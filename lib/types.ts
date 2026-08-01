@@ -17,7 +17,7 @@ export interface Customer {
   name: string;
   phone: string;
   nfcCardId: string;
-  planType: 'Monthly' | 'Quarterly' | 'Half-Yearly' | 'Annual';
+  planType: string;
   feeAmount: number;
   lastPaymentDate: string;
   nextDueDate: string;
@@ -55,4 +55,12 @@ export interface SystemStats {
   activeGyms: number;
   totalMembers: number;
   monthlyRevenue: number;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  gymId: string;
+  name: string;
+  durationMonths: number;
+  price: number;
 }

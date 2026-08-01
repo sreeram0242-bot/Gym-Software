@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShieldCheck, Plus, Search, Building2, UserPlus, Key, Phone, Mail, CheckCircle, AlertCircle, ArrowLeft, Users, Eye, EyeOff, Dumbbell, Lock, Sparkles, Filter } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ShieldCheck, Plus, Search, Building2, UserPlus, Key, Phone, Mail, CheckCircle, AlertCircle, ArrowLeft, Users, Eye, EyeOff, Dumbbell, Lock, Sparkles, Filter, LogOut } from 'lucide-react';
 import { AppStore } from '@/lib/store';
 import { Gym, Customer } from '@/lib/types';
 
 export default function SuperAdminPage() {
+  const router = useRouter();
   const [gyms, setGyms] = useState<Gym[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [activeTab, setActiveTab] = useState<'gyms' | 'add_gym' | 'global_search'>('gyms');
@@ -27,6 +29,13 @@ export default function SuperAdminPage() {
 
   // Load Data
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isMasterAdmin = localStorage.getItem('is_master_admin');
+      if (isMasterAdmin !== 'true') {
+        router.push('/superadmin/login');
+        return;
+      }
+    }
     loadData();
   }, []);
 
@@ -98,9 +107,16 @@ export default function SuperAdminPage() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Link href="/" className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
+            <button 
+              onClick={() => {
+                if (typeof window !== 'undefined') localStorage.removeItem('is_master_admin');
+                router.push('/superadmin/login');
+              }}
+              className="p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+              title="Secure Logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
             <div className="w-9 h-9 rounded-lg bg-blue-950 text-white flex items-center justify-center font-bold shadow-sm">
               <ShieldCheck className="w-5 h-5" />
             </div>
@@ -289,7 +305,7 @@ export default function SuperAdminPage() {
                             if (typeof window !== 'undefined') {
                               localStorage.setItem('active_gym_id', gym.id);
                             }
-                            window.location.href = '/dashboard';
+                            router.push('/dashboard');
                           }}
                           className="px-2.5 py-1.5 bg-blue-900 hover:bg-blue-950 text-white rounded-md text-xs font-semibold transition-colors shadow-sm"
                         >

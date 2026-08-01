@@ -11,6 +11,11 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
+    "/superadmin/login/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/superadmin/login/page.js"
+    ],
     "/superadmin/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -31,20 +36,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/checkin/page.js"
     ],
-    "/dashboard/reminders/page": [
+    "/dashboard/members/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/reminders/page.js"
+      "static/chunks/app/dashboard/members/page.js"
     ],
     "/dashboard/revenue/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/revenue/page.js"
-    ],
-    "/dashboard/members/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/members/page.js"
     ]
   }
 }

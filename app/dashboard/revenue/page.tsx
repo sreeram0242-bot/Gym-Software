@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter } from 'lucide-react';
+import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { AppStore } from '@/lib/store';
-import { Transaction } from '@/lib/types';
+import { Transaction, SubscriptionPlan } from '@/lib/types';
 
 export default function RevenuePage() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -23,6 +23,13 @@ export default function RevenuePage() {
   const [expenseDesc, setExpenseDesc] = useState('');
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
 
+  // Settings Modal
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [newPlanName, setNewPlanName] = useState('');
+  const [newPlanMonths, setNewPlanMonths] = useState(1);
+  const [newPlanPrice, setNewPlanPrice] = useState(2500);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -33,6 +40,9 @@ export default function RevenuePage() {
 
     const txs = AppStore.getTransactions(savedId);
     setTransactions(txs);
+
+    const ps = AppStore.getSubscriptionPlans(savedId);
+    setPlans(ps);
   };
 
   const handleAddExpense = (e: React.FormEvent) => {
@@ -51,6 +61,27 @@ export default function RevenuePage() {
     setShowExpenseModal(false);
     setExpenseDesc('');
     loadData();
+  };
+
+  const handleAddPlan = () => {
+    if (!newPlanName || newPlanPrice <= 0 || newPlanMonths <= 0) return;
+    AppStore.addSubscriptionPlan({
+      gymId,
+      name: newPlanName,
+      durationMonths: newPlanMonths,
+      price: newPlanPrice
+    });
+    setNewPlanName('');
+    setNewPlanMonths(1);
+    setNewPlanPrice(2500);
+    loadData();
+  };
+
+  const handleDeletePlan = (id: string) => {
+    if (window.confirm('Delete this subscription package?')) {
+      AppStore.deleteSubscriptionPlan(id);
+      loadData();
+    }
   };
 
   const allCustomers = AppStore.getCustomers();
@@ -135,13 +166,22 @@ export default function RevenuePage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowExpenseModal(true)}
-          className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex items-center space-x-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Record New Expense</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setShowSettingsModal(true)}
+            className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center"
+            title="Subscription Packages Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setShowExpenseModal(true)}
+            className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex items-center space-x-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Record New Expense</span>
+          </button>
+        </div>
       </div>
 
       {/* Global Filter Bar */}
@@ -421,6 +461,58 @@ export default function RevenuePage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: SETTINGS */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
+              <h3 className="font-bold text-slate-900 text-lg flex items-center space-x-2">
+                <Settings className="w-5 h-5 text-blue-900" />
+                <span>Subscription Packages</span>
+              </h3>
+              <button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+               {plans.length === 0 ? (
+                 <div className="text-center py-4 text-xs font-semibold text-slate-400">No packages created yet.</div>
+               ) : (
+                 <div className="space-y-2">
+                   {plans.map(p => (
+                     <div key={p.id} className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+                       <div>
+                         <div className="font-bold text-slate-900 text-sm">{p.name}</div>
+                         <div className="text-xs text-slate-500 font-semibold">{p.durationMonths} {p.durationMonths === 1 ? 'Month' : 'Months'} • ₹{p.price}</div>
+                       </div>
+                       <button onClick={() => handleDeletePlan(p.id)} className="p-2 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors">
+                         <Trash2 className="w-4 h-4" />
+                       </button>
+                     </div>
+                   ))}
+                 </div>
+               )}
+               
+               <div className="pt-4 border-t border-slate-200">
+                 <h4 className="font-bold text-slate-800 text-sm mb-3">Create New Package</h4>
+                 <div className="grid grid-cols-2 gap-3 mb-3">
+                   <input type="text" placeholder="Package Name" value={newPlanName} onChange={e => setNewPlanName(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
+                   <input type="number" placeholder="Months" value={newPlanMonths} onChange={e => setNewPlanMonths(Number(e.target.value))} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
+                   <div className="col-span-2 relative">
+                     <span className="absolute left-3 top-2 text-slate-400 font-bold">₹</span>
+                     <input type="number" placeholder="Price" value={newPlanPrice} onChange={e => setNewPlanPrice(Number(e.target.value))} className="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
+                   </div>
+                 </div>
+                 <button onClick={handleAddPlan} className="w-full py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg text-sm font-bold transition-colors">
+                   Add Package
+                 </button>
+               </div>
+            </div>
           </div>
         </div>
       )}

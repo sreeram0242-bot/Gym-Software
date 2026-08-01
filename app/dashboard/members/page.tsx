@@ -3,11 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2 } from 'lucide-react';
 import { AppStore } from '@/lib/store';
-import { Customer, Transaction, AttendanceRecord } from '@/lib/types';
+import { Customer, Transaction, AttendanceRecord, SubscriptionPlan } from '@/lib/types';
 
 export default function MemberManagementPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'active' | 'due_soon' | 'overdue'>('all');
   const [timeFilter, setTimeFilter] = useState<'all_time' | 'today' | 'this_week' | 'this_month'>('this_month');
@@ -17,7 +18,7 @@ export default function MemberManagementPage() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [nfcCardId, setNfcCardId] = useState('');
-  const [planType, setPlanType] = useState<'Monthly' | 'Quarterly' | 'Half-Yearly' | 'Annual'>('Monthly');
+  const [planType, setPlanType] = useState<string>('Monthly');
   const [feeAmount, setFeeAmount] = useState(2500);
   const [lastPaymentDate, setLastPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [errorMsg, setErrorMsg] = useState('');
@@ -131,6 +132,9 @@ export default function MemberManagementPage() {
 
     const custs = AppStore.getCustomers(savedId);
     setCustomers(custs);
+
+    const ps = AppStore.getSubscriptionPlans(savedId);
+    setPlans(ps);
   };
 
   const handleAddMember = (e: React.FormEvent) => {
@@ -155,7 +159,8 @@ export default function MemberManagementPage() {
     }
 
     // Calculate due date based on plan
-    const months = planType === 'Annual' ? 12 : planType === 'Half-Yearly' ? 6 : planType === 'Quarterly' ? 3 : 1;
+    const selectedPlan = plans.find(p => p.name === planType);
+    const months = selectedPlan ? selectedPlan.durationMonths : 1;
     const dueObj = new Date(lastPaymentDate);
     dueObj.setMonth(dueObj.getMonth() + months);
     const nextDueDate = dueObj.toISOString().split('T')[0];
@@ -490,19 +495,20 @@ export default function MemberManagementPage() {
                   <select
                     value={planType}
                     onChange={(e) => {
-                      const p = e.target.value as any;
+                      const p = e.target.value;
                       setPlanType(p);
-                      if (p === 'Quarterly') setFeeAmount(6500);
-                      else if (p === 'Half-Yearly') setFeeAmount(11500);
-                      else if (p === 'Annual') setFeeAmount(20000);
-                      else setFeeAmount(2500);
+                      const selectedPlan = plans.find(plan => plan.name === p);
+                      if (selectedPlan) {
+                        setFeeAmount(selectedPlan.price);
+                      }
                     }}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold text-slate-800 outline-none"
                   >
-                    <option value="Monthly">Monthly</option>
-                    <option value="Quarterly">Quarterly (3 Months)</option>
-                    <option value="Half-Yearly">Half-Yearly (6 Months)</option>
-                    <option value="Annual">Annual (1 Year)</option>
+                    {plans.map(p => (
+                      <option key={p.id} value={p.name}>
+                        {p.name} ({p.durationMonths} {p.durationMonths === 1 ? 'Month' : 'Months'})
+                      </option>
+                    ))}
                   </select>
                 </div>
 

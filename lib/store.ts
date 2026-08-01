@@ -1,4 +1,4 @@
-import { Gym, Customer, AttendanceRecord, Transaction } from './types';
+import { Gym, Customer, AttendanceRecord, Transaction, SubscriptionPlan } from './types';
 
 const INITIAL_GYMS: Gym[] = [
   {
@@ -37,6 +37,13 @@ const INITIAL_GYMS: Gym[] = [
     createdAt: '2026-05-20',
     memberCount: 35
   }
+];
+
+const INITIAL_PLANS: SubscriptionPlan[] = [
+  { id: 'plan_1', gymId: 'gym_1', name: 'Monthly', durationMonths: 1, price: 2500 },
+  { id: 'plan_2', gymId: 'gym_1', name: 'Quarterly', durationMonths: 3, price: 6500 },
+  { id: 'plan_3', gymId: 'gym_1', name: 'Half-Yearly', durationMonths: 6, price: 11500 },
+  { id: 'plan_4', gymId: 'gym_1', name: 'Annual', durationMonths: 12, price: 20000 }
 ];
 
 const INITIAL_CUSTOMERS: Customer[] = [
@@ -200,7 +207,7 @@ export class AppStore {
     const gyms = this.getGyms();
     const newGym: Gym = {
       ...gym,
-      id: `gym_${Date.now()}`,
+      id: `gym_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       status: 'active',
       createdAt: new Date().toISOString().split('T')[0],
       memberCount: 0
@@ -232,7 +239,7 @@ export class AppStore {
     const customers = this.getCustomers();
     const newCustomer: Customer = {
       ...customer,
-      id: `cust_${Date.now()}`,
+      id: `cust_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       joinedDate: new Date().toISOString().split('T')[0],
       status: 'active'
     };
@@ -368,7 +375,7 @@ export class AppStore {
     } else {
       // Check In
       const newRecord: AttendanceRecord = {
-        id: `att_${Date.now()}`,
+        id: `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         gymId: customer.gymId,
         customerId: customer.id,
         customerName: customer.name,
@@ -405,10 +412,52 @@ export class AppStore {
     const transactions = this.getTransactions();
     const newTx: Transaction = {
       ...tx,
-      id: `tx_${Date.now()}`
+      id: `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
     };
     transactions.unshift(newTx);
     this.setStorage('transactions_data_v2', transactions);
     return newTx;
+  }
+
+  // --- SUBSCRIPTION PLANS ---
+  static getSubscriptionPlans(gymId?: string): SubscriptionPlan[] {
+    const all = this.getStorage<SubscriptionPlan[]>('subscription_plans_v1', INITIAL_PLANS);
+    if (gymId) return all.filter(p => p.gymId === gymId);
+    return all;
+  }
+
+  static addSubscriptionPlan(plan: Omit<SubscriptionPlan, 'id'>): SubscriptionPlan {
+    const plans = this.getSubscriptionPlans();
+    const newPlan: SubscriptionPlan = {
+      ...plan,
+      id: `plan_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+    };
+    plans.push(newPlan);
+    this.setStorage('subscription_plans_v1', plans);
+    return newPlan;
+  }
+
+  static updateSubscriptionPlan(id: string, data: Partial<SubscriptionPlan>): SubscriptionPlan | undefined {
+    const plans = this.getSubscriptionPlans();
+    let updated: SubscriptionPlan | undefined;
+    const newList = plans.map(p => {
+      if (p.id === id) {
+        updated = { ...p, ...data };
+        return updated;
+      }
+      return p;
+    });
+    this.setStorage('subscription_plans_v1', newList);
+    return updated;
+  }
+
+  static deleteSubscriptionPlan(id: string): boolean {
+    const plans = this.getSubscriptionPlans();
+    const filtered = plans.filter(p => p.id !== id);
+    if (filtered.length !== plans.length) {
+      this.setStorage('subscription_plans_v1', filtered);
+      return true;
+    }
+    return false;
   }
 }

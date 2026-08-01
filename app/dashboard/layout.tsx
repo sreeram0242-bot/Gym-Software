@@ -27,7 +27,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setGyms(loadedGyms);
 
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
-    const matched = loadedGyms.find((g) => g.id === savedId) || loadedGyms[0];
+    const isMasterAdmin = typeof window !== 'undefined' ? localStorage.getItem('is_master_admin') === 'true' : false;
+    
+    // Find gym. Master admins can view suspended gyms.
+    const matched = loadedGyms.find((g) => g.id === savedId && (g.status === 'active' || isMasterAdmin));
+    
+    if (!matched) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('active_gym_id');
+      }
+      router.push('/');
+      return;
+    }
+    
     setCurrentGym(matched);
 
     // Global NFC scanner keyboard listener
@@ -174,13 +186,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Footer info */}
         <div className="p-3 border-t border-slate-200 bg-slate-50/50">
-          <Link
-            href="/superadmin"
-            className="flex items-center space-x-2 text-xs font-semibold text-slate-600 hover:text-blue-900 p-2 rounded-lg hover:bg-white transition-colors"
+          <button
+            onClick={() => {
+              let dest = '/';
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('active_gym_id');
+                if (localStorage.getItem('is_master_admin') === 'true') {
+                  dest = '/superadmin';
+                }
+              }
+              router.push(dest);
+            }}
+            className="w-full flex items-center space-x-2 text-xs font-semibold text-rose-600 hover:text-rose-700 p-2 rounded-lg hover:bg-rose-50 transition-colors"
           >
-            <ShieldCheck className="w-4 h-4 text-blue-900" />
-            <span>Master Admin Switch</span>
-          </Link>
+            <LogOut className="w-4 h-4" />
+            <span>Secure Logout</span>
+          </button>
         </div>
       </aside>
 
@@ -197,10 +218,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <div className="flex items-center space-x-2">
-          <Link href="/superadmin" className="p-1.5 text-slate-500 hover:text-blue-900 flex items-center space-x-1.5 bg-slate-100 rounded-lg px-2 py-1 text-xs font-bold transition-all">
-            <ShieldCheck className="w-4 h-4 text-blue-900" />
-            <span>Master Switch</span>
-          </Link>
+          <button 
+            onClick={() => {
+              let dest = '/';
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('active_gym_id');
+                if (localStorage.getItem('is_master_admin') === 'true') {
+                  dest = '/superadmin';
+                }
+              }
+              router.push(dest);
+            }}
+            className="p-1.5 text-rose-600 hover:text-rose-700 flex items-center space-x-1.5 bg-rose-50 rounded-lg px-2 py-1 text-xs font-bold transition-all"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Logout</span>
+          </button>
         </div>
       </header>
 
