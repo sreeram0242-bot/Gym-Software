@@ -84,7 +84,7 @@ export default function RevenuePage() {
     }
   };
 
-  const allCustomers = AppStore.getCustomers();
+  const allCustomers = AppStore.getCustomers(gymId);
 
   // Global Time Filter Logic
   const isDateInGlobalFilter = (dateStr: string) => {

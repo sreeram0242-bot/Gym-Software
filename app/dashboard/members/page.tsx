@@ -138,7 +138,7 @@ export default function MemberManagementPage() {
     setErrorMsg('');
 
     const cleanPhone = phone.replace(/\D/g, '');
-    const allCustomers = AppStore.getCustomers();
+    const allCustomers = AppStore.getCustomers(gymId);
     
     const existingPhone = allCustomers.find(c => c.phone.replace(/\D/g, '') === cleanPhone);
     if (existingPhone && (!isEditingMember || existingPhone.id !== selectedMember?.id)) {

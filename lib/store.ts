@@ -261,14 +261,14 @@ export class AppStore {
     return newCustomer;
   }
 
-  static findCustomerByPhone(phone: string): Customer | undefined {
+  static findCustomerByPhone(gymId: string, phone: string): Customer | undefined {
     const cleanPhone = phone.replace(/\D/g, '');
-    const customers = this.getCustomers();
+    const customers = this.getCustomers(gymId);
     return customers.find(c => c.phone.replace(/\D/g, '').includes(cleanPhone));
   }
 
-  static findCustomerByNFC(nfcId: string): Customer | undefined {
-    const customers = this.getCustomers();
+  static findCustomerByNFC(gymId: string, nfcId: string): Customer | undefined {
+    const customers = this.getCustomers(gymId);
     return customers.find(c => c.nfcCardId.toLowerCase() === nfcId.toLowerCase());
   }
 

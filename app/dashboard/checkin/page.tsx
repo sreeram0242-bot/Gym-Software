@@ -49,7 +49,7 @@ export default function NFCCheckInTerminal() {
 
       // @ts-ignore
       ndef.addEventListener('reading', ({ serialNumber }: any) => {
-        const matched = AppStore.findCustomerByNFC(serialNumber) || customers[0];
+        const matched = AppStore.findCustomerByNFC(gymId, serialNumber);
         if (matched) {
           AppStore.toggleCheckIn(matched);
         }
