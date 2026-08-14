@@ -62,11 +62,6 @@ export default function MemberManagementPage() {
     if (nfcCardId && nfcCardId.length > 3) {
       found = allCustomers.find(c => c.nfcCardId.toLowerCase() === nfcCardId.toLowerCase());
     }
-    
-    if (!found && phone && phone.replace(/\\D/g, '').length >= 10) {
-      const cleanPhone = phone.replace(/\\D/g, '');
-      found = allCustomers.find(c => c.phone.replace(/\\D/g, '') === cleanPhone);
-    }
 
     if (found) {
       setSelectedMember(found);
@@ -145,7 +140,7 @@ export default function MemberManagementPage() {
     const cleanPhone = phone.replace(/\D/g, '');
     const allCustomers = AppStore.getCustomers();
     
-    const existingPhone = allCustomers.find(c => c.phone.replace(/\\D/g, '') === cleanPhone);
+    const existingPhone = allCustomers.find(c => c.phone.replace(/\D/g, '') === cleanPhone);
     if (existingPhone && (!isEditingMember || existingPhone.id !== selectedMember?.id)) {
       setErrorMsg(`Phone number already in use by ${existingPhone.name}. A number is for one customer only.`);
       return;
@@ -224,7 +219,7 @@ export default function MemberManagementPage() {
     }
 
     let matchesTime = true;
-    if (statusFilter === 'new') {
+    if (timeFilter !== 'all_time') {
       const joinDate = new Date(c.joinedDate);
       const today = new Date();
       if (timeFilter === 'today') {
