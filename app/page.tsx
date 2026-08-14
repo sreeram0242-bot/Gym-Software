@@ -127,15 +127,7 @@ export default function LandingPage() {
               </button>
             </form>
 
-            <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col items-center justify-between space-y-4">
-              <div className="flex w-full items-center justify-between text-xs text-slate-400 font-medium">
-                <span className="flex items-center"><Database className="w-3.5 h-3.5 mr-1" /> Secure Oracle DB</span>
-                <span className="flex items-center"><ShieldCheck className="w-3.5 h-3.5 mr-1" /> 256-bit Encrypted</span>
-              </div>
-              <Link href="/superadmin/login" className="text-xs text-slate-400 hover:text-blue-900 font-semibold flex items-center transition-colors">
-                <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Master Admin Access
-              </Link>
-            </div>
+
           </div>
         </div>
 
