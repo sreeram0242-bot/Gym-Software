@@ -22,25 +22,30 @@ export default function LandingPage() {
     e.preventDefault();
     setErrorMsg('');
 
-    // Gym Partner Login
-    const gyms = await getGyms();
-    const gymMatch = gyms.find(
-      (g) => g.userId === userId && g.passwordHash === password && g.status === 'active'
-    );
+    try {
+      // Gym Partner Login
+      const gyms = await getGyms();
+      const gymMatch = gyms.find(
+        (g) => g.userId === userId && g.passwordHash === password && g.status === 'active'
+      );
 
-    if (gymMatch) {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('active_gym_id', gymMatch.id);
-      }
-      router.push('/dashboard');
-    } else {
-      // Check if gym exists but is suspended
-      const suspendedGym = gyms.find((g) => g.userId === userId && g.passwordHash === password && g.status === 'suspended');
-      if (suspendedGym) {
-        setErrorMsg('Your account has been suspended. Please contact the Master Admin.');
+      if (gymMatch) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('active_gym_id', gymMatch.id);
+        }
+        router.push('/dashboard');
       } else {
-        setErrorMsg('Invalid Gym User ID or Password.');
+        // Check if gym exists but is suspended
+        const suspendedGym = gyms.find((g) => g.userId === userId && g.passwordHash === password && g.status === 'suspended');
+        if (suspendedGym) {
+          setErrorMsg('Your account has been suspended. Please contact the Master Admin.');
+        } else {
+          setErrorMsg('Invalid Gym User ID or Password.');
+        }
       }
+    } catch (error: any) {
+      console.error(error);
+      setErrorMsg('Server error: Could not connect to the database. Please check if the database is initialized.');
     }
   };
 
