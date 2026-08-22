@@ -154,7 +154,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
 
       return () => {
-        window.removeEventListener('keydown', handleKeyDown as EventListener);
+        window.removeEventListener('keydown', handleKeyDown as unknown as EventListener);
         if (notificationTimeout) clearTimeout(notificationTimeout);
       };
     };
