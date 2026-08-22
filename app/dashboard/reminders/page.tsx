@@ -23,8 +23,19 @@ export default function RemindersPage() {
   };
 
   const handleRecordPayment = (cust: Customer) => {
-    AppStore.renewMemberPayment(cust.id, 1, cust.feeAmount);
+    const updated = AppStore.renewMemberPayment(cust.id, 1, cust.feeAmount);
     loadData();
+    if (updated) {
+      fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gymId,
+          phone: cust.phone,
+          message: `Payment Received! 💰\nHello ${cust.name}, we have received ₹${cust.feeAmount} for your membership renewal.\nYour new due date is ${updated.nextDueDate}. Thank you!`
+        })
+      }).catch(console.error);
+    }
   };
 
   // Filter members by due date

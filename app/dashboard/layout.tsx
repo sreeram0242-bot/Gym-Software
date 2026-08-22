@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X } from 'lucide-react';
+import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings } from 'lucide-react';
 import { AppStore } from '@/lib/store';
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 
@@ -95,6 +95,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
 
     window.addEventListener('keydown', handleKeyDown);
+
+    // Smart Sync: Background WhatsApp Reminders
+    if (matched) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const lastSync = localStorage.getItem(`wa_sync_${matched.id}`);
+      
+      if (lastSync !== todayStr) {
+        const customers = AppStore.getCustomers(matched.id);
+        const targetThresholdDate = new Date();
+        targetThresholdDate.setDate(new Date().getDate() + 3); // 3 days default
+
+        const dueCustomers = customers.filter((cust) => {
+          const dueDate = new Date(cust.nextDueDate);
+          return dueDate <= targetThresholdDate || cust.status === 'due_soon' || cust.status === 'overdue';
+        });
+
+        dueCustomers.forEach(cust => {
+          const isOverdue = new Date(cust.nextDueDate) < new Date();
+          const waText = `Hello ${cust.name}! 👋\nThis is a friendly automated reminder from your Gym. Your membership fee of ₹${cust.feeAmount} is ${isOverdue ? 'OVERDUE' : 'due'} on ${cust.nextDueDate}.\nPlease renew at your earliest convenience.`;
+          
+          fetch('/api/whatsapp/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              gymId: matched.id,
+              phone: cust.phone,
+              message: waText
+            })
+          }).catch(() => {});
+        });
+
+        localStorage.setItem(`wa_sync_${matched.id}`, todayStr);
+      }
+    }
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       if (notificationTimeout) clearTimeout(notificationTimeout);
@@ -117,6 +152,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: 'Members', href: '/dashboard/members', icon: Users },
     { label: 'Reminders', href: '/dashboard/reminders', icon: Bell, badge: 'Due' },
     { label: 'Revenue', href: '/dashboard/revenue', icon: CreditCard },
+    { label: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
 
   return (

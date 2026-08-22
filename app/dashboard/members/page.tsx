@@ -183,6 +183,16 @@ export default function MemberManagementPage() {
         lastPaymentDate,
         nextDueDate
       });
+
+      fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gymId,
+          phone,
+          message: `Welcome to the Gym, ${name}! 🏋️‍♂️\nYour ${planType} membership is active.\nAmount Paid: ₹${feeAmount}\nNext Due Date: ${nextDueDate}`
+        })
+      }).catch(console.error);
     }
 
     setShowAddModal(false);
@@ -198,6 +208,16 @@ export default function MemberManagementPage() {
     if (updated) {
       setSelectedMember(updated);
       loadData();
+
+      fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gymId,
+          phone: cust.phone,
+          message: `Payment Received! 💰\nHello ${cust.name}, we have received ₹${cust.feeAmount * renewMonths} for your membership renewal.\nYour new due date is ${updated.nextDueDate}. Thank you!`
+        })
+      }).catch(console.error);
     }
   };
 

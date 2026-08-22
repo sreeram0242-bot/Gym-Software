@@ -1,0 +1,183 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Smartphone, CheckCircle2, AlertTriangle, RefreshCw, LogOut, MessageSquare, Settings } from 'lucide-react';
+
+export default function SettingsPage() {
+  const [gymId, setGymId] = useState<string | null>(null);
+  const [waStatus, setWaStatus] = useState<string>('disconnected');
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
+    setGymId(savedId);
+  }, []);
+
+  useEffect(() => {
+    if (!gymId) return;
+
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch(`/api/whatsapp/status?gymId=${gymId}`);
+        const data = await res.json();
+        setWaStatus(data.status);
+        setQrCode(data.qr);
+      } catch (err) {
+        console.error('Failed to fetch WA status', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStatus();
+    // Poll every 3 seconds while not connected
+    const interval = setInterval(() => {
+      if (waStatus !== 'connected') {
+        fetchStatus();
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [gymId, waStatus]);
+
+  const handleDisconnect = async () => {
+    if (!gymId) return;
+    setIsLoading(true);
+    try {
+      await fetch('/api/whatsapp/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gymId }),
+      });
+      setWaStatus('disconnected');
+      setQrCode(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTestMessage = async () => {
+    if (!gymId) return;
+    const phone = prompt('Enter a phone number with country code (e.g. 919876543210):');
+    if (!phone) return;
+
+    try {
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gymId, phone, message: 'Hello from GymFlow! 🏋️‍♂️ Your WhatsApp integration is working perfectly.' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Test message sent successfully!');
+      } else {
+        alert('Failed to send test message.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error sending message');
+    }
+  };
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-800 text-xs font-bold mb-2">
+            <Settings className="w-3.5 h-3.5" />
+            <span>Settings</span>
+          </div>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Gym Configuration</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Manage your gym's integrations and preferences.
+          </p>
+        </div>
+      </div>
+
+      {/* WhatsApp Integration Card */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center space-x-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white shadow-md ${
+              waStatus === 'connected' ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-slate-800 shadow-slate-800/20'
+            }`}>
+              <MessageSquare className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                <span>WhatsApp Bot</span>
+                {waStatus === 'connected' && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center">
+                    <CheckCircle2 className="w-3 h-3 mr-1" /> Connected
+                  </span>
+                )}
+              </h2>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Send automatic payment receipts and background reminders.
+              </p>
+            </div>
+          </div>
+          {waStatus === 'connected' && (
+            <button
+              onClick={handleDisconnect}
+              disabled={isLoading}
+              className="px-4 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-sm rounded-xl transition-all border border-rose-200 flex items-center space-x-2 disabled:opacity-50"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Disconnect</span>
+            </button>
+          )}
+        </div>
+
+        <div className="p-6 bg-slate-50">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+              <RefreshCw className="w-8 h-8 animate-spin mb-4 text-blue-500" />
+              <p className="font-bold">Initializing WhatsApp Engine...</p>
+            </div>
+          ) : waStatus === 'connected' ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-6 border-4 border-white shadow-lg">
+                <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 mb-2">WhatsApp is Active!</h3>
+              <p className="text-slate-500 text-sm max-w-md text-center mb-8">
+                Your gym is now connected to WhatsApp. Payment receipts and reminders will be sent automatically from your number.
+              </p>
+              
+              <button
+                onClick={handleTestMessage}
+                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md flex items-center space-x-2 transition-all"
+              >
+                <MessageSquare className="w-5 h-5" />
+                <span>Send Test Message</span>
+              </button>
+            </div>
+          ) : qrCode ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="bg-white p-4 rounded-2xl shadow-md border border-slate-100 mb-6">
+                <img src={qrCode} alt="WhatsApp QR Code" className="w-64 h-64" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Scan to Link WhatsApp</h3>
+              <ol className="text-sm text-slate-600 space-y-2 max-w-sm text-left bg-white p-4 rounded-xl border border-slate-200">
+                <li className="flex items-start"><span className="font-bold mr-2">1.</span> Open WhatsApp on your phone</li>
+                <li className="flex items-start"><span className="font-bold mr-2">2.</span> Tap Menu (⋮) or Settings and select Linked Devices</li>
+                <li className="flex items-start"><span className="font-bold mr-2">3.</span> Tap on Link a Device</li>
+                <li className="flex items-start"><span className="font-bold mr-2">4.</span> Point your phone to this screen to capture the QR code</li>
+              </ol>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+              <AlertTriangle className="w-10 h-10 mb-4 text-amber-500" />
+              <p className="font-bold text-slate-800">WhatsApp is Disconnected</p>
+              <p className="text-sm mt-1">Please wait while the server generates a new QR code...</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
