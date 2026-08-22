@@ -4,159 +4,170 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings } from 'lucide-react';
-import { AppStore } from '@/lib/store';
+import { getGyms, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours, getCustomers } from '@/lib/actions';
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const [gyms, setGyms] = useState<Gym[]>([]);
-  const [currentGym, setCurrentGym] = useState<Gym | null>(null);
+  const [gyms, setGyms] = useState<any[]>([]);
+  const [currentGym, setCurrentGym] = useState<any | null>(null);
 
   // Global Notification for NFC scans
   const [globalNotification, setGlobalNotification] = useState<{
     customerName: string;
     action: 'checkin' | 'checkout';
-    record: AttendanceRecord;
+    record: any;
     avgHours: number;
   } | null>(null);
 
   useEffect(() => {
-    const loadedGyms = AppStore.getGyms();
-    setGyms(loadedGyms);
+    const initLayout = async () => {
+      const loadedGyms = await getGyms();
+      setGyms(loadedGyms);
 
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
-    const isMasterAdmin = typeof window !== 'undefined' ? localStorage.getItem('is_master_admin') === 'true' : false;
-    
-    // Find gym. Master admins can view suspended gyms.
-    const matched = loadedGyms.find((g) => g.id === savedId && (g.status === 'active' || isMasterAdmin));
-    
-    if (!matched) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('active_gym_id');
-      }
-      router.push('/');
-      return;
-    }
-    
-    setCurrentGym(matched);
-
-    // Global NFC scanner keyboard listener
-    let buffer = '';
-    let lastKeyTime = Date.now();
-    let notificationTimeout: NodeJS.Timeout;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept if they are actively typing in an input/textarea
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+      const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
+      const isMasterAdmin = typeof window !== 'undefined' ? localStorage.getItem('is_master_admin') === 'true' : false;
+      
+      // Find gym. Master admins can view suspended gyms.
+      const matched = loadedGyms.find((g) => g.id === savedId && (g.status === 'active' || isMasterAdmin));
+      
+      if (!matched) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('active_gym_id');
+        }
+        router.push('/');
         return;
       }
+      
+      setCurrentGym(matched);
 
-      const now = Date.now();
-      if (now - lastKeyTime > 50) {
-        buffer = ''; // Reset if typing is too slow (human typing)
-      }
-      lastKeyTime = now;
+      // Global NFC scanner keyboard listener
+      let buffer = '';
+      let lastKeyTime = Date.now();
+      let notificationTimeout: NodeJS.Timeout;
 
-      if (e.key === 'Enter' && buffer.length > 3) {
-        // Attempt to find customer by NFC
-        const matchedCust = AppStore.findCustomerByNFC(matched.id, buffer);
-        if (matchedCust) {
-          const { record, action } = AppStore.toggleCheckIn(matchedCust);
-          const avgHours = AppStore.getMemberMonthlyAvgHours(matchedCust.id);
-          
-          setGlobalNotification({
-            customerName: matchedCust.name,
-            action,
-            record,
-            avgHours
+      const handleKeyDown = async (e: KeyboardEvent) => {
+        // Don't intercept if they are actively typing in an input/textarea
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+          return;
+        }
+
+        const now = Date.now();
+        if (now - lastKeyTime > 50) {
+          buffer = ''; // Reset if typing is too slow (human typing)
+        }
+        lastKeyTime = now;
+
+        if (e.key === 'Enter' && buffer.length > 3) {
+          // Attempt to find customer by NFC
+          const matchedCust = await findCustomerByNFC(matched.id, buffer);
+          if (matchedCust) {
+            const { record, action } = await toggleCheckIn(matchedCust.id);
+            const avgHours = 1.2; // default
+            
+            setGlobalNotification({
+              customerName: matchedCust.name,
+              action: action as 'checkin' | 'checkout',
+              record,
+              avgHours
+            });
+
+            if (notificationTimeout) clearTimeout(notificationTimeout);
+            notificationTimeout = setTimeout(() => {
+              setGlobalNotification(null);
+            }, 5000);
+          } else {
+            // New NFC Card scanned!
+            if (typeof window !== 'undefined') {
+              if (window.location.pathname === '/dashboard/members') {
+                window.dispatchEvent(new CustomEvent('open_add_member', { detail: { nfcId: buffer } }));
+              } else {
+                router.push(`/dashboard/members?new_nfc=${buffer}`);
+              }
+            }
+          }
+          buffer = '';
+        } else if (e.key.length === 1) {
+          buffer += e.key;
+        }
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+
+      // Smart Sync: Background WhatsApp Reminders
+      if (matched) {
+        const autoMessagesEnabled = localStorage.getItem(`wa_auto_messages_${matched.id}`) !== 'false';
+        const reminderWindow = Number(localStorage.getItem(`wa_reminder_window_${matched.id}`) || 3);
+        
+        const todayStr = new Date().toISOString().split('T')[0];
+        const lastSync = localStorage.getItem(`wa_sync_${matched.id}`);
+        
+        if (autoMessagesEnabled && lastSync !== todayStr) {
+          const customers = await getCustomers(matched.id);
+          const targetThresholdDate = new Date();
+          targetThresholdDate.setDate(new Date().getDate() + reminderWindow);
+
+          const dueCustomers = customers.filter((cust: any) => {
+            const dueDate = new Date(cust.nextDueDate);
+            return dueDate <= targetThresholdDate || cust.status === 'due_soon' || cust.status === 'overdue';
           });
 
-          if (notificationTimeout) clearTimeout(notificationTimeout);
-          notificationTimeout = setTimeout(() => {
-            setGlobalNotification(null);
-          }, 5000);
-        } else {
-          // New NFC Card scanned!
-          if (typeof window !== 'undefined') {
-            if (window.location.pathname === '/dashboard/members') {
-              window.dispatchEvent(new CustomEvent('open_add_member', { detail: { nfcId: buffer } }));
-            } else {
-              router.push(`/dashboard/members?new_nfc=${buffer}`);
+          const sendWithDelay = async () => {
+            for (let i = 0; i < dueCustomers.length; i++) {
+              const cust = dueCustomers[i];
+              const isOverdue = new Date(cust.nextDueDate) < new Date();
+              
+              // Add date and time to make every single message 100% unique (Anti-Ban trick)
+              const now = new Date();
+              const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const dateString = now.toLocaleDateString();
+
+              const waText = `Hello ${cust.name}! 👋\nThis is a friendly automated reminder from your Gym as of ${dateString} ${timeString}.\nYour membership fee of ₹${cust.feeAmount} is ${isOverdue ? 'OVERDUE' : 'due'} on ${cust.nextDueDate}.\nPlease renew at your earliest convenience.`;
+              
+              try {
+                await fetch('/api/whatsapp/send', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    gymId: matched.id,
+                    phone: cust.phone,
+                    message: waText
+                  })
+                });
+              } catch (e) {}
+
+              // Random delay between 4 to 8 seconds to mimic human typing
+              if (i < dueCustomers.length - 1) {
+                const delay = Math.floor(Math.random() * 4000) + 4000;
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
             }
-          }
+          };
+
+          sendWithDelay();
+
+          localStorage.setItem(`wa_sync_${matched.id}`, todayStr);
         }
-        buffer = '';
-      } else if (e.key.length === 1) {
-        buffer += e.key;
       }
+
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown as EventListener);
+        if (notificationTimeout) clearTimeout(notificationTimeout);
+      };
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-
-    // Smart Sync: Background WhatsApp Reminders
-    if (matched) {
-      const autoMessagesEnabled = localStorage.getItem(`wa_auto_messages_${matched.id}`) !== 'false';
-      const reminderWindow = Number(localStorage.getItem(`wa_reminder_window_${matched.id}`) || 3);
-      
-      const todayStr = new Date().toISOString().split('T')[0];
-      const lastSync = localStorage.getItem(`wa_sync_${matched.id}`);
-      
-      if (autoMessagesEnabled && lastSync !== todayStr) {
-        const customers = AppStore.getCustomers(matched.id);
-        const targetThresholdDate = new Date();
-        targetThresholdDate.setDate(new Date().getDate() + reminderWindow);
-
-        const dueCustomers = customers.filter((cust) => {
-          const dueDate = new Date(cust.nextDueDate);
-          return dueDate <= targetThresholdDate || cust.status === 'due_soon' || cust.status === 'overdue';
-        });
-
-        const sendWithDelay = async () => {
-          for (let i = 0; i < dueCustomers.length; i++) {
-            const cust = dueCustomers[i];
-            const isOverdue = new Date(cust.nextDueDate) < new Date();
-            
-            // Add date and time to make every single message 100% unique (Anti-Ban trick)
-            const now = new Date();
-            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const dateString = now.toLocaleDateString();
-
-            const waText = `Hello ${cust.name}! 👋\nThis is a friendly automated reminder from your Gym as of ${dateString} ${timeString}.\nYour membership fee of ₹${cust.feeAmount} is ${isOverdue ? 'OVERDUE' : 'due'} on ${cust.nextDueDate}.\nPlease renew at your earliest convenience.`;
-            
-            try {
-              await fetch('/api/whatsapp/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  gymId: matched.id,
-                  phone: cust.phone,
-                  message: waText
-                })
-              });
-            } catch (e) {}
-
-            // Random delay between 4 to 8 seconds to mimic human typing
-            if (i < dueCustomers.length - 1) {
-              const delay = Math.floor(Math.random() * 4000) + 4000;
-              await new Promise(resolve => setTimeout(resolve, delay));
-            }
-          }
-        };
-
-        sendWithDelay();
-
-        localStorage.setItem(`wa_sync_${matched.id}`, todayStr);
-      }
-    }
+    const cleanupPromise = initLayout();
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      if (notificationTimeout) clearTimeout(notificationTimeout);
+      // Best effort cleanup in an async effect
+      cleanupPromise.then(cleanupFn => {
+        if (typeof cleanupFn === 'function') cleanupFn();
+      });
     };
-  }, []);
+  }, [router]);
 
   const handleSwitchGym = (gymId: string) => {
     const selected = gyms.find((g) => g.id === gymId);

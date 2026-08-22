@@ -2,28 +2,28 @@
 
 import React, { useState, useEffect } from 'react';
 import { Bell, AlertTriangle, CheckCircle2, MessageSquare, Phone, RefreshCw, Calendar, Filter, Sparkles, Send } from 'lucide-react';
-import { AppStore } from '@/lib/store';
+import { getCustomers, renewMemberPayment } from '@/lib/actions';
 import { Customer } from '@/lib/types';
 
 export default function RemindersPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [reminderThresholdDays, setReminderThresholdDays] = useState<number>(3); // 3 days default as requested
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
-    const custs = AppStore.getCustomers(savedId);
+    const custs = await getCustomers(savedId);
     setCustomers(custs);
   };
 
-  const handleRecordPayment = (cust: Customer) => {
-    const updated = AppStore.renewMemberPayment(cust.id, 1, cust.feeAmount);
+  const handleRecordPayment = async (cust: any) => {
+    const updated = await renewMemberPayment(cust.id, 1, cust.feeAmount);
     loadData();
     if (updated) {
       const autoMessagesEnabled = localStorage.getItem(`wa_auto_messages_${gymId}`) !== 'false';

@@ -3,15 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Users, Smartphone, Bell, CreditCard, Plus, ArrowUpRight, CheckCircle2, Clock, Dumbbell, AlertTriangle, TrendingUp, ChevronRight, Zap } from 'lucide-react';
-import { AppStore } from '@/lib/store';
+import { getGyms, getCustomers, getAttendance, getTransactions } from '@/lib/actions';
 import { Customer, AttendanceRecord, Transaction, Gym } from '@/lib/types';
 
 export default function DashboardOverview() {
   const [gymId, setGymId] = useState<string>('gym_1');
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [activeGym, setActiveGym] = useState<Gym | null>(null);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [activeGym, setActiveGym] = useState<any | null>(null);
 
   useEffect(() => {
     loadData();
@@ -20,20 +20,20 @@ export default function DashboardOverview() {
     return () => window.removeEventListener('attendance_updated', handleUpdate);
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
-    const gyms = AppStore.getGyms();
+    const [gyms, custs, atts, txs] = await Promise.all([
+      getGyms(),
+      getCustomers(savedId),
+      getAttendance(savedId),
+      getTransactions(savedId)
+    ]);
+
     setActiveGym(gyms.find(g => g.id === savedId) || gyms[0]);
-
-    const custs = AppStore.getCustomers(savedId);
     setCustomers(custs);
-
-    const atts = AppStore.getAttendance(savedId);
     setAttendance(atts);
-
-    const txs = AppStore.getTransactions(savedId);
     setTransactions(txs);
   };
 

@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Dumbbell, Smartphone, CreditCard, Users, ArrowRight, Database, KeyRound, Lock, AlertCircle } from 'lucide-react';
-import { AppStore } from '@/lib/store';
-import { Gym } from '@/lib/types';
+import { getGyms } from '@/lib/actions';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -19,12 +18,12 @@ export default function LandingPage() {
   useEffect(() => {
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
     // Gym Partner Login
-    const gyms = AppStore.getGyms();
+    const gyms = await getGyms();
     const gymMatch = gyms.find(
       (g) => g.userId === userId && g.passwordHash === password && g.status === 'active'
     );

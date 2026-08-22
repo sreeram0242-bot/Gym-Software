@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Radio, Clock, UserCheck } from 'lucide-react';
-import { AppStore } from '@/lib/store';
+import { getCustomers, getAttendance, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours } from '@/lib/actions';
 import { Customer, AttendanceRecord } from '@/lib/types';
 
 export default function NFCCheckInTerminal() {
   const [gymId, setGymId] = useState<string>('gym_1');
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<any[]>([]);
 
   // Web NFC State
   const [nfcSupported, setNfcSupported] = useState<boolean>(false);
@@ -27,14 +27,16 @@ export default function NFCCheckInTerminal() {
     return () => window.removeEventListener('attendance_updated', handleUpdate);
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
-    const custs = AppStore.getCustomers(savedId);
+    const [custs, atts] = await Promise.all([
+      getCustomers(savedId),
+      getAttendance(savedId)
+    ]);
+    
     setCustomers(custs);
-
-    const atts = AppStore.getAttendance(savedId);
     setAttendance(atts);
   };
 
@@ -48,10 +50,11 @@ export default function NFCCheckInTerminal() {
       await ndef.scan();
 
       // @ts-ignore
-      ndef.addEventListener('reading', ({ serialNumber }: any) => {
-        const matched = AppStore.findCustomerByNFC(gymId, serialNumber);
+      ndef.addEventListener('reading', async ({ serialNumber }: any) => {
+        const matched = await findCustomerByNFC(gymId, serialNumber);
         if (matched) {
-          AppStore.toggleCheckIn(matched);
+          await toggleCheckIn(matched.id);
+          loadData();
         }
       });
     } catch (err) {
@@ -59,13 +62,21 @@ export default function NFCCheckInTerminal() {
       setIsScanning(false);
     }
   };
+  
+  const getAvg = (custId: string) => {
+    const atts = attendance.filter(a => a.customerId === custId && a.durationMinutes);
+    if (atts.length === 0) return 1.2;
+    const totalMins = atts.reduce((sum, a) => sum + (a.durationMinutes || 0), 0);
+    const avg = (totalMins / 60) / Math.max(1, atts.length);
+    return parseFloat(avg.toFixed(1));
+  };
 
   const todayStr = new Date().toISOString().split('T')[0];
   const todayRecords = attendance.filter((a) => a.dateStr === todayStr);
   const activeSessions = todayRecords.filter(a => !a.checkOutTime);
 
   // Group by customer to prevent multiple cards for the same member
-  const uniqueTodayRecords: AttendanceRecord[] = [];
+  const uniqueTodayRecords: any[] = [];
   const seenCustomerIds = new Set<string>();
 
   // Prioritize active sessions, then fallback to most recent checkouts
@@ -134,7 +145,7 @@ export default function NFCCheckInTerminal() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {uniqueTodayRecords.map(session => {
               const customer = customers.find(c => c.id === session.customerId);
-                const avgHours = AppStore.getMemberMonthlyAvgHours(session.customerId);
+                const avgHours = getAvg(session.customerId);
                 const isActive = !session.checkOutTime;
                 
                 return (
@@ -223,7 +234,7 @@ export default function NFCCheckInTerminal() {
             <tbody className="divide-y divide-slate-200 text-xs sm:text-sm">
               {todayRecords.length > 0 ? (
                 todayRecords.map((rec) => {
-                  const avg = AppStore.getMemberMonthlyAvgHours(rec.customerId);
+                  const avg = getAvg(rec.customerId);
                   return (
                     <tr key={rec.id} className="hover:bg-slate-50 transition-colors">
                       <td className="py-3 px-4 font-bold text-slate-900 flex items-center space-x-2">

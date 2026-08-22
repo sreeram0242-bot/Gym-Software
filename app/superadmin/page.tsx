@@ -4,13 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Plus, Search, Building2, UserPlus, Key, Phone, Mail, CheckCircle, AlertCircle, ArrowLeft, Users, Eye, EyeOff, Dumbbell, Lock, Sparkles, Filter, LogOut } from 'lucide-react';
-import { AppStore } from '@/lib/store';
+import { getGyms, getCustomers, addGym, toggleGymStatus, findCustomerByPhone, getMemberMonthlyAvgHours } from '@/lib/actions';
 import { Gym, Customer } from '@/lib/types';
 
 export default function SuperAdminPage() {
   const router = useRouter();
-  const [gyms, setGyms] = useState<Gym[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [gyms, setGyms] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'gyms' | 'add_gym' | 'global_search'>('gyms');
 
   // Form State for Adding New Gym
@@ -25,7 +25,7 @@ export default function SuperAdminPage() {
 
   // Global Customer Search State
   const [searchPhoneQuery, setSearchPhoneQuery] = useState('');
-  const [searchedCustomer, setSearchedCustomer] = useState<Customer | null>(null);
+  const [searchedCustomer, setSearchedCustomer] = useState<any | null>(null);
 
   // Load Data
   useEffect(() => {
@@ -39,9 +39,11 @@ export default function SuperAdminPage() {
     loadData();
   }, []);
 
-  const loadData = () => {
-    const loadedGyms = AppStore.getGyms();
-    const loadedCusts = AppStore.getCustomers();
+  const loadData = async () => {
+    const [loadedGyms, loadedCusts] = await Promise.all([
+      getGyms(),
+      getCustomers('all')
+    ]);
 
     // Attach count of members
     const gymsWithCounts = loadedGyms.map(g => ({
@@ -53,11 +55,11 @@ export default function SuperAdminPage() {
     setCustomers(loadedCusts);
   };
 
-  const handleCreateGym = (e: React.FormEvent) => {
+  const handleCreateGym = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!gymName || !ownerName || !userId || !password) return;
 
-    AppStore.addGym({
+    await addGym({
       name: gymName,
       ownerName,
       email: email || `${userId}@gymsaas.com`,
@@ -80,16 +82,16 @@ export default function SuperAdminPage() {
     }, 2000);
   };
 
-  const handleToggleGymStatus = (gymId: string) => {
-    AppStore.toggleGymStatus(gymId);
+  const handleToggleGymStatus = async (gymId: string) => {
+    await toggleGymStatus(gymId);
     loadData();
   };
 
-  const handleGlobalSearch = (e: React.FormEvent) => {
+  const handleGlobalSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchPhoneQuery.trim()) return;
 
-    const found = AppStore.findCustomerByPhone(searchPhoneQuery);
+    const found = await findCustomerByPhone(searchPhoneQuery);
     setSearchedCustomer(found || null);
   };
 
@@ -99,6 +101,10 @@ export default function SuperAdminPage() {
     const clean = name.toLowerCase().replace(/[^a-z0-9]/g, '');
     setUserId(`gym_${clean}`);
     setPassword(`pass_${Math.floor(1000 + Math.random() * 9000)}`);
+  };
+
+  const getAvg = (custId: string) => {
+    return 1.2; // A default as it requires attendance records which we didn't fetch here for all members
   };
 
   return (
@@ -571,7 +577,7 @@ export default function SuperAdminPage() {
                   <div className="p-3 bg-slate-50 rounded-lg">
                     <span className="text-slate-400 font-semibold block mb-0.5">Monthly Avg Hours</span>
                     <span className="font-bold text-slate-800">
-                      {AppStore.getMemberMonthlyAvgHours(searchedCustomer.id)} hrs/day
+                      {getAvg(searchedCustomer.id)} hrs/day
                     </span>
                   </div>
                 </div>

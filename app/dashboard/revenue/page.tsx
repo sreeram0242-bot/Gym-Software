@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { AppStore } from '@/lib/store';
+import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, addSubscriptionPlan, deleteSubscriptionPlan } from '@/lib/actions';
 import { Transaction, SubscriptionPlan } from '@/lib/types';
 
 export default function RevenuePage() {
   const [gymId, setGymId] = useState<string>('gym_1');
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE' | 'NEW_MEMBERS'>('ALL');
 
   // Global Filter State
@@ -25,7 +26,7 @@ export default function RevenuePage() {
 
   // Settings Modal
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanMonths, setNewPlanMonths] = useState(1);
   const [newPlanPrice, setNewPlanPrice] = useState(2500);
@@ -34,22 +35,26 @@ export default function RevenuePage() {
     loadData();
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
-    const txs = AppStore.getTransactions(savedId);
+    const [txs, ps, custs] = await Promise.all([
+      getTransactions(savedId),
+      getSubscriptionPlans(savedId),
+      getCustomers(savedId)
+    ]);
+    
     setTransactions(txs);
-
-    const ps = AppStore.getSubscriptionPlans(savedId);
     setPlans(ps);
+    setAllCustomers(custs);
   };
 
-  const handleAddExpense = (e: React.FormEvent) => {
+  const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!expenseAmount || !expenseDesc) return;
 
-    AppStore.addTransaction({
+    await addTransaction({
       gymId,
       type: 'EXPENSE',
       amount: Number(expenseAmount),
@@ -63,9 +68,9 @@ export default function RevenuePage() {
     loadData();
   };
 
-  const handleAddPlan = () => {
+  const handleAddPlan = async () => {
     if (!newPlanName || newPlanPrice <= 0 || newPlanMonths <= 0) return;
-    AppStore.addSubscriptionPlan({
+    await addSubscriptionPlan({
       gymId,
       name: newPlanName,
       durationMonths: newPlanMonths,
@@ -77,14 +82,13 @@ export default function RevenuePage() {
     loadData();
   };
 
-  const handleDeletePlan = (id: string) => {
+  const handleDeletePlan = async (id: string) => {
     if (window.confirm('Delete this subscription package?')) {
-      AppStore.deleteSubscriptionPlan(id);
+      await deleteSubscriptionPlan(id);
       loadData();
     }
   };
 
-  const allCustomers = AppStore.getCustomers(gymId);
 
   // Global Time Filter Logic
   const isDateInGlobalFilter = (dateStr: string) => {

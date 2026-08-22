@@ -2,13 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2 } from 'lucide-react';
-import { AppStore } from '@/lib/store';
+import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan } from '@/lib/types';
 
 export default function MemberManagementPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<any[]>([]);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'active' | 'due_soon' | 'overdue'>('all');
   const [timeFilter, setTimeFilter] = useState<'all_time' | 'today' | 'this_week' | 'this_month'>('this_month');
@@ -25,12 +28,12 @@ export default function MemberManagementPage() {
   const [infoMsg, setInfoMsg] = useState('');
 
   // Selected Member Details Drawer State
-  const [selectedMember, setSelectedMember] = useState<Customer | null>(null);
+  const [selectedMember, setSelectedMember] = useState<any | null>(null);
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
   const [renewMonths, setRenewMonths] = useState(1);
   const [isEditingMember, setIsEditingMember] = useState(false);
 
-  const handleEditInit = (cust: Customer) => {
+  const handleEditInit = (cust: any) => {
     setName(cust.name);
     setPhone(cust.phone);
     setNfcCardId(cust.nfcCardId);
@@ -41,9 +44,9 @@ export default function MemberManagementPage() {
     setShowAddModal(true);
   };
 
-  const handleDeleteMember = (id: string) => {
+  const handleDeleteMember = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this member?')) {
-      AppStore.deleteCustomer(id);
+      await deleteCustomer(id);
       setSelectedMember(null);
       loadData();
     }
@@ -56,11 +59,10 @@ export default function MemberManagementPage() {
       return;
     }
 
-    const allCustomers = AppStore.getCustomers();
-    let found: Customer | undefined;
+    let found: any;
 
     if (nfcCardId && nfcCardId.length > 3) {
-      found = allCustomers.find(c => c.nfcCardId.toLowerCase() === nfcCardId.toLowerCase());
+      found = customers.find(c => c.nfcCardId.toLowerCase() === nfcCardId.toLowerCase());
     }
 
     if (found) {
@@ -75,7 +77,7 @@ export default function MemberManagementPage() {
       setErrorMsg('');
       setInfoMsg(`Existing member "${found.name}" found. Switched to Edit mode.`);
     }
-  }, [phone, nfcCardId, showAddModal, isEditingMember]);
+  }, [phone, nfcCardId, showAddModal, isEditingMember, customers]);
 
   useEffect(() => {
     loadData();
@@ -121,33 +123,38 @@ export default function MemberManagementPage() {
     };
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
-    const custs = AppStore.getCustomers(savedId);
-    setCustomers(custs);
+    const [custs, ps, txs, atts] = await Promise.all([
+      getCustomers(savedId),
+      getSubscriptionPlans(savedId),
+      getTransactions(savedId),
+      getAttendance(savedId)
+    ]);
 
-    const ps = AppStore.getSubscriptionPlans(savedId);
+    setCustomers(custs);
     setPlans(ps);
+    setTransactions(txs);
+    setAttendance(atts);
   };
 
-  const handleAddMember = (e: React.FormEvent) => {
+  const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone) return;
     setErrorMsg('');
 
     const cleanPhone = phone.replace(/\D/g, '');
-    const allCustomers = AppStore.getCustomers(gymId);
     
-    const existingPhone = allCustomers.find(c => c.phone.replace(/\D/g, '') === cleanPhone);
+    const existingPhone = customers.find(c => c.phone.replace(/\D/g, '') === cleanPhone);
     if (existingPhone && (!isEditingMember || existingPhone.id !== selectedMember?.id)) {
       setErrorMsg(`Phone number already in use by ${existingPhone.name}. A number is for one customer only.`);
       return;
     }
 
     const newNfc = nfcCardId.trim() || `NFC-${Math.floor(10000 + Math.random() * 90000)}`;
-    const existingNfc = allCustomers.find(c => c.nfcCardId.toLowerCase() === newNfc.toLowerCase());
+    const existingNfc = customers.find(c => c.nfcCardId.toLowerCase() === newNfc.toLowerCase());
     if (existingNfc && (!isEditingMember || existingNfc.id !== selectedMember?.id)) {
       setErrorMsg(`NFC Card ID "${newNfc}" is already assigned to ${existingNfc.name}. An NFC card is for one customer only.`);
       return;
@@ -161,7 +168,7 @@ export default function MemberManagementPage() {
     const nextDueDate = dueObj.toISOString().split('T')[0];
 
     if (isEditingMember && selectedMember) {
-      AppStore.updateCustomer(selectedMember.id, {
+      await updateCustomer(selectedMember.id, {
         name,
         phone,
         nfcCardId: newNfc,
@@ -173,7 +180,7 @@ export default function MemberManagementPage() {
       setIsEditingMember(false);
       setSelectedMember(null);
     } else {
-      AppStore.addCustomer({
+      await addCustomer({
         gymId,
         name,
         phone,
@@ -210,8 +217,8 @@ export default function MemberManagementPage() {
     loadData();
   };
 
-  const handleRenewPayment = (cust: Customer) => {
-    const updated = AppStore.renewMemberPayment(cust.id, renewMonths, cust.feeAmount * renewMonths);
+  const handleRenewPayment = async (cust: any) => {
+    const updated = await renewMemberPayment(cust.id, renewMonths, cust.feeAmount * renewMonths);
     if (updated) {
       setSelectedMember(updated);
       loadData();
@@ -233,6 +240,14 @@ export default function MemberManagementPage() {
         }).catch(console.error);
       }
     }
+  };
+
+  const getAvg = (custId: string) => {
+    const atts = attendance.filter(a => a.customerId === custId && a.durationMinutes);
+    if (atts.length === 0) return 1.2;
+    const totalMins = atts.reduce((sum, a) => sum + (a.durationMinutes || 0), 0);
+    const avg = (totalMins / 60) / Math.max(1, atts.length);
+    return parseFloat(avg.toFixed(1));
   };
 
 
@@ -349,7 +364,7 @@ export default function MemberManagementPage() {
       {/* Members Grid View (Responsive Cards + Table) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredCustomers.map((cust) => {
-          const avgHours = AppStore.getMemberMonthlyAvgHours(cust.id);
+          const avgHours = getAvg(cust.id);
           return (
             <div
               key={cust.id}
@@ -409,7 +424,7 @@ export default function MemberManagementPage() {
                 <div className="mt-4 pt-3 border-t border-slate-100">
                   <h4 className="text-xs font-bold text-slate-800 mb-2">Last 2 Transactions</h4>
                   <div className="space-y-2">
-                    {AppStore.getTransactions(gymId)
+                    {transactions
                       .filter(t => t.customerId === cust.id)
                       .slice(0, 2)
                       .map(tx => (
@@ -418,7 +433,7 @@ export default function MemberManagementPage() {
                           <span className="font-bold text-emerald-600">₹{tx.amount}</span>
                         </div>
                       ))}
-                    {AppStore.getTransactions(gymId).filter(t => t.customerId === cust.id).length === 0 && (
+                    {transactions.filter(t => t.customerId === cust.id).length === 0 && (
                       <div className="text-xs text-slate-500 italic">No recent transactions</div>
                     )}
                   </div>
@@ -625,7 +640,7 @@ export default function MemberManagementPage() {
                 <div className="p-3 bg-slate-50 rounded-xl">
                   <span className="text-slate-400 font-semibold block mb-0.5">Monthly Avg Workout</span>
                   <span className="font-bold text-blue-950">
-                    {AppStore.getMemberMonthlyAvgHours(selectedMember.id)} hrs / day
+                    {getAvg(selectedMember.id)} hrs / day
                   </span>
                 </div>
 
@@ -672,7 +687,7 @@ export default function MemberManagementPage() {
               <div className="mt-6 pt-4 border-t border-slate-200">
                 <h4 className="font-bold text-slate-900 text-sm mb-3">All Transaction History</h4>
                 <div className="space-y-2">
-                  {AppStore.getTransactions(gymId)
+                  {transactions
                     .filter(t => t.customerId === selectedMember.id)
                     .map(tx => (
                       <div key={tx.id} className="bg-slate-50 p-2.5 rounded-lg flex justify-between items-center border border-slate-100">
@@ -683,7 +698,7 @@ export default function MemberManagementPage() {
                         <span className="font-black text-emerald-600">₹{tx.amount}</span>
                       </div>
                     ))}
-                  {AppStore.getTransactions(gymId).filter(t => t.customerId === selectedMember.id).length === 0 && (
+                  {transactions.filter(t => t.customerId === selectedMember.id).length === 0 && (
                     <div className="text-slate-500 italic p-2 bg-slate-50 rounded-lg border border-slate-100 text-center">No transaction history found.</div>
                   )}
                 </div>
@@ -692,7 +707,7 @@ export default function MemberManagementPage() {
               <div className="mt-6 pt-4 border-t border-slate-200">
                 <h4 className="font-bold text-slate-900 text-sm mb-3">Recent Attendance</h4>
                 <div className="space-y-2">
-                  {AppStore.getAttendance()
+                  {attendance
                     .filter(a => a.customerId === selectedMember.id)
                     .slice(0, 5)
                     .map(a => (
@@ -711,7 +726,7 @@ export default function MemberManagementPage() {
                         )}
                       </div>
                     ))}
-                  {AppStore.getAttendance().filter(a => a.customerId === selectedMember.id).length === 0 && (
+                  {attendance.filter(a => a.customerId === selectedMember.id).length === 0 && (
                     <div className="text-slate-500 italic p-2 bg-slate-50 rounded-lg border border-slate-100 text-center">No attendance history found.</div>
                   )}
                 </div>

@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Gym {
+  id           String   @id @default(uuid())
+  name         String
+  ownerName    String
+  email        String
+  phone        String
+  userId       String   @unique
+  passwordHash String
+  status       String   @default("active")
+  createdAt    String
+  memberCount  Int      @default(0)
+
+  customers    Customer[]
+  attendance   AttendanceRecord[]
+  transactions Transaction[]
+  subscriptionPlans SubscriptionPlan[]
+}
+
+model Customer {
+  id              String   @id @default(uuid())
+  gymId           String
+  gym             Gym      @relation(fields: [gymId], references: [id])
+  name            String
+  phone           String
+  nfcCardId       String
+  planType        String
+  feeAmount       Int
+  lastPaymentDate String
+  nextDueDate     String
+  status          String   @default("active")
+  joinedDate      String
+
+  attendance      AttendanceRecord[]
+  transactions    Transaction[]
+}
+
+model AttendanceRecord {
+  id            String   @id @default(uuid())
+  gymId         String
+  gym           Gym      @relation(fields: [gymId], references: [id])
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerName  String
+  customerPhone String
+  checkInTime   String
+  checkOutTime  String?
+  durationMinutes Int?
+  dateStr       String
+}
+
+model Transaction {
+  id           String   @id @default(uuid())
+  gymId        String
+  gym          Gym      @relation(fields: [gymId], references: [id])
+  type         String
+  amount       Int
+  category     String
+  description  String
+  date         String
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName String?
+}
+
+model SubscriptionPlan {
+  id             String @id @default(uuid())
+  gymId          String
+  gym            Gym    @relation(fields: [gymId], references: [id])
+  name           String
+  durationMonths Int
+  price          Int
+}

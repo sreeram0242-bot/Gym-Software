@@ -1,5 +1,15 @@
 {
+  "/_not-found": "app/_not-found.js",
+  "/api/whatsapp/logout/route": "app/api/whatsapp/logout/route.js",
+  "/api/whatsapp/status/route": "app/api/whatsapp/status/route.js",
   "/superadmin/page": "app/superadmin/page.js",
+  "/page": "app/page.js",
+  "/superadmin/login/page": "app/superadmin/login/page.js",
+  "/api/whatsapp/send/route": "app/api/whatsapp/send/route.js",
+  "/dashboard/members/page": "app/dashboard/members/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/dashboard/checkin/page": "app/dashboard/checkin/page.js"
+  "/dashboard/revenue/page": "app/dashboard/revenue/page.js",
+  "/dashboard/settings/page": "app/dashboard/settings/page.js",
+  "/dashboard/checkin/page": "app/dashboard/checkin/page.js",
+  "/dashboard/reminders/page": "app/dashboard/reminders/page.js"
 }
