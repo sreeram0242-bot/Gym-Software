@@ -17,7 +17,9 @@ if (!globalAny.WhatsAppSessions) {
 
 export class WhatsAppManager {
   static async initSession(gymId: string) {
-    if (globalAny.WhatsAppSessions.has(gymId)) return;
+    if (globalAny.WhatsAppStatuses.get(gymId) === 'initializing' || globalAny.WhatsAppSessions.has(gymId)) {
+      return;
+    }
 
     globalAny.WhatsAppStatuses.set(gymId, 'initializing');
     
