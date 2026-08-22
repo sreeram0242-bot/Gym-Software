@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { WhatsAppManager } from '@/lib/whatsapp';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const gymId = searchParams.get('gymId');
