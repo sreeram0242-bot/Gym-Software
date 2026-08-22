@@ -1,6 +1,7 @@
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } from '@whiskeysockets/baileys';
-import * as QRCode from 'qrcode';
-import pino from 'pino';
+const baileys = eval('require')('@whiskeysockets/baileys');
+const { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = baileys;
+const QRCode = eval('require')('qrcode');
+const pino = eval('require')('pino');
 import fs from 'fs';
 import path from 'path';
 
