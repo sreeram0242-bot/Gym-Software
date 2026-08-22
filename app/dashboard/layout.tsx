@@ -111,20 +111,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           return dueDate <= targetThresholdDate || cust.status === 'due_soon' || cust.status === 'overdue';
         });
 
-        dueCustomers.forEach(cust => {
-          const isOverdue = new Date(cust.nextDueDate) < new Date();
-          const waText = `Hello ${cust.name}! 👋\nThis is a friendly automated reminder from your Gym. Your membership fee of ₹${cust.feeAmount} is ${isOverdue ? 'OVERDUE' : 'due'} on ${cust.nextDueDate}.\nPlease renew at your earliest convenience.`;
-          
-          fetch('/api/whatsapp/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              gymId: matched.id,
-              phone: cust.phone,
-              message: waText
-            })
-          }).catch(() => {});
-        });
+        const sendWithDelay = async () => {
+          for (let i = 0; i < dueCustomers.length; i++) {
+            const cust = dueCustomers[i];
+            const isOverdue = new Date(cust.nextDueDate) < new Date();
+            
+            // Add date and time to make every single message 100% unique (Anti-Ban trick)
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const dateString = now.toLocaleDateString();
+
+            const waText = `Hello ${cust.name}! 👋\nThis is a friendly automated reminder from your Gym as of ${dateString} ${timeString}.\nYour membership fee of ₹${cust.feeAmount} is ${isOverdue ? 'OVERDUE' : 'due'} on ${cust.nextDueDate}.\nPlease renew at your earliest convenience.`;
+            
+            try {
+              await fetch('/api/whatsapp/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  gymId: matched.id,
+                  phone: cust.phone,
+                  message: waText
+                })
+              });
+            } catch (e) {}
+
+            // Random delay between 4 to 8 seconds to mimic human typing
+            if (i < dueCustomers.length - 1) {
+              const delay = Math.floor(Math.random() * 4000) + 4000;
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
+          }
+        };
+
+        sendWithDelay();
 
         localStorage.setItem(`wa_sync_${matched.id}`, todayStr);
       }

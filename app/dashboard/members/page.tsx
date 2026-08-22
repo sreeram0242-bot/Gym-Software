@@ -184,13 +184,17 @@ export default function MemberManagementPage() {
         nextDueDate
       });
 
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const dateString = now.toLocaleDateString();
+
       fetch('/api/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           gymId,
           phone,
-          message: `Welcome to the Gym, ${name}! 🏋️‍♂️\nYour ${planType} membership is active.\nAmount Paid: ₹${feeAmount}\nNext Due Date: ${nextDueDate}`
+          message: `Welcome to the Gym, ${name}! 🏋️‍♂️\nYour ${planType} membership is active.\nAmount Paid: ₹${feeAmount}\nNext Due Date: ${nextDueDate}\n\n*Receipt Generated: ${dateString} ${timeString}*`
         })
       }).catch(console.error);
     }
@@ -209,13 +213,17 @@ export default function MemberManagementPage() {
       setSelectedMember(updated);
       loadData();
 
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const dateString = now.toLocaleDateString();
+
       fetch('/api/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           gymId,
           phone: cust.phone,
-          message: `Payment Received! 💰\nHello ${cust.name}, we have received ₹${cust.feeAmount * renewMonths} for your membership renewal.\nYour new due date is ${updated.nextDueDate}. Thank you!`
+          message: `Payment Received! 💰\nHello ${cust.name}, we have received ₹${cust.feeAmount * renewMonths} for your membership renewal.\nYour new due date is ${updated.nextDueDate}.\n\n*Transaction ID: TXN-${Date.now().toString().slice(-6)}*\n*Date: ${dateString} ${timeString}*\nThank you!`
         })
       }).catch(console.error);
     }
