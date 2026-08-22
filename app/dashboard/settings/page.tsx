@@ -8,11 +8,32 @@ export default function SettingsPage() {
   const [waStatus, setWaStatus] = useState<string>('disconnected');
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [autoMessagesEnabled, setAutoMessagesEnabled] = useState(true);
+  const [reminderWindowDays, setReminderWindowDays] = useState(3);
 
   useEffect(() => {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
     setGymId(savedId);
+    
+    if (savedId && typeof window !== 'undefined') {
+      const savedToggle = localStorage.getItem(`wa_auto_messages_${savedId}`);
+      if (savedToggle !== null) setAutoMessagesEnabled(savedToggle === 'true');
+
+      const savedWindow = localStorage.getItem(`wa_reminder_window_${savedId}`);
+      if (savedWindow !== null) setReminderWindowDays(Number(savedWindow));
+    }
   }, []);
+
+  const handleToggleAutoMessages = (enabled: boolean) => {
+    setAutoMessagesEnabled(enabled);
+    if (gymId) localStorage.setItem(`wa_auto_messages_${gymId}`, String(enabled));
+  };
+
+  const handleReminderWindowChange = (days: number) => {
+    setReminderWindowDays(days);
+    if (gymId) localStorage.setItem(`wa_reminder_window_${gymId}`, String(days));
+  };
 
   useEffect(() => {
     if (!gymId) return;
@@ -176,6 +197,49 @@ export default function SettingsPage() {
               <p className="text-sm mt-1">Please wait while the server generates a new QR code...</p>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Preferences Card */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-slate-200">
+          <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+            <span>Automation Preferences</span>
+          </h2>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Configure how and when automated messages are sent.
+          </p>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-slate-800 text-sm">Enable Automated Messages</h3>
+              <p className="text-xs text-slate-500 mt-1">If turned off, no receipts or reminders will be sent automatically.</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" className="sr-only peer" checked={autoMessagesEnabled} onChange={(e) => handleToggleAutoMessages(e.target.checked)} />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+            <div>
+              <h3 className="font-bold text-slate-800 text-sm">Daily Reminder Window</h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm">Number of days before the due date to start sending daily background reminders.</p>
+            </div>
+            <select
+              value={reminderWindowDays}
+              onChange={(e) => handleReminderWindowChange(Number(e.target.value))}
+              className="bg-slate-50 border border-slate-300 text-slate-800 font-bold text-sm rounded-lg py-2 px-3 focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              <option value={1}>1 Day Before</option>
+              <option value={2}>2 Days Before</option>
+              <option value={3}>3 Days Before</option>
+              <option value={5}>5 Days Before</option>
+              <option value={7}>7 Days Before</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>

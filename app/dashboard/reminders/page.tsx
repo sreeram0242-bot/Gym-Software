@@ -26,19 +26,22 @@ export default function RemindersPage() {
     const updated = AppStore.renewMemberPayment(cust.id, 1, cust.feeAmount);
     loadData();
     if (updated) {
-      const now = new Date();
-      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const dateString = now.toLocaleDateString();
+      const autoMessagesEnabled = localStorage.getItem(`wa_auto_messages_${gymId}`) !== 'false';
+      if (autoMessagesEnabled) {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateString = now.toLocaleDateString();
 
-      fetch('/api/whatsapp/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gymId,
-          phone: cust.phone,
-          message: `Payment Received! 💰\nHello ${cust.name}, we have received ₹${cust.feeAmount} for your membership renewal.\nYour new due date is ${updated.nextDueDate}.\n\n*Transaction ID: TXN-${Date.now().toString().slice(-6)}*\n*Date: ${dateString} ${timeString}*\nThank you!`
-        })
-      }).catch(console.error);
+        fetch('/api/whatsapp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gymId,
+            phone: cust.phone,
+            message: `Payment Received! 💰\nHello ${cust.name}, we have received ₹${cust.feeAmount} for your membership renewal.\nYour new due date is ${updated.nextDueDate}.\n\n*Transaction ID: TXN-${Date.now().toString().slice(-6)}*\n*Date: ${dateString} ${timeString}*\nThank you!`
+          })
+        }).catch(console.error);
+      }
     }
   };
 

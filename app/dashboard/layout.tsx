@@ -98,13 +98,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     // Smart Sync: Background WhatsApp Reminders
     if (matched) {
+      const autoMessagesEnabled = localStorage.getItem(`wa_auto_messages_${matched.id}`) !== 'false';
+      const reminderWindow = Number(localStorage.getItem(`wa_reminder_window_${matched.id}`) || 3);
+      
       const todayStr = new Date().toISOString().split('T')[0];
       const lastSync = localStorage.getItem(`wa_sync_${matched.id}`);
       
-      if (lastSync !== todayStr) {
+      if (autoMessagesEnabled && lastSync !== todayStr) {
         const customers = AppStore.getCustomers(matched.id);
         const targetThresholdDate = new Date();
-        targetThresholdDate.setDate(new Date().getDate() + 3); // 3 days default
+        targetThresholdDate.setDate(new Date().getDate() + reminderWindow);
 
         const dueCustomers = customers.filter((cust) => {
           const dueDate = new Date(cust.nextDueDate);
