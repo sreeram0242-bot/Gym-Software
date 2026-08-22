@@ -23,6 +23,7 @@ model Gym {
   attendance   AttendanceRecord[]
   transactions Transaction[]
   subscriptionPlans SubscriptionPlan[]
+  whatsappSessions WhatsAppSession[]
 }
 
 model Customer {
@@ -78,4 +79,11 @@ model SubscriptionPlan {
   name           String
   durationMonths Int
   price          Int
+}
+
+model WhatsAppSession {
+  id    String @id
+  gymId String
+  gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  data  String // JSON stringified auth data
 }

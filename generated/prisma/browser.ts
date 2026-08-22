@@ -42,3 +42,8 @@ export type Transaction = Prisma.TransactionModel
  * 
  */
 export type SubscriptionPlan = Prisma.SubscriptionPlanModel
+/**
+ * Model WhatsAppSession
+ * 
+ */
+export type WhatsAppSession = Prisma.WhatsAppSessionModel

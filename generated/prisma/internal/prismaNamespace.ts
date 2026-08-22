@@ -401,7 +401,8 @@ export const ModelName = {
   Customer: 'Customer',
   AttendanceRecord: 'AttendanceRecord',
   Transaction: 'Transaction',
-  SubscriptionPlan: 'SubscriptionPlan'
+  SubscriptionPlan: 'SubscriptionPlan',
+  WhatsAppSession: 'WhatsAppSession'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -417,7 +418,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "gym" | "customer" | "attendanceRecord" | "transaction" | "subscriptionPlan"
+    modelProps: "gym" | "customer" | "attendanceRecord" | "transaction" | "subscriptionPlan" | "whatsAppSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -791,6 +792,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    WhatsAppSession: {
+      payload: Prisma.$WhatsAppSessionPayload<ExtArgs>
+      fields: Prisma.WhatsAppSessionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.WhatsAppSessionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WhatsAppSessionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.WhatsAppSessionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WhatsAppSessionPayload>
+        }
+        findFirst: {
+          args: Prisma.WhatsAppSessionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WhatsAppSessionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.WhatsAppSessionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WhatsAppSessionPayload>
+        }
+        findMany: {
+          args: Prisma.WhatsAppSessionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WhatsAppSessionPayload>[]
+        }
+        create: {
+          args: Prisma.WhatsAppSessionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WhatsAppSessionPayload>
+        }
+        createMany: {
+          args: Prisma.WhatsAppSessionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.WhatsAppSessionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WhatsAppSessionPayload>[]
+        }
+        delete: {
+          args: Prisma.WhatsAppSessionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WhatsAppSessionPayload>
+        }
+        update: {
+          args: Prisma.WhatsAppSessionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WhatsAppSessionPayload>
+        }
+        deleteMany: {
+          args: Prisma.WhatsAppSessionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.WhatsAppSessionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.WhatsAppSessionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WhatsAppSessionPayload>[]
+        }
+        upsert: {
+          args: Prisma.WhatsAppSessionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WhatsAppSessionPayload>
+        }
+        aggregate: {
+          args: Prisma.WhatsAppSessionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWhatsAppSession>
+        }
+        groupBy: {
+          args: Prisma.WhatsAppSessionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WhatsAppSessionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.WhatsAppSessionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WhatsAppSessionCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -902,6 +977,15 @@ export const SubscriptionPlanScalarFieldEnum = {
 } as const
 
 export type SubscriptionPlanScalarFieldEnum = (typeof SubscriptionPlanScalarFieldEnum)[keyof typeof SubscriptionPlanScalarFieldEnum]
+
+
+export const WhatsAppSessionScalarFieldEnum = {
+  id: 'id',
+  gymId: 'gymId',
+  data: 'data'
+} as const
+
+export type WhatsAppSessionScalarFieldEnum = (typeof WhatsAppSessionScalarFieldEnum)[keyof typeof WhatsAppSessionScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1131,6 +1215,7 @@ export type GlobalOmitConfig = {
   attendanceRecord?: Prisma.AttendanceRecordOmit
   transaction?: Prisma.TransactionOmit
   subscriptionPlan?: Prisma.SubscriptionPlanOmit
+  whatsAppSession?: Prisma.WhatsAppSessionOmit
 }
 
 /* Types for Logging */

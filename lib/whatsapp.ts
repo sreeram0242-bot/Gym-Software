@@ -2,8 +2,7 @@ const baileys = eval('require')('@whiskeysockets/baileys');
 const { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = baileys;
 const QRCode = eval('require')('qrcode');
 const pino = eval('require')('pino');
-import fs from 'fs';
-import path from 'path';
+// fs and path removed
 
 // Supress verbose logging
 const logger = pino({ level: 'silent' }) as any;
@@ -16,6 +15,88 @@ if (!globalAny.WhatsAppSessions) {
   globalAny.WhatsAppStatuses = new Map<string, string>();
 }
 
+import { db } from './db';
+
+async function usePrismaAuthState(gymId: string) {
+  const { initAuthCreds, BufferJSON, proto } = baileys;
+  
+  let creds: any;
+  const credsId = `${gymId}-creds`;
+  
+  const existingCreds = await db.whatsAppSession.findUnique({ where: { id: credsId } });
+  if (existingCreds) {
+    creds = JSON.parse(existingCreds.data, BufferJSON.reviver);
+  } else {
+    creds = initAuthCreds();
+  }
+
+  const saveCreds = async () => {
+    const data = JSON.stringify(creds, BufferJSON.replacer);
+    await db.whatsAppSession.upsert({
+      where: { id: credsId },
+      update: { data },
+      create: { id: credsId, gymId, data }
+    });
+  };
+
+  const readData = async (type: string, id: string) => {
+    const key = `${gymId}-${type}-${id}`;
+    const record = await db.whatsAppSession.findUnique({ where: { id: key } });
+    return record ? JSON.parse(record.data, BufferJSON.reviver) : null;
+  };
+
+  const writeData = async (data: any, type: string, id: string) => {
+    const key = `${gymId}-${type}-${id}`;
+    const value = JSON.stringify(data, BufferJSON.replacer);
+    await db.whatsAppSession.upsert({
+      where: { id: key },
+      update: { data: value },
+      create: { id: key, gymId, data: value }
+    });
+  };
+
+  const removeData = async (type: string, id: string) => {
+    const key = `${gymId}-${type}-${id}`;
+    try { await db.whatsAppSession.delete({ where: { id: key } }); } catch(e) {}
+  };
+
+  return {
+    state: {
+      creds,
+      keys: {
+        get: async (type: string, ids: string[]) => {
+          const data: any = {};
+          await Promise.all(
+            ids.map(async id => {
+              let value = await readData(type, id);
+              if (type === 'app-state-sync-key' && value) {
+                value = proto.Message.AppStateSyncKeyData.fromObject(value);
+              }
+              data[id] = value;
+            })
+          );
+          return data;
+        },
+        set: async (data: any) => {
+          const tasks: Promise<any>[] = [];
+          for (const category in data) {
+            for (const id in data[category]) {
+              const value = data[category][id];
+              if (value) {
+                tasks.push(writeData(value, category, id));
+              } else {
+                tasks.push(removeData(category, id));
+              }
+            }
+          }
+          await Promise.all(tasks);
+        }
+      }
+    },
+    saveCreds
+  };
+}
+
 export class WhatsAppManager {
   static async initSession(gymId: string) {
     if (globalAny.WhatsAppStatuses.get(gymId) === 'initializing' || globalAny.WhatsAppSessions.has(gymId)) {
@@ -25,22 +106,16 @@ export class WhatsAppManager {
     globalAny.WhatsAppStatuses.set(gymId, 'initializing');
     
     try {
-      const authFolder = path.join('/tmp', 'whatsapp-auth', gymId);
-      
-      if (!fs.existsSync(authFolder)) {
-        fs.mkdirSync(authFolder, { recursive: true });
-      }
+      const { state, saveCreds } = await usePrismaAuthState(gymId);
 
-      const { state, saveCreds } = await useMultiFileAuthState(authFolder);
-
-    const sock = makeWASocket({
-      auth: state,
-      printQRInTerminal: false,
-      logger,
-      browser: Browsers.macOS('Desktop'),
-      syncFullHistory: false, // Save memory
-      markOnlineOnConnect: false, // Anti-ban measure
-    });
+      const sock = makeWASocket({
+        auth: state,
+        printQRInTerminal: false,
+        logger,
+        browser: Browsers.macOS('Desktop'),
+        syncFullHistory: false, // Save memory
+        markOnlineOnConnect: false, // Anti-ban measure
+      });
 
     globalAny.WhatsAppSessions.set(gymId, sock);
 
@@ -68,9 +143,9 @@ export class WhatsAppManager {
           // Auto reconnect
           setTimeout(() => this.initSession(gymId), 5000);
         } else {
-          // Logged out, clean up auth folder
+          // Logged out, clean up auth
           try {
-            fs.rmSync(authFolder, { recursive: true, force: true });
+            db.whatsAppSession.deleteMany({ where: { gymId } });
           } catch (e) {}
           globalAny.WhatsAppQRs.delete(gymId);
         }
@@ -103,9 +178,8 @@ export class WhatsAppManager {
       globalAny.WhatsAppStatuses.set(gymId, 'disconnected');
       globalAny.WhatsAppQRs.delete(gymId);
       
-      const authFolder = path.join('/tmp', 'whatsapp-auth', gymId);
       try {
-        fs.rmSync(authFolder, { recursive: true, force: true });
+        db.whatsAppSession.deleteMany({ where: { gymId } });
       } catch (e) {}
     }
   }

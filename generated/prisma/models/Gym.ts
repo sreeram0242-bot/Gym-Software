@@ -260,6 +260,7 @@ export type GymWhereInput = {
   attendance?: Prisma.AttendanceRecordListRelationFilter
   transactions?: Prisma.TransactionListRelationFilter
   subscriptionPlans?: Prisma.SubscriptionPlanListRelationFilter
+  whatsappSessions?: Prisma.WhatsAppSessionListRelationFilter
 }
 
 export type GymOrderByWithRelationInput = {
@@ -277,6 +278,7 @@ export type GymOrderByWithRelationInput = {
   attendance?: Prisma.AttendanceRecordOrderByRelationAggregateInput
   transactions?: Prisma.TransactionOrderByRelationAggregateInput
   subscriptionPlans?: Prisma.SubscriptionPlanOrderByRelationAggregateInput
+  whatsappSessions?: Prisma.WhatsAppSessionOrderByRelationAggregateInput
 }
 
 export type GymWhereUniqueInput = Prisma.AtLeast<{
@@ -297,6 +299,7 @@ export type GymWhereUniqueInput = Prisma.AtLeast<{
   attendance?: Prisma.AttendanceRecordListRelationFilter
   transactions?: Prisma.TransactionListRelationFilter
   subscriptionPlans?: Prisma.SubscriptionPlanListRelationFilter
+  whatsappSessions?: Prisma.WhatsAppSessionListRelationFilter
 }, "id" | "userId">
 
 export type GymOrderByWithAggregationInput = {
@@ -348,6 +351,7 @@ export type GymCreateInput = {
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutGymInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutGymInput
   subscriptionPlans?: Prisma.SubscriptionPlanCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateInput = {
@@ -365,6 +369,7 @@ export type GymUncheckedCreateInput = {
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutGymInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutGymInput
   subscriptionPlans?: Prisma.SubscriptionPlanUncheckedCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymUpdateInput = {
@@ -382,6 +387,7 @@ export type GymUpdateInput = {
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutGymNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutGymNestedInput
   subscriptionPlans?: Prisma.SubscriptionPlanUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateInput = {
@@ -399,6 +405,7 @@ export type GymUncheckedUpdateInput = {
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutGymNestedInput
   subscriptionPlans?: Prisma.SubscriptionPlanUncheckedUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateManyInput = {
@@ -560,6 +567,20 @@ export type GymUpdateOneRequiredWithoutSubscriptionPlansNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.GymUpdateToOneWithWhereWithoutSubscriptionPlansInput, Prisma.GymUpdateWithoutSubscriptionPlansInput>, Prisma.GymUncheckedUpdateWithoutSubscriptionPlansInput>
 }
 
+export type GymCreateNestedOneWithoutWhatsappSessionsInput = {
+  create?: Prisma.XOR<Prisma.GymCreateWithoutWhatsappSessionsInput, Prisma.GymUncheckedCreateWithoutWhatsappSessionsInput>
+  connectOrCreate?: Prisma.GymCreateOrConnectWithoutWhatsappSessionsInput
+  connect?: Prisma.GymWhereUniqueInput
+}
+
+export type GymUpdateOneRequiredWithoutWhatsappSessionsNestedInput = {
+  create?: Prisma.XOR<Prisma.GymCreateWithoutWhatsappSessionsInput, Prisma.GymUncheckedCreateWithoutWhatsappSessionsInput>
+  connectOrCreate?: Prisma.GymCreateOrConnectWithoutWhatsappSessionsInput
+  upsert?: Prisma.GymUpsertWithoutWhatsappSessionsInput
+  connect?: Prisma.GymWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.GymUpdateToOneWithWhereWithoutWhatsappSessionsInput, Prisma.GymUpdateWithoutWhatsappSessionsInput>, Prisma.GymUncheckedUpdateWithoutWhatsappSessionsInput>
+}
+
 export type GymCreateWithoutCustomersInput = {
   id?: string
   name: string
@@ -574,6 +595,7 @@ export type GymCreateWithoutCustomersInput = {
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutGymInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutGymInput
   subscriptionPlans?: Prisma.SubscriptionPlanCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutCustomersInput = {
@@ -590,6 +612,7 @@ export type GymUncheckedCreateWithoutCustomersInput = {
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutGymInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutGymInput
   subscriptionPlans?: Prisma.SubscriptionPlanUncheckedCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutCustomersInput = {
@@ -622,6 +645,7 @@ export type GymUpdateWithoutCustomersInput = {
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutGymNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutGymNestedInput
   subscriptionPlans?: Prisma.SubscriptionPlanUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutCustomersInput = {
@@ -638,6 +662,7 @@ export type GymUncheckedUpdateWithoutCustomersInput = {
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutGymNestedInput
   subscriptionPlans?: Prisma.SubscriptionPlanUncheckedUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutAttendanceInput = {
@@ -654,6 +679,7 @@ export type GymCreateWithoutAttendanceInput = {
   customers?: Prisma.CustomerCreateNestedManyWithoutGymInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutGymInput
   subscriptionPlans?: Prisma.SubscriptionPlanCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutAttendanceInput = {
@@ -670,6 +696,7 @@ export type GymUncheckedCreateWithoutAttendanceInput = {
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutGymInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutGymInput
   subscriptionPlans?: Prisma.SubscriptionPlanUncheckedCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutAttendanceInput = {
@@ -702,6 +729,7 @@ export type GymUpdateWithoutAttendanceInput = {
   customers?: Prisma.CustomerUpdateManyWithoutGymNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutGymNestedInput
   subscriptionPlans?: Prisma.SubscriptionPlanUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutAttendanceInput = {
@@ -718,6 +746,7 @@ export type GymUncheckedUpdateWithoutAttendanceInput = {
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutGymNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutGymNestedInput
   subscriptionPlans?: Prisma.SubscriptionPlanUncheckedUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutTransactionsInput = {
@@ -734,6 +763,7 @@ export type GymCreateWithoutTransactionsInput = {
   customers?: Prisma.CustomerCreateNestedManyWithoutGymInput
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutGymInput
   subscriptionPlans?: Prisma.SubscriptionPlanCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutTransactionsInput = {
@@ -750,6 +780,7 @@ export type GymUncheckedCreateWithoutTransactionsInput = {
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutGymInput
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutGymInput
   subscriptionPlans?: Prisma.SubscriptionPlanUncheckedCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutTransactionsInput = {
@@ -782,6 +813,7 @@ export type GymUpdateWithoutTransactionsInput = {
   customers?: Prisma.CustomerUpdateManyWithoutGymNestedInput
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutGymNestedInput
   subscriptionPlans?: Prisma.SubscriptionPlanUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutTransactionsInput = {
@@ -798,6 +830,7 @@ export type GymUncheckedUpdateWithoutTransactionsInput = {
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutGymNestedInput
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
   subscriptionPlans?: Prisma.SubscriptionPlanUncheckedUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutSubscriptionPlansInput = {
@@ -814,6 +847,7 @@ export type GymCreateWithoutSubscriptionPlansInput = {
   customers?: Prisma.CustomerCreateNestedManyWithoutGymInput
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutGymInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutSubscriptionPlansInput = {
@@ -830,6 +864,7 @@ export type GymUncheckedCreateWithoutSubscriptionPlansInput = {
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutGymInput
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutGymInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutSubscriptionPlansInput = {
@@ -862,6 +897,7 @@ export type GymUpdateWithoutSubscriptionPlansInput = {
   customers?: Prisma.CustomerUpdateManyWithoutGymNestedInput
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutGymNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutSubscriptionPlansInput = {
@@ -878,6 +914,91 @@ export type GymUncheckedUpdateWithoutSubscriptionPlansInput = {
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutGymNestedInput
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedUpdateManyWithoutGymNestedInput
+}
+
+export type GymCreateWithoutWhatsappSessionsInput = {
+  id?: string
+  name: string
+  ownerName: string
+  email: string
+  phone: string
+  userId: string
+  passwordHash: string
+  status?: string
+  createdAt: string
+  memberCount?: number
+  customers?: Prisma.CustomerCreateNestedManyWithoutGymInput
+  attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutGymInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutGymInput
+  subscriptionPlans?: Prisma.SubscriptionPlanCreateNestedManyWithoutGymInput
+}
+
+export type GymUncheckedCreateWithoutWhatsappSessionsInput = {
+  id?: string
+  name: string
+  ownerName: string
+  email: string
+  phone: string
+  userId: string
+  passwordHash: string
+  status?: string
+  createdAt: string
+  memberCount?: number
+  customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutGymInput
+  attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutGymInput
+  subscriptionPlans?: Prisma.SubscriptionPlanUncheckedCreateNestedManyWithoutGymInput
+}
+
+export type GymCreateOrConnectWithoutWhatsappSessionsInput = {
+  where: Prisma.GymWhereUniqueInput
+  create: Prisma.XOR<Prisma.GymCreateWithoutWhatsappSessionsInput, Prisma.GymUncheckedCreateWithoutWhatsappSessionsInput>
+}
+
+export type GymUpsertWithoutWhatsappSessionsInput = {
+  update: Prisma.XOR<Prisma.GymUpdateWithoutWhatsappSessionsInput, Prisma.GymUncheckedUpdateWithoutWhatsappSessionsInput>
+  create: Prisma.XOR<Prisma.GymCreateWithoutWhatsappSessionsInput, Prisma.GymUncheckedCreateWithoutWhatsappSessionsInput>
+  where?: Prisma.GymWhereInput
+}
+
+export type GymUpdateToOneWithWhereWithoutWhatsappSessionsInput = {
+  where?: Prisma.GymWhereInput
+  data: Prisma.XOR<Prisma.GymUpdateWithoutWhatsappSessionsInput, Prisma.GymUncheckedUpdateWithoutWhatsappSessionsInput>
+}
+
+export type GymUpdateWithoutWhatsappSessionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
+  memberCount?: Prisma.IntFieldUpdateOperationsInput | number
+  customers?: Prisma.CustomerUpdateManyWithoutGymNestedInput
+  attendance?: Prisma.AttendanceRecordUpdateManyWithoutGymNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutGymNestedInput
+  subscriptionPlans?: Prisma.SubscriptionPlanUpdateManyWithoutGymNestedInput
+}
+
+export type GymUncheckedUpdateWithoutWhatsappSessionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
+  memberCount?: Prisma.IntFieldUpdateOperationsInput | number
+  customers?: Prisma.CustomerUncheckedUpdateManyWithoutGymNestedInput
+  attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutGymNestedInput
+  subscriptionPlans?: Prisma.SubscriptionPlanUncheckedUpdateManyWithoutGymNestedInput
 }
 
 
@@ -890,6 +1011,7 @@ export type GymCountOutputType = {
   attendance: number
   transactions: number
   subscriptionPlans: number
+  whatsappSessions: number
 }
 
 export type GymCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -897,6 +1019,7 @@ export type GymCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.In
   attendance?: boolean | GymCountOutputTypeCountAttendanceArgs
   transactions?: boolean | GymCountOutputTypeCountTransactionsArgs
   subscriptionPlans?: boolean | GymCountOutputTypeCountSubscriptionPlansArgs
+  whatsappSessions?: boolean | GymCountOutputTypeCountWhatsappSessionsArgs
 }
 
 /**
@@ -937,6 +1060,13 @@ export type GymCountOutputTypeCountSubscriptionPlansArgs<ExtArgs extends runtime
   where?: Prisma.SubscriptionPlanWhereInput
 }
 
+/**
+ * GymCountOutputType without action
+ */
+export type GymCountOutputTypeCountWhatsappSessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.WhatsAppSessionWhereInput
+}
+
 
 export type GymSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -953,6 +1083,7 @@ export type GymSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   attendance?: boolean | Prisma.Gym$attendanceArgs<ExtArgs>
   transactions?: boolean | Prisma.Gym$transactionsArgs<ExtArgs>
   subscriptionPlans?: boolean | Prisma.Gym$subscriptionPlansArgs<ExtArgs>
+  whatsappSessions?: boolean | Prisma.Gym$whatsappSessionsArgs<ExtArgs>
   _count?: boolean | Prisma.GymCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["gym"]>
 
@@ -1001,6 +1132,7 @@ export type GymInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   attendance?: boolean | Prisma.Gym$attendanceArgs<ExtArgs>
   transactions?: boolean | Prisma.Gym$transactionsArgs<ExtArgs>
   subscriptionPlans?: boolean | Prisma.Gym$subscriptionPlansArgs<ExtArgs>
+  whatsappSessions?: boolean | Prisma.Gym$whatsappSessionsArgs<ExtArgs>
   _count?: boolean | Prisma.GymCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type GymIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1013,6 +1145,7 @@ export type $GymPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     attendance: Prisma.$AttendanceRecordPayload<ExtArgs>[]
     transactions: Prisma.$TransactionPayload<ExtArgs>[]
     subscriptionPlans: Prisma.$SubscriptionPlanPayload<ExtArgs>[]
+    whatsappSessions: Prisma.$WhatsAppSessionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1423,6 +1556,7 @@ export interface Prisma__GymClient<T, Null = never, ExtArgs extends runtime.Type
   attendance<T extends Prisma.Gym$attendanceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Gym$attendanceArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AttendanceRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   transactions<T extends Prisma.Gym$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Gym$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   subscriptionPlans<T extends Prisma.Gym$subscriptionPlansArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Gym$subscriptionPlansArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SubscriptionPlanPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  whatsappSessions<T extends Prisma.Gym$whatsappSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Gym$whatsappSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WhatsAppSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1948,6 +2082,30 @@ export type Gym$subscriptionPlansArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.SubscriptionPlanScalarFieldEnum | Prisma.SubscriptionPlanScalarFieldEnum[]
+}
+
+/**
+ * Gym.whatsappSessions
+ */
+export type Gym$whatsappSessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the WhatsAppSession
+   */
+  select?: Prisma.WhatsAppSessionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the WhatsAppSession
+   */
+  omit?: Prisma.WhatsAppSessionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WhatsAppSessionInclude<ExtArgs> | null
+  where?: Prisma.WhatsAppSessionWhereInput
+  orderBy?: Prisma.WhatsAppSessionOrderByWithRelationInput | Prisma.WhatsAppSessionOrderByWithRelationInput[]
+  cursor?: Prisma.WhatsAppSessionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.WhatsAppSessionScalarFieldEnum | Prisma.WhatsAppSessionScalarFieldEnum[]
 }
 
 /**
