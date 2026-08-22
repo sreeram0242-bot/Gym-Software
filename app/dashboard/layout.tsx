@@ -62,7 +62,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       if (e.key === 'Enter' && buffer.length > 3) {
         // Attempt to find customer by NFC
-        const matchedCust = AppStore.findCustomerByNFC(buffer);
+        const matchedCust = AppStore.findCustomerByNFC(matched.id, buffer);
         if (matchedCust) {
           const { record, action } = AppStore.toggleCheckIn(matchedCust);
           const avgHours = AppStore.getMemberMonthlyAvgHours(matchedCust.id);
