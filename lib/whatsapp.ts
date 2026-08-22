@@ -39,6 +39,7 @@ export class WhatsAppManager {
       logger,
       browser: Browsers.macOS('Desktop'),
       syncFullHistory: false, // Save memory
+      markOnlineOnConnect: false, // Anti-ban measure
     });
 
     globalAny.WhatsAppSessions.set(gymId, sock);
@@ -119,6 +120,16 @@ export class WhatsAppManager {
     
     const jid = `${cleanPhone}@s.whatsapp.net`;
     try {
+      // Anti-ban measure: simulate human typing before sending
+      await sock.presenceSubscribe(jid);
+      await sock.sendPresenceUpdate('composing', jid);
+      
+      // Random typing delay between 1.5s and 3.5s
+      const typingDelay = Math.floor(Math.random() * 2000) + 1500;
+      await new Promise(resolve => setTimeout(resolve, typingDelay));
+      
+      await sock.sendPresenceUpdate('paused', jid);
+      
       await sock.sendMessage(jid, { text });
       return true;
     } catch (e) {
