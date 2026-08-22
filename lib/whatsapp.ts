@@ -77,8 +77,10 @@ export class WhatsAppManager {
         globalAny.WhatsAppQRs.delete(gymId);
       }
     });
-    } catch (error) {
+    } catch (error: any) {
       console.error("WhatsApp Init Error:", error);
+      if (!globalAny.WhatsAppErrors) globalAny.WhatsAppErrors = new Map<string, string>();
+      globalAny.WhatsAppErrors.set(gymId, error?.message || String(error));
       globalAny.WhatsAppStatuses.set(gymId, 'disconnected');
     }
   }
@@ -87,6 +89,7 @@ export class WhatsAppManager {
     return {
       status: globalAny.WhatsAppStatuses.get(gymId) || 'disconnected',
       qr: globalAny.WhatsAppQRs.get(gymId) || null,
+      error: globalAny.WhatsAppErrors?.get(gymId) || null,
     };
   }
   

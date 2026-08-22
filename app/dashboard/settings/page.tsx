@@ -6,6 +6,7 @@ import { Smartphone, CheckCircle2, AlertTriangle, RefreshCw, LogOut, MessageSqua
 export default function SettingsPage() {
   const [gymId, setGymId] = useState<string | null>(null);
   const [waStatus, setWaStatus] = useState<string>('disconnected');
+  const [waError, setWaError] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -44,6 +45,7 @@ export default function SettingsPage() {
         const data = await res.json();
         setWaStatus(data.status);
         setQrCode(data.qr);
+        if (data.error) setWaError(data.error);
       } catch (err) {
         console.error('Failed to fetch WA status', err);
       } finally {
@@ -194,7 +196,24 @@ export default function SettingsPage() {
             <div className="flex flex-col items-center justify-center py-12 text-slate-500">
               <AlertTriangle className="w-10 h-10 mb-4 text-amber-500" />
               <p className="font-bold text-slate-800">WhatsApp is Disconnected</p>
-              <p className="text-sm mt-1">Please wait while the server generates a new QR code...</p>
+              
+              {waError ? (
+                <div className="mt-4 max-w-sm text-center p-3 bg-red-50 rounded-xl border border-red-100">
+                  <p className="text-sm text-red-600 font-bold mb-1">Server Error:</p>
+                  <p className="text-xs text-red-500 font-mono break-words">{waError}</p>
+                </div>
+              ) : (
+                <p className="text-sm mt-1">Please wait while the server generates a new QR code...</p>
+              )}
+              
+              {waStatus === 'disconnected' && !isLoading && (
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-all"
+                >
+                  Try Again
+                </button>
+              )}
             </div>
           )}
         </div>
