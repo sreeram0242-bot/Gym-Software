@@ -15,7 +15,7 @@ if (!globalAny.WhatsAppSessions) {
   globalAny.WhatsAppStatuses = new Map<string, string>();
 }
 
-import { db } from './db';
+import db from './db';
 
 async function usePrismaAuthState(gymId: string) {
   const { initAuthCreds, BufferJSON, proto } = baileys;
