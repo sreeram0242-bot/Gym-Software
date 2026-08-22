@@ -76,7 +76,7 @@ export async function addCustomer(data: any) {
   return newCust;
 }
 
-export async function findCustomerByPhone(gymId: string, phone: string) {
+export async function findCustomerByPhone(phone: string, gymId?: string) {
   const cleanPhone = phone.replace(/\D/g, '');
   const customers = await getCustomers(gymId);
   return customers.find(c => c.phone.replace(/\D/g, '').includes(cleanPhone));
