@@ -20,13 +20,15 @@ export class WhatsAppManager {
     if (globalAny.WhatsAppSessions.has(gymId)) return;
 
     globalAny.WhatsAppStatuses.set(gymId, 'initializing');
-    const authFolder = path.join(process.cwd(), 'whatsapp-auth', gymId);
     
-    if (!fs.existsSync(authFolder)) {
-      fs.mkdirSync(authFolder, { recursive: true });
-    }
+    try {
+      const authFolder = path.join('/tmp', 'whatsapp-auth', gymId);
+      
+      if (!fs.existsSync(authFolder)) {
+        fs.mkdirSync(authFolder, { recursive: true });
+      }
 
-    const { state, saveCreds } = await useMultiFileAuthState(authFolder);
+      const { state, saveCreds } = await useMultiFileAuthState(authFolder);
 
     const sock = makeWASocket({
       auth: state,
@@ -73,6 +75,10 @@ export class WhatsAppManager {
         globalAny.WhatsAppQRs.delete(gymId);
       }
     });
+    } catch (error) {
+      console.error("WhatsApp Init Error:", error);
+      globalAny.WhatsAppStatuses.set(gymId, 'disconnected');
+    }
   }
 
   static getStatus(gymId: string) {
@@ -90,7 +96,7 @@ export class WhatsAppManager {
       globalAny.WhatsAppStatuses.set(gymId, 'disconnected');
       globalAny.WhatsAppQRs.delete(gymId);
       
-      const authFolder = path.join(process.cwd(), 'whatsapp-auth', gymId);
+      const authFolder = path.join('/tmp', 'whatsapp-auth', gymId);
       try {
         fs.rmSync(authFolder, { recursive: true, force: true });
       } catch (e) {}
