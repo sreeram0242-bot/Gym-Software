@@ -140,7 +140,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               const dateString = now.toLocaleDateString();
 
-              const waText = `Hello ${cust.name}! 👋\nThis is a friendly automated reminder from your Gym as of ${dateString} ${timeString}.\nYour membership fee of ₹${cust.feeAmount} is ${isOverdue ? 'OVERDUE' : 'due'} on ${cust.nextDueDate}.\nPlease renew at your earliest convenience.`;
+              const waText = `⚠️ *Membership Renewal Reminder* ⚠️\n\nHello ${cust.name}! 👋\nThis is a gentle automated reminder that your gym membership ${isOverdue ? 'expired' : 'is expiring'} soon.\n\n*Details:*\n📅 *Due Date:* ${cust.nextDueDate}\n💵 *Amount Due:* ₹${cust.feeAmount}\n🚨 *Status:* ${isOverdue ? 'OVERDUE ❗️' : 'Due Soon ⏳'}\n\nTo ensure uninterrupted access to the gym, please renew your membership at your earliest convenience.\n\nIgnore this message if you have already paid. Keep up the great work! 💪🔥\n_Generated: ${dateString} ${timeString}_`;
               
               try {
                 await fetch('/api/whatsapp/send', {

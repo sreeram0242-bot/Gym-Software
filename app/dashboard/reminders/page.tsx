@@ -38,7 +38,7 @@ export default function RemindersPage() {
           body: JSON.stringify({
             gymId,
             phone: cust.phone,
-            message: `Payment Received! 💰\nHello ${cust.name}, we have received ₹${cust.feeAmount} for your membership renewal.\nYour new due date is ${updated.nextDueDate}.\n\n*Transaction ID: TXN-${Date.now().toString().slice(-6)}*\n*Date: ${dateString} ${timeString}*\nThank you!`
+            message: `✅ *Payment Successfully Received!* 💰\n\nHi ${cust.name}, thank you for renewing your membership. Your payment has been successfully processed! 🚀\n\n*Transaction Details:*\n💳 *Amount Paid:* ₹${cust.feeAmount}\n📅 *New Expiry Date:* ${updated.nextDueDate}\n🔑 *Txn ID:* TXN-${Date.now().toString().slice(-6)}\n\nThank you for your continued dedication. See you at the gym! 🏋️‍♀️🔥\n_Date: ${dateString} ${timeString}_`
           })
         }).catch(console.error);
       }
@@ -102,8 +102,12 @@ export default function RemindersPage() {
           <div className="divide-y divide-slate-100">
             {dueCustomers.map((cust) => {
               const isOverdue = new Date(cust.nextDueDate) < new Date();
+              const now = new Date();
+              const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const dateString = now.toLocaleDateString();
+              
               const waText = encodeURIComponent(
-                `Hello ${cust.name}! 👋\nThis is a friendly reminder from your Gym. Your membership fee of ₹${cust.feeAmount} is due on ${cust.nextDueDate}.\nPlease renew at your earliest convenience to continue uninterrupted gym access.\nThank you!`
+                `⚠️ *Membership Renewal Reminder* ⚠️\n\nHello ${cust.name}! 👋\nThis is a gentle reminder that your gym membership ${isOverdue ? 'expired' : 'is expiring'} soon.\n\n*Details:*\n📅 *Due Date:* ${cust.nextDueDate}\n💵 *Amount Due:* ₹${cust.feeAmount}\n🚨 *Status:* ${isOverdue ? 'OVERDUE ❗️' : 'Due Soon ⏳'}\n\nTo ensure uninterrupted access to the gym, please renew your membership at your earliest convenience.\n\nIgnore this message if you have already paid. Keep up the great work! 💪🔥\n_Generated: ${dateString} ${timeString}_`
               );
 
               return (

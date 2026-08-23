@@ -203,7 +203,7 @@ export default function MemberManagementPage() {
           body: JSON.stringify({
             gymId,
             phone,
-            message: `Welcome to the Gym, ${name}! 🏋️‍♂️\nYour ${planType} membership is active.\nAmount Paid: ₹${feeAmount}\nNext Due Date: ${nextDueDate}\n\n*Receipt Generated: ${dateString} ${timeString}*`
+            message: `🎉 *Welcome to the Gym, ${name}!* 🏋️‍♂️🔥\n\nWe are absolutely thrilled to have you join our fitness family! Let's crush those fitness goals together. 💪\n\n*Membership Details:*\n🔹 *Plan:* ${planType}\n🔹 *Amount Paid:* ₹${feeAmount}\n🔹 *Valid Until:* ${nextDueDate}\n\nKeep pushing, you've got this! 💯\n_Receipt Generated: ${dateString} ${timeString}_`
           })
         }).catch(console.error);
       }
@@ -235,7 +235,7 @@ export default function MemberManagementPage() {
           body: JSON.stringify({
             gymId,
             phone: cust.phone,
-            message: `Payment Received! 💰\nHello ${cust.name}, we have received ₹${cust.feeAmount * renewMonths} for your membership renewal.\nYour new due date is ${updated.nextDueDate}.\n\n*Transaction ID: TXN-${Date.now().toString().slice(-6)}*\n*Date: ${dateString} ${timeString}*\nThank you!`
+            message: `✅ *Payment Successfully Received!* 💰\n\nHi ${cust.name}, thank you for renewing your membership. Your payment has been successfully processed! 🚀\n\n*Transaction Details:*\n💳 *Amount Paid:* ₹${cust.feeAmount * renewMonths}\n📅 *New Expiry Date:* ${updated.nextDueDate}\n🔑 *Txn ID:* TXN-${Date.now().toString().slice(-6)}\n\nThank you for your continued dedication. See you at the gym! 🏋️‍♀️🔥\n_Date: ${dateString} ${timeString}_`
           })
         }).catch(console.error);
       }
