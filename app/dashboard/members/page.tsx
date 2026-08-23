@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2 } from 'lucide-react';
-import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment } from '@/lib/actions';
-import { Customer, Transaction, AttendanceRecord, SubscriptionPlan } from '@/lib/types';
+import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, getGyms } from '@/lib/actions';
+import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
 
 export default function MemberManagementPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
+  const [gymName, setGymName] = useState<string>('Our Gym');
   const [customers, setCustomers] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -127,17 +128,23 @@ export default function MemberManagementPage() {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
-    const [custs, ps, txs, atts] = await Promise.all([
+    const [custs, ps, txs, atts, loadedGyms] = await Promise.all([
       getCustomers(savedId),
       getSubscriptionPlans(savedId),
       getTransactions(savedId),
-      getAttendance(savedId)
+      getAttendance(savedId),
+      getGyms()
     ]);
 
     setCustomers(custs);
     setPlans(ps);
     setTransactions(txs);
     setAttendance(atts);
+    
+    const matchedGym = loadedGyms.find((g) => g.id === savedId);
+    if (matchedGym) {
+      setGymName(matchedGym.name);
+    }
   };
 
   const handleAddMember = async (e: React.FormEvent) => {
@@ -203,7 +210,7 @@ export default function MemberManagementPage() {
           body: JSON.stringify({
             gymId,
             phone,
-            message: `🎉 *Welcome to the Gym, ${name}!* 🏋️‍♂️🔥\n\nWe are absolutely thrilled to have you join our fitness family! Let's crush those fitness goals together. 💪\n\n*Membership Details:*\n🔹 *Plan:* ${planType}\n🔹 *Amount Paid:* ₹${feeAmount}\n🔹 *Valid Until:* ${nextDueDate}\n\nKeep pushing, you've got this! 💯\n_Receipt Generated: ${dateString} ${timeString}_`
+            message: `🎉 *Welcome to ${gymName}, ${name}!* 🏋️‍♂️🔥\n\nWe are absolutely thrilled to have you join our fitness family! Let's crush those fitness goals together. 💪\n\n*Membership Details:*\n🔹 *Plan:* ${planType}\n🔹 *Amount Paid:* ₹${feeAmount}\n🔹 *Valid Until:* ${nextDueDate}\n\nKeep pushing, you've got this! 💯\n_Receipt Generated: ${dateString} ${timeString}_`
           })
         }).catch(console.error);
       }
