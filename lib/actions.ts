@@ -3,6 +3,25 @@
 import prisma from './db';
 import { Prisma } from '../generated/prisma/client';
 
+// --- SETTINGS ---
+export async function getGymSettings(gymId: string) {
+  let settings = await prisma.gymSettings.findUnique({ where: { gymId } });
+  if (!settings) {
+    settings = await prisma.gymSettings.create({
+      data: { gymId }
+    });
+  }
+  return settings;
+}
+
+export async function updateGymSettings(gymId: string, data: any) {
+  return await prisma.gymSettings.upsert({
+    where: { gymId },
+    update: data,
+    create: { gymId, ...data }
+  });
+}
+
 // --- GYMS ---
 export async function getGyms() {
   return await prisma.gym.findMany({

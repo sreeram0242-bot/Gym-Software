@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Smartphone, CheckCircle2, AlertTriangle, RefreshCw, LogOut, MessageSquare, Settings, Save } from 'lucide-react';
-import { getTemplate, saveTemplate, TemplateType, DEFAULT_TEMPLATES } from '@/lib/templates';
+import { getTemplate, TemplateType, DEFAULT_TEMPLATES } from '@/lib/templates';
+import { getGymSettings, updateGymSettings } from '@/lib/actions';
+
 export default function SettingsPage() {
   const [gymId, setGymId] = useState<string | null>(null);
   const [waStatus, setWaStatus] = useState<string>('disconnected');
@@ -21,52 +23,63 @@ export default function SettingsPage() {
   const [templateContent, setTemplateContent] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Store full settings object
+  const [settings, setSettings] = useState<any>(null);
+
   useEffect(() => {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
     setGymId(savedId);
     
-    if (savedId && typeof window !== 'undefined') {
-      const savedToggle = localStorage.getItem(`wa_auto_messages_${savedId}`);
-      if (savedToggle !== null) setAutoMessagesEnabled(savedToggle === 'true');
-
-      const savedWindow = localStorage.getItem(`wa_reminder_window_${savedId}`);
-      if (savedWindow !== null) setReminderWindowDays(Number(savedWindow));
-
-      const savedAbsentToggle = localStorage.getItem(`absent_tracking_enabled_${savedId}`);
-      if (savedAbsentToggle !== null) setAbsentTrackingEnabled(savedAbsentToggle === 'true');
-
-      const savedAbsentThreshold = localStorage.getItem(`absent_threshold_${savedId}`);
-      if (savedAbsentThreshold !== null) setAbsentThresholdDays(Number(savedAbsentThreshold));
-
-      setTemplateContent(getTemplate(savedId, selectedTemplateType));
+    if (savedId) {
+      loadSettings(savedId);
     }
-  }, [gymId, selectedTemplateType]);
+  }, []);
 
-  const handleToggleAutoMessages = (enabled: boolean) => {
+  const loadSettings = async (id: string) => {
+    const data = await getGymSettings(id);
+    setSettings(data);
+    setAutoMessagesEnabled(data.waAutoMessages ?? true);
+    setReminderWindowDays(data.waReminderWindowDays ?? 3);
+    setAbsentTrackingEnabled(data.absentTrackingEnabled ?? false);
+    setAbsentThresholdDays(data.absentThresholdDays ?? 3);
+  };
+
+  // When selected template changes, or settings are loaded, update text area
+  useEffect(() => {
+    setTemplateContent(getTemplate(settings, selectedTemplateType));
+  }, [settings, selectedTemplateType]);
+
+  const handleToggleAutoMessages = async (enabled: boolean) => {
     setAutoMessagesEnabled(enabled);
-    if (gymId) localStorage.setItem(`wa_auto_messages_${gymId}`, String(enabled));
+    if (gymId) await updateGymSettings(gymId, { waAutoMessages: enabled });
   };
 
-  const handleReminderWindowChange = (days: number) => {
+  const handleReminderWindowChange = async (days: number) => {
     setReminderWindowDays(days);
-    if (gymId) localStorage.setItem(`wa_reminder_window_${gymId}`, String(days));
+    if (gymId) await updateGymSettings(gymId, { waReminderWindowDays: days });
   };
 
-  const handleToggleAbsentTracking = (enabled: boolean) => {
+  const handleToggleAbsentTracking = async (enabled: boolean) => {
     setAbsentTrackingEnabled(enabled);
-    if (gymId) localStorage.setItem(`absent_tracking_enabled_${gymId}`, String(enabled));
+    if (gymId) await updateGymSettings(gymId, { absentTrackingEnabled: enabled });
   };
 
-  const handleAbsentThresholdChange = (days: number) => {
+  const handleAbsentThresholdChange = async (days: number) => {
     setAbsentThresholdDays(days);
-    if (gymId) {
-      localStorage.setItem(`absent_threshold_${gymId}`, String(days));
-    }
+    if (gymId) await updateGymSettings(gymId, { absentThresholdDays: days });
   };
 
-  const handleTemplateSave = () => {
+  const handleTemplateSave = async () => {
     if (gymId) {
-      saveTemplate(gymId, selectedTemplateType, templateContent);
+      let updateData: any = {};
+      if (selectedTemplateType === 'welcome') updateData.templateWelcome = templateContent;
+      if (selectedTemplateType === 'receipt') updateData.templateReceipt = templateContent;
+      if (selectedTemplateType === 'reminder') updateData.templateReminder = templateContent;
+      if (selectedTemplateType === 'absentee') updateData.templateAbsentee = templateContent;
+      
+      const newSettings = await updateGymSettings(gymId, updateData);
+      setSettings(newSettings);
+      
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     }

@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Bell, AlertTriangle, CheckCircle2, MessageSquare, Phone, RefreshCw, Calendar, Filter, Sparkles, Send } from 'lucide-react';
-import { getCustomers, renewMemberPayment } from '@/lib/actions';
+import { getCustomers, renewMemberPayment, getGymSettings, getGyms } from '@/lib/actions';
 import { Customer } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 
 export default function RemindersPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
   const [customers, setCustomers] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any>(null);
+  const [gymName, setGymName] = useState<string>('Our Gym');
   const [reminderThresholdDays, setReminderThresholdDays] = useState<number>(3); // 3 days default as requested
 
   useEffect(() => {
@@ -19,15 +21,28 @@ export default function RemindersPage() {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
-    const custs = await getCustomers(savedId);
+    const [custs, gymSettings, loadedGyms] = await Promise.all([
+      getCustomers(savedId),
+      getGymSettings(savedId),
+      getGyms()
+    ]);
+    
     setCustomers(custs);
+    setSettings(gymSettings);
+    
+    const matchedGym = loadedGyms.find(g => g.id === savedId);
+    if (matchedGym) setGymName(matchedGym.name);
+
+    if (gymSettings && gymSettings.waReminderWindowDays !== undefined) {
+      setReminderThresholdDays(gymSettings.waReminderWindowDays);
+    }
   };
 
   const handleRecordPayment = async (cust: any) => {
     const updated = await renewMemberPayment(cust.id, 1, cust.feeAmount);
     loadData();
     if (updated) {
-      const autoMessagesEnabled = localStorage.getItem(`wa_auto_messages_${gymId}`) !== 'false';
+      const autoMessagesEnabled = settings?.waAutoMessages ?? true;
       if (autoMessagesEnabled) {
         const now = new Date();
         const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -39,9 +54,9 @@ export default function RemindersPage() {
           body: JSON.stringify({
             gymId,
             phone: cust.phone,
-            message: compileTemplate(getTemplate(gymId, 'receipt'), {
+            message: compileTemplate(getTemplate(settings, 'receipt'), {
               name: updated.name,
-              gymName: 'Gym', // Not tracking gymName state in this page yet, could use 'Gym' or add state
+              gymName,
               phone: updated.phone,
               plan: updated.planType,
               amount: cust.feeAmount,
@@ -115,9 +130,9 @@ export default function RemindersPage() {
               const dateString = now.toLocaleDateString();
               
               const waText = encodeURIComponent(
-                compileTemplate(getTemplate(gymId, 'reminder'), {
+                compileTemplate(getTemplate(settings, 'reminder'), {
                   name: cust.name,
-                  gymName: 'Gym',
+                  gymName,
                   phone: cust.phone,
                   plan: cust.planType,
                   amount: cust.feeAmount,

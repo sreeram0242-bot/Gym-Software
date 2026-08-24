@@ -24,6 +24,7 @@ model Gym {
   transactions Transaction[]
   subscriptionPlans SubscriptionPlan[]
   whatsappSessions WhatsAppSession[]
+  gymSettings  GymSettings?
 }
 
 model Customer {
@@ -87,3 +88,21 @@ model WhatsAppSession {
   gym   Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
   data  String // JSON stringified auth data
 }
+
+model GymSettings {
+  id                    String  @id @default(uuid())
+  gymId                 String  @unique
+  gym                   Gym     @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  
+  absentTrackingEnabled Boolean @default(false)
+  absentThresholdDays   Int     @default(3)
+  
+  waAutoMessages        Boolean @default(true)
+  waReminderWindowDays  Int     @default(3)
+  
+  templateWelcome       String?
+  templateReceipt       String?
+  templateReminder      String?
+  templateAbsentee      String?
+}
+

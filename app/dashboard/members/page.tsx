@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle } from 'lucide-react';
-import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, getGyms } from '@/lib/actions';
+import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, getGyms, getGymSettings } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 
@@ -13,6 +13,7 @@ export default function MemberManagementPage() {
   const [plans, setPlans] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any>(null);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'active' | 'due_soon' | 'overdue' | 'absent'>('all');
@@ -131,18 +132,20 @@ export default function MemberManagementPage() {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
-    const [custs, ps, txs, atts, loadedGyms] = await Promise.all([
+    const [custs, ps, txs, atts, loadedGyms, gymSettings] = await Promise.all([
       getCustomers(savedId),
       getSubscriptionPlans(savedId),
       getTransactions(savedId),
       getAttendance(savedId),
-      getGyms()
+      getGyms(),
+      getGymSettings(savedId)
     ]);
 
     setCustomers(custs);
     setPlans(ps);
     setTransactions(txs);
     setAttendance(atts);
+    setSettings(gymSettings);
     
     // Set default plan to the first available plan if none selected or if plans exist
     if (ps.length > 0) {
@@ -155,12 +158,9 @@ export default function MemberManagementPage() {
       setGymName(matchedGym.name);
     }
 
-    if (savedId && typeof window !== 'undefined') {
-      const savedAbsentToggle = localStorage.getItem(`absent_tracking_enabled_${savedId}`);
-      if (savedAbsentToggle !== null) setAbsentTrackingEnabled(savedAbsentToggle === 'true');
-
-      const savedAbsentDays = localStorage.getItem(`absent_tracking_days_${savedId}`);
-      if (savedAbsentDays !== null) setAbsentThresholdDays(Number(savedAbsentDays));
+    if (gymSettings) {
+      setAbsentTrackingEnabled(gymSettings.absentTrackingEnabled ?? false);
+      setAbsentThresholdDays(gymSettings.absentThresholdDays ?? 3);
     }
   };
 
@@ -215,7 +215,7 @@ export default function MemberManagementPage() {
         nextDueDate
       });
 
-      const autoMessagesEnabled = localStorage.getItem(`wa_auto_messages_${gymId}`) !== 'false';
+      const autoMessagesEnabled = settings?.waAutoMessages ?? true;
       if (autoMessagesEnabled) {
         const now = new Date();
         const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -227,7 +227,7 @@ export default function MemberManagementPage() {
           body: JSON.stringify({
             gymId,
             phone,
-            message: compileTemplate(getTemplate(gymId, 'welcome'), {
+            message: compileTemplate(getTemplate(settings, 'welcome'), {
               name,
               gymName,
               phone,
@@ -254,7 +254,7 @@ export default function MemberManagementPage() {
       setSelectedMember(updated);
       loadData();
 
-      const autoMessagesEnabled = localStorage.getItem(`wa_auto_messages_${gymId}`) !== 'false';
+      const autoMessagesEnabled = settings?.waAutoMessages ?? true;
       if (autoMessagesEnabled) {
         const now = new Date();
         const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -266,7 +266,7 @@ export default function MemberManagementPage() {
           body: JSON.stringify({
             gymId,
             phone: cust.phone,
-            message: compileTemplate(getTemplate(gymId, 'receipt'), {
+            message: compileTemplate(getTemplate(settings, 'receipt'), {
               name: updated.name,
               gymName,
               phone: updated.phone,
@@ -306,7 +306,7 @@ export default function MemberManagementPage() {
 
   const handleSendAbsenteeMsg = async (cust: any) => {
     try {
-      const msg = compileTemplate(getTemplate(gymId, 'absentee'), {
+      const msg = compileTemplate(getTemplate(settings, 'absentee'), {
         name: cust.name.split(' ')[0],
         gymName,
         phone: cust.phone,

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle } from 'lucide-react';
-import { getGyms, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours, getCustomers } from '@/lib/actions';
+import { getGyms, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours, getCustomers, getGymSettings } from '@/lib/actions';
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 
@@ -115,8 +115,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       // Smart Sync: Background WhatsApp Reminders
       if (matched) {
-        const autoMessagesEnabled = localStorage.getItem(`wa_auto_messages_${matched.id}`) !== 'false';
-        const reminderWindow = Number(localStorage.getItem(`wa_reminder_window_${matched.id}`) || 3);
+        const settings = await getGymSettings(matched.id);
+        const autoMessagesEnabled = settings?.waAutoMessages ?? true;
+        const reminderWindow = settings?.waReminderWindowDays ?? 3;
         
         const todayStr = new Date().toISOString().split('T')[0];
         const lastSync = localStorage.getItem(`wa_sync_${matched.id}`);
@@ -141,7 +142,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               const dateString = now.toLocaleDateString();
 
-              const waText = compileTemplate(getTemplate(matched.id, 'reminder'), {
+              const waText = compileTemplate(getTemplate(settings, 'reminder'), {
                 name: cust.name,
                 gymName: matched.name,
                 phone: cust.phone,

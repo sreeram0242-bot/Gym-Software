@@ -402,7 +402,8 @@ export const ModelName = {
   AttendanceRecord: 'AttendanceRecord',
   Transaction: 'Transaction',
   SubscriptionPlan: 'SubscriptionPlan',
-  WhatsAppSession: 'WhatsAppSession'
+  WhatsAppSession: 'WhatsAppSession',
+  GymSettings: 'GymSettings'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -418,7 +419,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "gym" | "customer" | "attendanceRecord" | "transaction" | "subscriptionPlan" | "whatsAppSession"
+    modelProps: "gym" | "customer" | "attendanceRecord" | "transaction" | "subscriptionPlan" | "whatsAppSession" | "gymSettings"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -866,6 +867,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    GymSettings: {
+      payload: Prisma.$GymSettingsPayload<ExtArgs>
+      fields: Prisma.GymSettingsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.GymSettingsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GymSettingsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.GymSettingsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GymSettingsPayload>
+        }
+        findFirst: {
+          args: Prisma.GymSettingsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GymSettingsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.GymSettingsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GymSettingsPayload>
+        }
+        findMany: {
+          args: Prisma.GymSettingsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GymSettingsPayload>[]
+        }
+        create: {
+          args: Prisma.GymSettingsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GymSettingsPayload>
+        }
+        createMany: {
+          args: Prisma.GymSettingsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.GymSettingsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GymSettingsPayload>[]
+        }
+        delete: {
+          args: Prisma.GymSettingsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GymSettingsPayload>
+        }
+        update: {
+          args: Prisma.GymSettingsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GymSettingsPayload>
+        }
+        deleteMany: {
+          args: Prisma.GymSettingsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.GymSettingsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.GymSettingsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GymSettingsPayload>[]
+        }
+        upsert: {
+          args: Prisma.GymSettingsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GymSettingsPayload>
+        }
+        aggregate: {
+          args: Prisma.GymSettingsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateGymSettings>
+        }
+        groupBy: {
+          args: Prisma.GymSettingsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GymSettingsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.GymSettingsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GymSettingsCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -988,6 +1063,22 @@ export const WhatsAppSessionScalarFieldEnum = {
 export type WhatsAppSessionScalarFieldEnum = (typeof WhatsAppSessionScalarFieldEnum)[keyof typeof WhatsAppSessionScalarFieldEnum]
 
 
+export const GymSettingsScalarFieldEnum = {
+  id: 'id',
+  gymId: 'gymId',
+  absentTrackingEnabled: 'absentTrackingEnabled',
+  absentThresholdDays: 'absentThresholdDays',
+  waAutoMessages: 'waAutoMessages',
+  waReminderWindowDays: 'waReminderWindowDays',
+  templateWelcome: 'templateWelcome',
+  templateReceipt: 'templateReceipt',
+  templateReminder: 'templateReminder',
+  templateAbsentee: 'templateAbsentee'
+} as const
+
+export type GymSettingsScalarFieldEnum = (typeof GymSettingsScalarFieldEnum)[keyof typeof GymSettingsScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1043,6 +1134,13 @@ export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'In
  * Reference to a field of type 'Int[]'
  */
 export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -1216,6 +1314,7 @@ export type GlobalOmitConfig = {
   transaction?: Prisma.TransactionOmit
   subscriptionPlan?: Prisma.SubscriptionPlanOmit
   whatsAppSession?: Prisma.WhatsAppSessionOmit
+  gymSettings?: Prisma.GymSettingsOmit
 }
 
 /* Types for Logging */

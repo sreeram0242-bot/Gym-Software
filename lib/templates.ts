@@ -54,15 +54,16 @@ Team {{gymName}}`
 
 export type TemplateType = keyof typeof DEFAULT_TEMPLATES;
 
-export function getTemplate(gymId: string, type: TemplateType): string {
-  if (typeof window === 'undefined') return DEFAULT_TEMPLATES[type];
-  const saved = localStorage.getItem(`template_${type}_${gymId}`);
-  return saved || DEFAULT_TEMPLATES[type];
-}
-
-export function saveTemplate(gymId: string, type: TemplateType, content: string) {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(`template_${type}_${gymId}`, content);
+// Helper to extract the correct template from the DB settings object, falling back to default
+export function getTemplate(settings: any, type: TemplateType): string {
+  if (!settings) return DEFAULT_TEMPLATES[type];
+  
+  switch(type) {
+    case 'welcome': return settings.templateWelcome || DEFAULT_TEMPLATES.welcome;
+    case 'receipt': return settings.templateReceipt || DEFAULT_TEMPLATES.receipt;
+    case 'reminder': return settings.templateReminder || DEFAULT_TEMPLATES.reminder;
+    case 'absentee': return settings.templateAbsentee || DEFAULT_TEMPLATES.absentee;
+    default: return DEFAULT_TEMPLATES[type];
   }
 }
 

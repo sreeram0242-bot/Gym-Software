@@ -56,7 +56,8 @@ export const ModelName = {
   AttendanceRecord: 'AttendanceRecord',
   Transaction: 'Transaction',
   SubscriptionPlan: 'SubscriptionPlan',
-  WhatsAppSession: 'WhatsAppSession'
+  WhatsAppSession: 'WhatsAppSession',
+  GymSettings: 'GymSettings'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -156,6 +157,22 @@ export const WhatsAppSessionScalarFieldEnum = {
 } as const
 
 export type WhatsAppSessionScalarFieldEnum = (typeof WhatsAppSessionScalarFieldEnum)[keyof typeof WhatsAppSessionScalarFieldEnum]
+
+
+export const GymSettingsScalarFieldEnum = {
+  id: 'id',
+  gymId: 'gymId',
+  absentTrackingEnabled: 'absentTrackingEnabled',
+  absentThresholdDays: 'absentThresholdDays',
+  waAutoMessages: 'waAutoMessages',
+  waReminderWindowDays: 'waReminderWindowDays',
+  templateWelcome: 'templateWelcome',
+  templateReceipt: 'templateReceipt',
+  templateReminder: 'templateReminder',
+  templateAbsentee: 'templateAbsentee'
+} as const
+
+export type GymSettingsScalarFieldEnum = (typeof GymSettingsScalarFieldEnum)[keyof typeof GymSettingsScalarFieldEnum]
 
 
 export const SortOrder = {
