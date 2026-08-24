@@ -12,6 +12,9 @@ export default function SettingsPage() {
   
   const [autoMessagesEnabled, setAutoMessagesEnabled] = useState(true);
   const [reminderWindowDays, setReminderWindowDays] = useState(3);
+  
+  const [absentTrackingEnabled, setAbsentTrackingEnabled] = useState(false);
+  const [absentThresholdDays, setAbsentThresholdDays] = useState(3);
 
   useEffect(() => {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
@@ -23,6 +26,12 @@ export default function SettingsPage() {
 
       const savedWindow = localStorage.getItem(`wa_reminder_window_${savedId}`);
       if (savedWindow !== null) setReminderWindowDays(Number(savedWindow));
+
+      const savedAbsentToggle = localStorage.getItem(`absent_tracking_enabled_${savedId}`);
+      if (savedAbsentToggle !== null) setAbsentTrackingEnabled(savedAbsentToggle === 'true');
+
+      const savedAbsentDays = localStorage.getItem(`absent_tracking_days_${savedId}`);
+      if (savedAbsentDays !== null) setAbsentThresholdDays(Number(savedAbsentDays));
     }
   }, []);
 
@@ -34,6 +43,16 @@ export default function SettingsPage() {
   const handleReminderWindowChange = (days: number) => {
     setReminderWindowDays(days);
     if (gymId) localStorage.setItem(`wa_reminder_window_${gymId}`, String(days));
+  };
+
+  const handleToggleAbsentTracking = (enabled: boolean) => {
+    setAbsentTrackingEnabled(enabled);
+    if (gymId) localStorage.setItem(`absent_tracking_enabled_${gymId}`, String(enabled));
+  };
+
+  const handleAbsentThresholdChange = (days: number) => {
+    setAbsentThresholdDays(days);
+    if (gymId) localStorage.setItem(`absent_tracking_days_${gymId}`, String(days));
   };
 
   useEffect(() => {
@@ -259,6 +278,57 @@ export default function SettingsPage() {
               <option value={7}>7 Days Before</option>
             </select>
           </div>
+        </div>
+      </div>
+
+      {/* Attendance & Absentee Tracking Card */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-slate-200">
+          <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+            <span>Absentee Tracking</span>
+          </h2>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Track members who haven't tapped their NFC cards recently.
+          </p>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-slate-800 text-sm">Enable Absentee Tracking</h3>
+              <p className="text-xs text-slate-500 mt-1">If enabled, absent members will be highlighted in the Members tab.</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer" 
+                checked={absentTrackingEnabled} 
+                onChange={(e) => handleToggleAbsentTracking(e.target.checked)} 
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
+
+          {absentTrackingEnabled && (
+            <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+              <div>
+                <h3 className="font-bold text-slate-800 text-sm">Absent Threshold (Days)</h3>
+                <p className="text-xs text-slate-500 mt-1 max-w-sm">Mark a member as absent if they haven't checked in for this many days.</p>
+              </div>
+              <select
+                value={absentThresholdDays}
+                onChange={(e) => handleAbsentThresholdChange(Number(e.target.value))}
+                className="bg-slate-50 border border-slate-300 text-slate-800 font-bold text-sm rounded-lg py-2 px-3 focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value={2}>2 Days</option>
+                <option value={3}>3 Days</option>
+                <option value={5}>5 Days</option>
+                <option value={7}>7 Days</option>
+                <option value={10}>10 Days</option>
+                <option value={14}>14 Days</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
     </div>

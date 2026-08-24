@@ -14,8 +14,10 @@ export default function MemberManagementPage() {
   const [attendance, setAttendance] = useState<any[]>([]);
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'active' | 'due_soon' | 'overdue'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'active' | 'due_soon' | 'overdue' | 'absent'>('all');
   const [timeFilter, setTimeFilter] = useState<'all_time' | 'today' | 'this_week' | 'this_month'>('this_month');
+  const [absentTrackingEnabled, setAbsentTrackingEnabled] = useState(false);
+  const [absentThresholdDays, setAbsentThresholdDays] = useState(3);
 
   // Add Member Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -145,6 +147,14 @@ export default function MemberManagementPage() {
     if (matchedGym) {
       setGymName(matchedGym.name);
     }
+
+    if (savedId && typeof window !== 'undefined') {
+      const savedAbsentToggle = localStorage.getItem(`absent_tracking_enabled_${savedId}`);
+      if (savedAbsentToggle !== null) setAbsentTrackingEnabled(savedAbsentToggle === 'true');
+
+      const savedAbsentDays = localStorage.getItem(`absent_tracking_days_${savedId}`);
+      if (savedAbsentDays !== null) setAbsentThresholdDays(Number(savedAbsentDays));
+    }
   };
 
   const handleAddMember = async (e: React.FormEvent) => {
@@ -257,6 +267,21 @@ export default function MemberManagementPage() {
     return parseFloat(avg.toFixed(1));
   };
 
+  const getLastAttendanceDate = (custId: string) => {
+    const atts = attendance.filter(a => a.customerId === custId);
+    if (atts.length === 0) return null;
+    return new Date(Math.max(...atts.map(a => new Date(a.checkInTime).getTime())));
+  };
+
+  const isAbsent = (custId: string) => {
+    if (!absentTrackingEnabled) return false;
+    const lastDate = getLastAttendanceDate(custId);
+    if (!lastDate) return true; // Never attended
+    const diffTime = Math.abs(new Date().getTime() - lastDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > absentThresholdDays;
+  };
+
 
   // Filtered members list
   const filteredCustomers = customers.filter((c) => {
@@ -270,8 +295,10 @@ export default function MemberManagementPage() {
     );
 
     let matchesStatus = true;
-    if (statusFilter !== 'all' && statusFilter !== 'new') {
+    if (statusFilter !== 'all' && statusFilter !== 'new' && statusFilter !== 'absent') {
       matchesStatus = c.status === statusFilter;
+    } else if (statusFilter === 'absent') {
+      matchesStatus = isAbsent(c.id);
     }
 
     let matchesTime = true;
@@ -325,6 +352,31 @@ export default function MemberManagementPage() {
         </button>
       </div>
 
+      {/* Absentee Warning Banner */}
+      {absentTrackingEnabled && customers.some(c => isAbsent(c.id)) && (
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center space-x-3 text-purple-900">
+            <div className="bg-purple-100 p-2 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-purple-700" />
+            </div>
+            <div>
+              <p className="text-sm font-bold">
+                {customers.filter(c => isAbsent(c.id)).length} members are currently marked as Absent!
+              </p>
+              <p className="text-xs text-purple-700 mt-0.5">
+                They haven't checked in for over {absentThresholdDays} days.
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setStatusFilter('absent')}
+            className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold rounded-lg transition-colors shadow-sm whitespace-nowrap"
+          >
+            View Absent Members
+          </button>
+        </div>
+      )}
+
       {/* Filter & Search Controls Bar */}
       <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row gap-3 justify-between items-center">
         <div className="relative w-full sm:w-80">
@@ -339,7 +391,7 @@ export default function MemberManagementPage() {
         </div>
 
         <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-          {(['all', 'new', 'active', 'due_soon', 'overdue'] as const).map((st) => (
+          {(['all', 'new', 'active', 'due_soon', 'overdue', ...(absentTrackingEnabled ? ['absent'] : [])] as const).map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
@@ -349,7 +401,7 @@ export default function MemberManagementPage() {
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {st === 'due_soon' ? 'Due Soon' : st === 'new' ? 'New Members' : st}
+              {st === 'due_soon' ? 'Due Soon' : st === 'new' ? 'New Members' : st === 'absent' ? `Absent (${absentThresholdDays}+ Days)` : st}
             </button>
           ))}
           
@@ -392,14 +444,16 @@ export default function MemberManagementPage() {
 
                   <span
                     className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      cust.status === 'active'
+                      isAbsent(cust.id) 
+                        ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                        : cust.status === 'active'
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                         : cust.status === 'due_soon'
                         ? 'bg-amber-50 text-amber-700 border border-amber-200'
                         : 'bg-rose-50 text-rose-700 border border-rose-200'
                     }`}
                   >
-                    {cust.status === 'active' ? 'Active' : cust.status === 'due_soon' ? 'Due Soon' : 'Overdue'}
+                    {isAbsent(cust.id) ? 'Absent' : cust.status === 'active' ? 'Active' : cust.status === 'due_soon' ? 'Due Soon' : 'Overdue'}
                   </span>
                 </div>
 
