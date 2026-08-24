@@ -397,7 +397,7 @@ export default function MemberManagementPage() {
         </div>
 
         <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-          {(['all', 'new', 'active', 'due_soon', 'overdue', ...(absentTrackingEnabled ? ['absent'] : [])] as const).map((st) => (
+          {(['all', 'new', 'active', 'due_soon', 'overdue', ...(absentTrackingEnabled ? ['absent'] : [])] as Array<'active' | 'due_soon' | 'overdue' | 'all' | 'new' | 'absent'>).map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
