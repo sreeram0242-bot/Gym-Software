@@ -143,6 +143,12 @@ export default function MemberManagementPage() {
     setTransactions(txs);
     setAttendance(atts);
     
+    // Set default plan to the first available plan if none selected or if plans exist
+    if (ps.length > 0) {
+      setPlanType(ps[0].name);
+      setFeeAmount(ps[0].price);
+    }
+    
     const matchedGym = loadedGyms.find((g) => g.id === savedId);
     if (matchedGym) {
       setGymName(matchedGym.name);
@@ -609,11 +615,15 @@ export default function MemberManagementPage() {
                     }}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold text-slate-800 outline-none"
                   >
-                    {plans.map(p => (
-                      <option key={p.id} value={p.name}>
-                        {p.name} ({p.durationMonths} {p.durationMonths === 1 ? 'Month' : 'Months'})
-                      </option>
-                    ))}
+                    {plans.length === 0 ? (
+                      <option disabled value="">No plans available</option>
+                    ) : (
+                      plans.map(p => (
+                        <option key={p.id} value={p.name}>
+                          {p.name} ({p.durationMonths} {p.durationMonths === 1 ? 'Month' : 'Months'})
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
 
