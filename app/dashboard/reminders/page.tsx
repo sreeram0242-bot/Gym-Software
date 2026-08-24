@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Bell, AlertTriangle, CheckCircle2, MessageSquare, Phone, RefreshCw, Calendar, Filter, Sparkles, Send } from 'lucide-react';
 import { getCustomers, renewMemberPayment } from '@/lib/actions';
 import { Customer } from '@/lib/types';
+import { getTemplate, compileTemplate } from '@/lib/templates';
 
 export default function RemindersPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -38,7 +39,14 @@ export default function RemindersPage() {
           body: JSON.stringify({
             gymId,
             phone: cust.phone,
-            message: `✅ *Payment Successfully Received!* 💰\n\nHi ${cust.name}, thank you for renewing your membership. Your payment has been successfully processed! 🚀\n\n*Transaction Details:*\n💳 *Amount Paid:* ₹${cust.feeAmount}\n📅 *New Expiry Date:* ${updated.nextDueDate}\n🔑 *Txn ID:* TXN-${Date.now().toString().slice(-6)}\n\nThank you for your continued dedication. See you at the gym! 🏋️‍♀️🔥\n_Date: ${dateString} ${timeString}_`
+            message: compileTemplate(getTemplate(gymId, 'receipt'), {
+              name: updated.name,
+              gymName: 'Gym', // Not tracking gymName state in this page yet, could use 'Gym' or add state
+              phone: updated.phone,
+              plan: updated.planType,
+              amount: cust.feeAmount,
+              dueDate: updated.nextDueDate
+            }) + `\n\n_Date: ${dateString} ${timeString}_`
           })
         }).catch(console.error);
       }
@@ -107,7 +115,14 @@ export default function RemindersPage() {
               const dateString = now.toLocaleDateString();
               
               const waText = encodeURIComponent(
-                `⚠️ *Membership Renewal Reminder* ⚠️\n\nHello ${cust.name}! 👋\nThis is a gentle reminder that your gym membership ${isOverdue ? 'expired' : 'is expiring'} soon.\n\n*Details:*\n📅 *Due Date:* ${cust.nextDueDate}\n💵 *Amount Due:* ₹${cust.feeAmount}\n🚨 *Status:* ${isOverdue ? 'OVERDUE ❗️' : 'Due Soon ⏳'}\n\nTo ensure uninterrupted access to the gym, please renew your membership at your earliest convenience.\n\nIgnore this message if you have already paid. Keep up the great work! 💪🔥\n_Generated: ${dateString} ${timeString}_`
+                compileTemplate(getTemplate(gymId, 'reminder'), {
+                  name: cust.name,
+                  gymName: 'Gym',
+                  phone: cust.phone,
+                  plan: cust.planType,
+                  amount: cust.feeAmount,
+                  dueDate: cust.nextDueDate
+                }) + `\n\n_Generated: ${dateString} ${timeString}_`
               );
 
               return (

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle } from 'lucide-react';
 import { getGyms, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours, getCustomers } from '@/lib/actions';
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
+import { getTemplate, compileTemplate } from '@/lib/templates';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -140,7 +141,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               const dateString = now.toLocaleDateString();
 
-              const waText = `⚠️ *Membership Renewal Reminder* ⚠️\n\nHello ${cust.name}! 👋\nThis is a gentle automated reminder that your gym membership ${isOverdue ? 'expired' : 'is expiring'} soon.\n\n*Details:*\n📅 *Due Date:* ${cust.nextDueDate}\n💵 *Amount Due:* ₹${cust.feeAmount}\n🚨 *Status:* ${isOverdue ? 'OVERDUE ❗️' : 'Due Soon ⏳'}\n\nTo ensure uninterrupted access to the gym, please renew your membership at your earliest convenience.\n\nIgnore this message if you have already paid. Keep up the great work! 💪🔥\n_Generated: ${dateString} ${timeString}_`;
+              const waText = compileTemplate(getTemplate(matched.id, 'reminder'), {
+                name: cust.name,
+                gymName: matched.name,
+                phone: cust.phone,
+                plan: cust.planType,
+                amount: cust.feeAmount,
+                dueDate: cust.nextDueDate
+              }) + `\n\n_Generated: ${dateString} ${timeString}_`;
               
               try {
                 await fetch('/api/whatsapp/send', {

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle } from 'lucide-react';
 import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, getGyms } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
+import { getTemplate, compileTemplate } from '@/lib/templates';
 
 export default function MemberManagementPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -226,7 +227,14 @@ export default function MemberManagementPage() {
           body: JSON.stringify({
             gymId,
             phone,
-            message: `🎉 *Welcome to ${gymName}, ${name}!* 🏋️‍♂️🔥\n\nWe are absolutely thrilled to have you join our fitness family! Let's crush those fitness goals together. 💪\n\n*Membership Details:*\n🔹 *Plan:* ${planType}\n🔹 *Amount Paid:* ₹${feeAmount}\n🔹 *Valid Until:* ${nextDueDate}\n\nKeep pushing, you've got this! 💯\n_Receipt Generated: ${dateString} ${timeString}_`
+            message: compileTemplate(getTemplate(gymId, 'welcome'), {
+              name,
+              gymName,
+              phone,
+              plan: planType,
+              amount: feeAmount,
+              dueDate: nextDueDate
+            }) + `\n\n_Receipt Generated: ${dateString} ${timeString}_`
           })
         }).catch(console.error);
       }
@@ -258,7 +266,14 @@ export default function MemberManagementPage() {
           body: JSON.stringify({
             gymId,
             phone: cust.phone,
-            message: `✅ *Payment Successfully Received!* 💰\n\nHi ${cust.name}, thank you for renewing your membership. Your payment has been successfully processed! 🚀\n\n*Transaction Details:*\n💳 *Amount Paid:* ₹${cust.feeAmount * renewMonths}\n📅 *New Expiry Date:* ${updated.nextDueDate}\n🔑 *Txn ID:* TXN-${Date.now().toString().slice(-6)}\n\nThank you for your continued dedication. See you at the gym! 🏋️‍♀️🔥\n_Date: ${dateString} ${timeString}_`
+            message: compileTemplate(getTemplate(gymId, 'receipt'), {
+              name: updated.name,
+              gymName,
+              phone: updated.phone,
+              plan: updated.planType,
+              amount: cust.feeAmount * renewMonths,
+              dueDate: updated.nextDueDate
+            }) + `\n\n_Date: ${dateString} ${timeString}_`
           })
         }).catch(console.error);
       }
@@ -291,7 +306,14 @@ export default function MemberManagementPage() {
 
   const handleSendAbsenteeMsg = async (cust: any) => {
     try {
-      const msg = `Hi ${cust.name.split(' ')[0]},\n\nWe noticed you haven't checked into ${gymName} for a few days! 🥺\n\nConsistency is the key to results. We'd love to see you back in the gym soon!\n\nBest,\nTeam ${gymName}`;
+      const msg = compileTemplate(getTemplate(gymId, 'absentee'), {
+        name: cust.name.split(' ')[0],
+        gymName,
+        phone: cust.phone,
+        plan: cust.planType,
+        amount: cust.feeAmount,
+        dueDate: cust.nextDueDate
+      });
       
       const res = await fetch('/api/whatsapp/send', {
         method: 'POST',

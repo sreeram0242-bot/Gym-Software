@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Smartphone, CheckCircle2, AlertTriangle, RefreshCw, LogOut, MessageSquare, Settings } from 'lucide-react';
-
+import { Smartphone, CheckCircle2, AlertTriangle, RefreshCw, LogOut, MessageSquare, Settings, Save } from 'lucide-react';
+import { getTemplate, saveTemplate, TemplateType, DEFAULT_TEMPLATES } from '@/lib/templates';
 export default function SettingsPage() {
   const [gymId, setGymId] = useState<string | null>(null);
   const [waStatus, setWaStatus] = useState<string>('disconnected');
@@ -15,6 +15,11 @@ export default function SettingsPage() {
   
   const [absentTrackingEnabled, setAbsentTrackingEnabled] = useState(false);
   const [absentThresholdDays, setAbsentThresholdDays] = useState(3);
+
+  // Template State
+  const [selectedTemplateType, setSelectedTemplateType] = useState<TemplateType>('welcome');
+  const [templateContent, setTemplateContent] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
@@ -30,10 +35,12 @@ export default function SettingsPage() {
       const savedAbsentToggle = localStorage.getItem(`absent_tracking_enabled_${savedId}`);
       if (savedAbsentToggle !== null) setAbsentTrackingEnabled(savedAbsentToggle === 'true');
 
-      const savedAbsentDays = localStorage.getItem(`absent_tracking_days_${savedId}`);
-      if (savedAbsentDays !== null) setAbsentThresholdDays(Number(savedAbsentDays));
+      const savedAbsentThreshold = localStorage.getItem(`absent_threshold_${savedId}`);
+      if (savedAbsentThreshold !== null) setAbsentThresholdDays(Number(savedAbsentThreshold));
+
+      setTemplateContent(getTemplate(savedId, selectedTemplateType));
     }
-  }, []);
+  }, [gymId, selectedTemplateType]);
 
   const handleToggleAutoMessages = (enabled: boolean) => {
     setAutoMessagesEnabled(enabled);
@@ -52,7 +59,23 @@ export default function SettingsPage() {
 
   const handleAbsentThresholdChange = (days: number) => {
     setAbsentThresholdDays(days);
-    if (gymId) localStorage.setItem(`absent_tracking_days_${gymId}`, String(days));
+    if (gymId) {
+      localStorage.setItem(`absent_threshold_${gymId}`, String(days));
+    }
+  };
+
+  const handleTemplateSave = () => {
+    if (gymId) {
+      saveTemplate(gymId, selectedTemplateType, templateContent);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    }
+  };
+
+  const handleTemplateReset = () => {
+    if (confirm("Reset this template to default?")) {
+      setTemplateContent(DEFAULT_TEMPLATES[selectedTemplateType]);
+    }
   };
 
   useEffect(() => {
@@ -329,6 +352,69 @@ export default function SettingsPage() {
               </select>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Message Templates Card */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-slate-200">
+          <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+            <span>WhatsApp Message Templates</span>
+          </h2>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Customize the automated messages sent to your members. Available variables: {`{{name}}`}, {`{{gymName}}`}, {`{{plan}}`}, {`{{amount}}`}, {`{{dueDate}}`}
+          </p>
+        </div>
+
+        <div className="p-6">
+          <div className="flex overflow-x-auto space-x-2 mb-4 pb-2">
+            {(['welcome', 'receipt', 'reminder', 'absentee'] as TemplateType[]).map(type => (
+              <button
+                key={type}
+                onClick={() => setSelectedTemplateType(type)}
+                className={`px-4 py-2 rounded-lg text-xs font-bold capitalize whitespace-nowrap transition-colors ${
+                  selectedTemplateType === type
+                    ? 'bg-blue-900 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {type === 'absentee' ? 'We Miss You (Absent)' : type}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-4">
+            <textarea
+              value={templateContent}
+              onChange={(e) => setTemplateContent(e.target.value)}
+              rows={8}
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none resize-y"
+            />
+
+            <div className="flex items-center justify-between">
+              <button
+                onClick={handleTemplateReset}
+                className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+              >
+                Reset to Default
+              </button>
+              
+              <div className="flex items-center space-x-3">
+                {saveSuccess && (
+                  <span className="text-xs font-bold text-emerald-600 flex items-center">
+                    <CheckCircle2 className="w-4 h-4 mr-1" /> Saved!
+                  </span>
+                )}
+                <button
+                  onClick={handleTemplateSave}
+                  className="px-5 py-2.5 bg-blue-900 hover:bg-blue-950 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center space-x-2"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Template</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
