@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2 } from 'lucide-react';
+import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2, Edit2 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, addSubscriptionPlan, deleteSubscriptionPlan } from '@/lib/actions';
+import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan } from '@/lib/actions';
 import { Transaction, SubscriptionPlan } from '@/lib/types';
 
 export default function RevenuePage() {
@@ -30,6 +30,7 @@ export default function RevenuePage() {
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanMonths, setNewPlanMonths] = useState(1);
   const [newPlanPrice, setNewPlanPrice] = useState(2500);
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -70,16 +71,41 @@ export default function RevenuePage() {
 
   const handleAddPlan = async () => {
     if (!newPlanName || newPlanPrice <= 0 || newPlanMonths <= 0) return;
-    await addSubscriptionPlan({
-      gymId,
-      name: newPlanName,
-      durationMonths: newPlanMonths,
-      price: newPlanPrice
-    });
+    
+    if (editingPlanId) {
+      await updateSubscriptionPlan(editingPlanId, {
+        name: newPlanName,
+        durationMonths: newPlanMonths,
+        price: newPlanPrice
+      });
+      setEditingPlanId(null);
+    } else {
+      await addSubscriptionPlan({
+        gymId,
+        name: newPlanName,
+        durationMonths: newPlanMonths,
+        price: newPlanPrice
+      });
+    }
+    
     setNewPlanName('');
     setNewPlanMonths(1);
     setNewPlanPrice(2500);
     loadData();
+  };
+
+  const handleEditPlanClick = (plan: any) => {
+    setEditingPlanId(plan.id);
+    setNewPlanName(plan.name);
+    setNewPlanMonths(plan.durationMonths);
+    setNewPlanPrice(plan.price);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPlanId(null);
+    setNewPlanName('');
+    setNewPlanMonths(1);
+    setNewPlanPrice(2500);
   };
 
   const handleDeletePlan = async (id: string) => {
@@ -494,16 +520,28 @@ export default function RevenuePage() {
                          <div className="font-bold text-slate-900 text-sm">{p.name}</div>
                          <div className="text-xs text-slate-500 font-semibold">{p.durationMonths} {p.durationMonths === 1 ? 'Month' : 'Months'} • ₹{p.price}</div>
                        </div>
-                       <button onClick={() => handleDeletePlan(p.id)} className="p-2 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors">
-                         <Trash2 className="w-4 h-4" />
-                       </button>
+                       <div className="flex items-center space-x-1">
+                         <button onClick={() => handleEditPlanClick(p)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">
+                           <Edit2 className="w-4 h-4" />
+                         </button>
+                         <button onClick={() => handleDeletePlan(p.id)} className="p-2 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors">
+                           <Trash2 className="w-4 h-4" />
+                         </button>
+                       </div>
                      </div>
                    ))}
                  </div>
                )}
                
                <div className="pt-4 border-t border-slate-200">
-                 <h4 className="font-bold text-slate-800 text-sm mb-3">Create New Package</h4>
+                 <div className="flex items-center justify-between mb-3">
+                   <h4 className="font-bold text-slate-800 text-sm">{editingPlanId ? 'Edit Package' : 'Create New Package'}</h4>
+                   {editingPlanId && (
+                     <button onClick={handleCancelEdit} className="text-xs text-slate-500 hover:text-slate-800 font-bold">
+                       Cancel
+                     </button>
+                   )}
+                 </div>
                  <div className="grid grid-cols-2 gap-3 mb-3">
                    <input type="text" placeholder="Package Name" value={newPlanName} onChange={e => setNewPlanName(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
                    <input type="number" placeholder="Months" value={newPlanMonths} onChange={e => setNewPlanMonths(Number(e.target.value))} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
@@ -513,7 +551,7 @@ export default function RevenuePage() {
                    </div>
                  </div>
                  <button onClick={handleAddPlan} className="w-full py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg text-sm font-bold transition-colors">
-                   Add Package
+                   {editingPlanId ? 'Update Package' : 'Add Package'}
                  </button>
                </div>
             </div>
