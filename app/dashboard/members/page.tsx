@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2 } from 'lucide-react';
+import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle } from 'lucide-react';
 import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, getGyms } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
 
@@ -289,6 +289,27 @@ export default function MemberManagementPage() {
   };
 
 
+  const handleSendAbsenteeMsg = async (cust: any) => {
+    try {
+      const msg = `Hi ${cust.name.split(' ')[0]},\n\nWe noticed you haven't checked into ${gymName} for a few days! 🥺\n\nConsistency is the key to results. We'd love to see you back in the gym soon!\n\nBest,\nTeam ${gymName}`;
+      
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cust.phone, message: msg }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('WhatsApp message sent successfully!');
+      } else {
+        alert('Failed to send message. Make sure WhatsApp is connected in Settings.');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error sending message');
+    }
+  };
+
   // Filtered members list
   const filteredCustomers = customers.filter((c) => {
     const searchLower = searchQuery.toLowerCase().trim();
@@ -507,7 +528,21 @@ export default function MemberManagementPage() {
                 </div>
               )}
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+              <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
+                {isAbsent(cust.id) ? (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSendAbsenteeMsg(cust);
+                    }}
+                    className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition-colors border border-emerald-200 shadow-sm"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Send "We miss you!"</span>
+                  </button>
+                ) : (
+                  <div />
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
