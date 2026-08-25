@@ -314,7 +314,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* Global WA Disconnected Warning */}
-      {waStatus === 'disconnected' && (
+      {waStatus !== 'connected' && (
         <div className={`fixed ${globalAnnouncement ? 'top-8' : 'top-0'} left-0 right-0 z-[90] px-4 py-2 flex items-center justify-center text-xs font-bold bg-rose-600 text-white shadow-md animate-in slide-in-from-top-2`}>
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4" />
@@ -336,7 +336,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* DESKTOP SIDEBAR */}
-      <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen z-30 shadow-sm ${globalAnnouncement ? 'pt-8' : ''} ${waStatus === 'disconnected' ? 'pt-16' : ''}`}>
+      <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen z-30 shadow-sm ${globalAnnouncement ? 'pt-8' : ''} ${waStatus !== 'connected' ? 'pt-16' : ''}`}>
         {/* Brand */}
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center space-x-3">

@@ -10,7 +10,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing gymId' }, { status: 400 });
     }
 
-    WhatsAppManager.logout(gymId);
+    await WhatsAppManager.logout(gymId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Logout error:', error);

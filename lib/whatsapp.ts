@@ -149,7 +149,7 @@ export class WhatsAppManager {
         } else {
           // Logged out, clean up auth
           try {
-            db.whatsAppSession.deleteMany({ where: { gymId } });
+            await db.whatsAppSession.deleteMany({ where: { gymId } });
           } catch (e) {}
           globalAny.WhatsAppQRs.delete(gymId);
         }
@@ -174,17 +174,22 @@ export class WhatsAppManager {
     };
   }
   
-  static logout(gymId: string) {
+  static async logout(gymId: string) {
     const sock = globalAny.WhatsAppSessions.get(gymId);
     if (sock) {
-      sock.logout();
-      globalAny.WhatsAppSessions.delete(gymId);
-      globalAny.WhatsAppStatuses.set(gymId, 'disconnected');
-      globalAny.WhatsAppQRs.delete(gymId);
-      
       try {
-        db.whatsAppSession.deleteMany({ where: { gymId } });
+        sock.logout();
       } catch (e) {}
+    }
+    
+    globalAny.WhatsAppSessions.delete(gymId);
+    globalAny.WhatsAppStatuses.set(gymId, 'disconnected');
+    globalAny.WhatsAppQRs.delete(gymId);
+    
+    try {
+      await db.whatsAppSession.deleteMany({ where: { gymId } });
+    } catch (e) {
+      console.error('Logout DB cleanup error:', e);
     }
   }
 
