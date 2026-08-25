@@ -51,15 +51,22 @@ Consistency is the key to results. We'd love to see you back in the gym soon!
 Best,
 Team {{gymName}}`,
 
-  checkin: `👋 *Welcome to {{gymName}}, {{name}}!*
+  checkin: `📊 *{{gymName}} Attendance System*
 
-You've successfully checked in at {{time}}.
-Have a great workout! 💪🔥`,
+Hi {{name}}! 
+📍 *Status:* Checked IN
+⏰ *Time:* {{time}}
 
-  checkout: `👋 *Goodbye {{name}}!*
+Time to hit your targets today. Let's make every rep count! 💯`,
 
-You've checked out at {{time}} after a {{duration}} min workout.
-Great job today! See you next time! 🏋️‍♀️`
+  checkout: `📊 *{{gymName}} Attendance System*
+
+Hi {{name}}! 
+📍 *Status:* Checked OUT
+⏰ *Time:* {{time}}
+⏱️ *Total Time Active:* {{duration}} Minutes
+
+Consistency builds results. Great effort today! 📈💪`
 };
 
 export type TemplateType = keyof typeof DEFAULT_TEMPLATES;
