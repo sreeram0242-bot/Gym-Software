@@ -38,6 +38,15 @@ export default function MemberManagementPage() {
   const [renewMonths, setRenewMonths] = useState(1);
   const [isEditingMember, setIsEditingMember] = useState(false);
 
+  // Custom UI Overlays
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const handleEditInit = (cust: any) => {
     setName(cust.name);
     setPhone(cust.phone);
@@ -49,12 +58,17 @@ export default function MemberManagementPage() {
     setShowAddModal(true);
   };
 
-  const handleDeleteMember = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this member?')) {
-      await deleteCustomer(id);
-      setSelectedMember(null);
-      loadData();
-    }
+  const handleDeleteMember = (id: string) => {
+    setConfirmDialog({
+      title: 'Delete Member',
+      message: 'Are you sure you want to completely delete this member? This action cannot be undone.',
+      onConfirm: async () => {
+        await deleteCustomer(id);
+        setSelectedMember(null);
+        showToast('Member deleted successfully', 'success');
+        loadData();
+      }
+    });
   };
 
   // Auto-detect existing member when typing phone or NFC
@@ -318,17 +332,17 @@ export default function MemberManagementPage() {
       const res = await fetch('/api/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: cust.phone, message: msg }),
+        body: JSON.stringify({ gymId, phone: cust.phone, message: msg }),
       });
       const data = await res.json();
       if (data.success) {
-        alert('WhatsApp message sent successfully!');
+        showToast('WhatsApp message sent successfully!', 'success');
       } else {
-        alert('Failed to send message. Make sure WhatsApp is connected in Settings.');
+        showToast('Failed to send message. Make sure WhatsApp is connected in Settings.', 'error');
       }
     } catch (error) {
       console.error(error);
-      alert('Error sending message');
+      showToast('Error sending message', 'error');
     }
   };
 
@@ -860,6 +874,54 @@ export default function MemberManagementPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM UI CONFIRM MODAL */}
+      {confirmDialog && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl p-6 md:p-8 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-4">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <h2 className="text-xl font-black text-slate-900 mb-2">{confirmDialog.title}</h2>
+            <p className="text-slate-600 text-sm font-medium mb-6 leading-relaxed">
+              {confirmDialog.message}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDialog(null)}
+                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  confirmDialog.onConfirm();
+                  setConfirmDialog(null);
+                }}
+                className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors shadow-sm"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM UI TOAST NOTIFICATION */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <div className={`flex items-center space-x-3 px-5 py-4 rounded-2xl shadow-lg border ${
+            toast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
+            toast.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
+            'bg-blue-50 border-blue-200 text-blue-800'
+          }`}>
+            {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+            {toast.type === 'error' && <AlertTriangle className="w-5 h-5 text-red-600" />}
+            {toast.type === 'info' && <Bell className="w-5 h-5 text-blue-600" />}
+            <span className="font-bold text-sm">{toast.message}</span>
           </div>
         </div>
       )}
