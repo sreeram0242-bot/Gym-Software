@@ -16,8 +16,10 @@ export default function MemberManagementPage() {
   const [settings, setSettings] = useState<any>(null);
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'active' | 'due_soon' | 'overdue' | 'absent'>('all');
-  const [timeFilter, setTimeFilter] = useState<'all_time' | 'today' | 'this_week' | 'this_month'>('this_month');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'due_soon' | 'overdue' | 'all' | 'new' | 'absent'>('all');
+  const [timeFilter, setTimeFilter] = useState<'all_time' | 'today' | 'this_week' | 'this_month'>('all_time');
+  const [planFilter, setPlanFilter] = useState<string>('all');
+  
   const [absentTrackingEnabled, setAbsentTrackingEnabled] = useState(false);
   const [absentThresholdDays, setAbsentThresholdDays] = useState(3);
 
@@ -310,8 +312,19 @@ export default function MemberManagementPage() {
 
   const isAbsent = (custId: string) => {
     if (!absentTrackingEnabled) return false;
+    const cust = customers.find(c => c.id === custId);
+    if (!cust) return false;
+
     const lastDate = getLastAttendanceDate(custId);
-    if (!lastDate) return true; // Never attended
+    const joinDate = new Date(cust.joinedDate);
+    
+    if (!lastDate) {
+      // If never attended, check if they joined long enough ago to be considered absent
+      const diffTimeJoin = Math.abs(new Date().getTime() - joinDate.getTime());
+      const diffDaysJoin = Math.ceil(diffTimeJoin / (1000 * 60 * 60 * 24));
+      return diffDaysJoin > absentThresholdDays;
+    }
+    
     const diffTime = Math.abs(new Date().getTime() - lastDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays > absentThresholdDays;
@@ -379,7 +392,12 @@ export default function MemberManagementPage() {
       }
     }
 
-    return matchesSearch && matchesStatus && matchesTime;
+    let matchesPlan = true;
+    if (planFilter !== 'all') {
+      matchesPlan = c.planType === planFilter;
+    }
+
+    return matchesSearch && matchesStatus && matchesTime && matchesPlan;
   });
 
   return (
@@ -480,6 +498,17 @@ export default function MemberManagementPage() {
               <option value="this_month">This Month</option>
             </select>
           )}
+
+          <select
+            value={planFilter}
+            onChange={(e) => setPlanFilter(e.target.value)}
+            className="ml-2 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-800"
+          >
+            <option value="all">All Plans</option>
+            {plans.map(p => (
+              <option key={p.id} value={p.name}>{p.name}</option>
+            ))}
+          </select>
         </div>
       </div>
 
