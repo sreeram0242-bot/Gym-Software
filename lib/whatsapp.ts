@@ -251,6 +251,12 @@ export class WhatsAppManager {
         }
         
         resolve(true);
+
+        // Anti-ban measure: Massive cooldown between messages (10 to 25 seconds)
+        // This prevents rapid firing that triggers WhatsApp spam algorithms.
+        const cooldownDelay = Math.floor(Math.random() * 15000) + 10000;
+        await new Promise(r => setTimeout(r, cooldownDelay));
+
       } catch (e) {
         console.error('Failed to send message:', e);
         resolve(false);
