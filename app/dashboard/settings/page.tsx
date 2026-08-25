@@ -15,6 +15,7 @@ export default function SettingsPage() {
   const [autoMessagesEnabled, setAutoMessagesEnabled] = useState(true);
   const [attendanceMessagesEnabled, setAttendanceMessagesEnabled] = useState(true);
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
+  const [autoArchiveEnabled, setAutoArchiveEnabled] = useState(false);
   const [reminderWindowDays, setReminderWindowDays] = useState(3);
   
   const [absentTrackingEnabled, setAbsentTrackingEnabled] = useState(false);
@@ -43,6 +44,7 @@ export default function SettingsPage() {
     setAutoMessagesEnabled(data.waAutoMessages ?? true);
     setAttendanceMessagesEnabled(data.waAttendanceMessages ?? true);
     setAutoReplyEnabled(data.waAutoReply ?? true);
+    setAutoArchiveEnabled(data.waAutoArchive ?? false);
     setReminderWindowDays(data.waReminderWindowDays ?? 3);
     setAbsentTrackingEnabled(data.absentTrackingEnabled ?? false);
     setAbsentThresholdDays(data.absentThresholdDays ?? 3);
@@ -66,6 +68,11 @@ export default function SettingsPage() {
   const handleToggleAutoReply = async (enabled: boolean) => {
     setAutoReplyEnabled(enabled);
     if (gymId) await updateGymSettings(gymId, { waAutoReply: enabled });
+  };
+
+  const handleToggleAutoArchive = async (enabled: boolean) => {
+    setAutoArchiveEnabled(enabled);
+    if (gymId) await updateGymSettings(gymId, { waAutoArchive: enabled });
   };
 
   const handleReminderWindowChange = async (days: number) => {

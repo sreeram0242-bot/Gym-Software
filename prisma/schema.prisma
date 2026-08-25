@@ -102,6 +102,7 @@ model GymSettings {
   
   waAttendanceMessages  Boolean @default(true)
   waAutoReply           Boolean @default(true)
+  waAutoArchive         Boolean @default(false)
   
   templateWelcome       String?
   templateReceipt       String?

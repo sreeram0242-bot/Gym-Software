@@ -379,6 +379,17 @@ export class WhatsAppManager {
           await sock.sendMessage(jid, { text });
         }
         
+        // Auto-Archive Chat
+        try {
+          const settings = await db.gymSettings.findUnique({ where: { gymId } });
+          if (settings?.waAutoArchive) {
+            console.log(`[WA DEBUG] Archiving chat ${jid}`);
+            await sock.chatModify({ archive: true }, jid);
+          }
+        } catch (e) {
+          console.error('[WA DEBUG] Failed to archive chat:', e);
+        }
+
         globalAny.WhatsAppHourlyStats.count++; // Increment our hourly limit tracker
         resolve(true);
 

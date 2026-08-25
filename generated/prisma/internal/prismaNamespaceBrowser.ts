@@ -168,6 +168,8 @@ export const GymSettingsScalarFieldEnum = {
   waAutoMessages: 'waAutoMessages',
   waReminderWindowDays: 'waReminderWindowDays',
   waAttendanceMessages: 'waAttendanceMessages',
+  waAutoReply: 'waAutoReply',
+  waAutoArchive: 'waAutoArchive',
   templateWelcome: 'templateWelcome',
   templateReceipt: 'templateReceipt',
   templateReminder: 'templateReminder',
