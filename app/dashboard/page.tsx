@@ -60,7 +60,7 @@ export default function DashboardOverview() {
   return (
     <div className="space-y-6">
       {/* WhatsApp Disconnected Banner */}
-      {waStatus === 'disconnected' && (
+      {(waStatus === 'disconnected' || waStatus === 'scan_qr') && (
         <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start sm:items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 text-red-600">
