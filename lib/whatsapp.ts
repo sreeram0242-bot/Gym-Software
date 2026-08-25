@@ -209,7 +209,26 @@ export class WhatsAppManager {
     
     globalAny.WhatsAppQueueProcessing = true;
     
+    if (!globalAny.WhatsAppHourlyStats) {
+      globalAny.WhatsAppHourlyStats = { count: 0, resetAt: Date.now() + 60 * 60 * 1000 };
+    }
+    
     while (globalAny.WhatsAppMessageQueue.length > 0) {
+      // 1. Anti-ban measure: Hourly Throttle (Deep Sleep Batching)
+      if (Date.now() > globalAny.WhatsAppHourlyStats.resetAt) {
+        globalAny.WhatsAppHourlyStats.count = 0;
+        globalAny.WhatsAppHourlyStats.resetAt = Date.now() + 60 * 60 * 1000;
+      }
+      
+      if (globalAny.WhatsAppHourlyStats.count >= 20) {
+        console.log('WhatsApp hourly limit (20) reached. Sleeping queue for 10 mins.');
+        setTimeout(() => {
+          globalAny.WhatsAppQueueProcessing = false;
+          WhatsAppManager.processQueue();
+        }, 10 * 60 * 1000); // Sleep 10 minutes
+        return; // Exit loop, leaving remaining items in queue
+      }
+
       const task = globalAny.WhatsAppMessageQueue.shift();
       if (!task) continue;
       
@@ -235,9 +254,17 @@ export class WhatsAppManager {
         await sock.presenceSubscribe(jid);
         await sock.sendPresenceUpdate('composing', jid);
         
-        // Random typing delay between 2s and 4.5s
-        const typingDelay = Math.floor(Math.random() * 2500) + 2000;
-        await new Promise(r => setTimeout(r, typingDelay));
+        // 2. Anti-ban measure: Real-Time Typing Simulation
+        // Calculate typing delay based on message length (approx 5 chars per second)
+        const charCount = text.length;
+        let dynamicTypingDelay = Math.floor((charCount / 5) * 1000);
+        
+        // Cap it between 2s and 12s, plus some random human jitter
+        if (dynamicTypingDelay < 2000) dynamicTypingDelay = 2000;
+        if (dynamicTypingDelay > 12000) dynamicTypingDelay = 12000;
+        dynamicTypingDelay += Math.floor(Math.random() * 2000) - 1000;
+        
+        await new Promise(r => setTimeout(r, dynamicTypingDelay));
         
         await sock.sendPresenceUpdate('paused', jid);
         
@@ -250,6 +277,7 @@ export class WhatsAppManager {
           await sock.sendMessage(jid, { text });
         }
         
+        globalAny.WhatsAppHourlyStats.count++; // Increment our hourly limit tracker
         resolve(true);
 
         // Anti-ban measure: Massive cooldown between messages (10 to 25 seconds)

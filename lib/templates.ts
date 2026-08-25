@@ -92,6 +92,13 @@ export function compileTemplate(template: string, data: Record<string, string | 
     compiled = compiled.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
   }
   
+  // 3. ANTI-SPAM MEASURE: Visible Spintax
+  // We randomly swap common greetings to ensure visual text diversity.
+  // This replaces instances of "Hi", "Hello", etc. at the start of lines.
+  const greetings = ['Hi', 'Hello', 'Hey', 'Greetings', 'Good day'];
+  const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+  compiled = compiled.replace(/^Hi\b/gm, randomGreeting);
+  
   // ANTI-SPAM MEASURE: Invisible text salting
   // We append 1 to 5 random Zero-Width characters to the end of the message.
   // These characters are completely invisible to the human eye on WhatsApp,
