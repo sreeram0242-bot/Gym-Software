@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  serverExternalPackages: ['@whiskeysockets/baileys', 'pino', 'qrcode'],
+  experimental: {
+    serverComponentsExternalPackages: ['@whiskeysockets/baileys', 'pino', 'qrcode'],
+    instrumentationHook: true,
+  }
 }
 
 module.exports = nextConfig
