@@ -279,3 +279,64 @@ export async function deleteSubscriptionPlan(id: string) {
     return false;
   }
 }
+
+// --- SUPERADMIN SAAS FEATURES ---
+
+export async function getGlobalStats() {
+  const totalGyms = await prisma.gym.count();
+  
+  const totalMembers = await prisma.customer.count({
+    where: { status: 'active' }
+  });
+
+  // Calculate MRR from active customers across all gyms
+  const activeCustomers = await prisma.customer.findMany({ where: { status: 'active' } });
+  const globalGymRevenue = activeCustomers.reduce((sum, c) => sum + c.feeAmount, 0);
+
+  // Assuming SaaS pricing is 1499/month
+  const saasMRR = totalGyms * 1499;
+
+  return { totalGyms, totalMembers, saasMRR, globalGymRevenue };
+}
+
+export async function updateGymStatus(gymId: string, status: string) {
+  return await prisma.gym.update({
+    where: { id: gymId },
+    data: { status }
+  });
+}
+
+// Announcements
+export async function getAnnouncements() {
+  return await prisma.announcement.findMany({
+    orderBy: { createdAt: 'desc' }
+  });
+}
+
+export async function getActiveAnnouncement() {
+  return await prisma.announcement.findFirst({
+    where: { active: true },
+    orderBy: { createdAt: 'desc' }
+  });
+}
+
+export async function createAnnouncement(data: { title: string, message: string, type: string }) {
+  // Deactivate old announcements first
+  await prisma.announcement.updateMany({
+    where: { active: true },
+    data: { active: false }
+  });
+
+  return await prisma.announcement.create({
+    data: {
+      title: data.title,
+      message: data.message,
+      type: data.type,
+      createdAt: new Date().toISOString()
+    }
+  });
+}
+
+export async function deleteAnnouncement(id: string) {
+  return await prisma.announcement.delete({ where: { id } });
+}

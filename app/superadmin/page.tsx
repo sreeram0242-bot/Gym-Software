@@ -3,15 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Plus, Search, Building2, UserPlus, Key, Phone, Mail, CheckCircle, AlertCircle, ArrowLeft, Users, Eye, EyeOff, Dumbbell, Lock, Sparkles, Filter, LogOut } from 'lucide-react';
-import { getGyms, getCustomers, addGym, toggleGymStatus, findCustomerByPhone, getMemberMonthlyAvgHours } from '@/lib/actions';
+import { ShieldCheck, Plus, Search, Building2, UserPlus, Key, Phone, Mail, CheckCircle, AlertCircle, ArrowLeft, Users, Eye, EyeOff, Dumbbell, Lock, Sparkles, Filter, LogOut, Trash2 } from 'lucide-react';
+import { getGyms, getCustomers, addGym, toggleGymStatus, findCustomerByPhone, getMemberMonthlyAvgHours, getGlobalStats, getAnnouncements, createAnnouncement, deleteAnnouncement, updateGymStatus } from '@/lib/actions';
 import { Gym, Customer } from '@/lib/types';
 
 export default function SuperAdminPage() {
   const router = useRouter();
   const [gyms, setGyms] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'gyms' | 'add_gym' | 'global_search'>('gyms');
+  const [activeTab, setActiveTab] = useState<'gyms' | 'add_gym' | 'global_search' | 'announcements'>('gyms');
+
+  const [globalStats, setGlobalStats] = useState({ totalGyms: 0, totalMembers: 0, saasMRR: 0, globalGymRevenue: 0 });
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  
+  // Announcement Form State
+  const [annTitle, setAnnTitle] = useState('');
+  const [annMessage, setAnnMessage] = useState('');
+  const [annType, setAnnType] = useState('info');
+
 
   // Form State for Adding New Gym
   const [gymName, setGymName] = useState('');
@@ -40,9 +49,11 @@ export default function SuperAdminPage() {
   }, []);
 
   const loadData = async () => {
-    const [loadedGyms, loadedCusts] = await Promise.all([
+    const [loadedGyms, loadedCusts, stats, anns] = await Promise.all([
       getGyms(),
-      getCustomers('all')
+      getCustomers('all'),
+      getGlobalStats(),
+      getAnnouncements()
     ]);
 
     // Attach count of members
@@ -53,6 +64,8 @@ export default function SuperAdminPage() {
 
     setGyms(gymsWithCounts);
     setCustomers(loadedCusts);
+    setGlobalStats(stats);
+    setAnnouncements(anns);
   };
 
   const handleCreateGym = async (e: React.FormEvent) => {
@@ -104,7 +117,34 @@ export default function SuperAdminPage() {
   };
 
   const getAvg = (custId: string) => {
-    return 1.2; // A default as it requires attendance records which we didn't fetch here for all members
+    return 1.2; 
+  };
+
+  const handleLoginAs = (gymId: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('active_gym_id', gymId);
+    }
+    router.push('/dashboard');
+  };
+
+  const handleToggleSuspend = async (gymId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+    await updateGymStatus(gymId, newStatus);
+    loadData();
+  };
+
+  const handleCreateAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!annTitle || !annMessage) return;
+    await createAnnouncement({ title: annTitle, message: annMessage, type: annType });
+    setAnnTitle('');
+    setAnnMessage('');
+    loadData();
+  };
+
+  const handleDeleteAnnouncement = async (id: string) => {
+    await deleteAnnouncement(id);
+    loadData();
   };
 
   return (
@@ -147,44 +187,44 @@ export default function SuperAdminPage() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Metric Cards Banner */}
+        {/* Metric Cards Banner (God View) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-between">
               <span>Total Onboarded Gyms</span>
               <Building2 className="w-4 h-4 text-blue-900" />
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{gyms.length}</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{globalStats.totalGyms}</div>
             <div className="text-xs text-blue-900 font-medium mt-1">Multi-Tenant Platform</div>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-between">
-              <span>Active Subscriptions</span>
-              <CheckCircle className="w-4 h-4 text-emerald-600" />
+              <span>Estimated SaaS MRR</span>
+              <Sparkles className="w-4 h-4 text-emerald-600" />
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              {gyms.filter(g => g.status === 'active').length}
+              ₹{globalStats.saasMRR.toLocaleString()}
             </div>
-            <div className="text-xs text-emerald-600 font-medium mt-1">100% Operating</div>
+            <div className="text-xs text-emerald-600 font-medium mt-1">At ₹1,499 / gym</div>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-between">
-              <span>Total Gym Members</span>
+              <span>Total Global Members</span>
               <Users className="w-4 h-4 text-indigo-600" />
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{customers.length}</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">{globalStats.totalMembers}</div>
             <div className="text-xs text-indigo-600 font-medium mt-1">Across All Gyms</div>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-between">
-              <span>Database Engine</span>
-              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>Global Gym Revenue</span>
+              <Building2 className="w-4 h-4 text-amber-600" />
             </div>
-            <div className="text-lg font-bold text-slate-900">Oracle Cloud</div>
-            <div className="text-xs text-slate-500 mt-1">Ready Connection</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">₹{globalStats.globalGymRevenue.toLocaleString()}</div>
+            <div className="text-xs text-amber-600 font-medium mt-1">Combined Economy</div>
           </div>
         </div>
 
@@ -304,28 +344,25 @@ export default function SuperAdminPage() {
                       </td>
 
                       <td className="py-3 px-4 text-right space-x-2">
-                        <button
-                          onClick={() => {
-                            if (typeof window !== 'undefined') {
-                              localStorage.setItem('active_gym_id', gym.id);
-                            }
-                            router.push('/dashboard');
-                          }}
-                          className="px-2.5 py-1.5 bg-blue-900 hover:bg-blue-950 text-white rounded-md text-xs font-semibold transition-colors shadow-sm"
-                        >
-                          Login as Gym
-                        </button>
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => handleLoginAs(gym.id)}
+                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-lg transition-colors flex items-center space-x-1"
+                          >
+                            <Key className="w-3 h-3" />
+                            <span>Login As</span>
+                          </button>
 
-                        <button
-                          onClick={() => handleToggleGymStatus(gym.id)}
-                          className={`px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors border ${
-                            gym.status === 'active'
-                              ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                              : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                          }`}
-                        >
-                          {gym.status === 'active' ? 'Suspend' : 'Activate'}
-                        </button>
+                          <button
+                            onClick={() => handleToggleSuspend(gym.id, gym.status)}
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center space-x-1 ${
+                              gym.status === 'active' ? 'bg-rose-50 hover:bg-rose-100 text-rose-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
+                            }`}
+                          >
+                            <Lock className="w-3 h-3" />
+                            <span>{gym.status === 'active' ? 'Suspend' : 'Activate'}</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -587,6 +624,103 @@ export default function SuperAdminPage() {
                 <p className="text-xs text-slate-400 mt-1">Try entering digits without country codes.</p>
               </div>
             ) : null}
+          </div>
+        )}
+
+        {/* TAB 4: GLOBAL ANNOUNCEMENTS */}
+        {activeTab === 'announcements' && (
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+              <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-slate-200">
+                <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-900 flex items-center justify-center font-bold">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-slate-900 text-lg">Global System Broadcast</h2>
+                  <p className="text-xs text-slate-500">Send an alert banner to all gym owners' dashboards instantly.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleCreateAnnouncement} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Announcement Title
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={annTitle}
+                    onChange={(e) => setAnnTitle(e.target.value)}
+                    placeholder="e.g. Scheduled Maintenance"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-800 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Message
+                  </label>
+                  <textarea
+                    required
+                    value={annMessage}
+                    onChange={(e) => setAnnMessage(e.target.value)}
+                    placeholder="Provide details about the announcement..."
+                    rows={3}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-800 outline-none"
+                  ></textarea>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Alert Type
+                  </label>
+                  <select
+                    value={annType}
+                    onChange={(e) => setAnnType(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-800 outline-none"
+                  >
+                    <option value="info">Info (Blue)</option>
+                    <option value="warning">Warning (Yellow)</option>
+                    <option value="critical">Critical (Red)</option>
+                  </select>
+                </div>
+                <div className="pt-2">
+                  <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-md">
+                    Broadcast Announcement
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-slate-200 bg-slate-50/50">
+                <h3 className="font-bold text-slate-900">Recent Announcements</h3>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {announcements.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-sm">No announcements found.</div>
+                ) : (
+                  announcements.map((ann) => (
+                    <div key={ann.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className={`w-2 h-2 rounded-full ${ann.active ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                          <span className="font-bold text-slate-900 text-sm">{ann.title}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                            ann.type === 'info' ? 'bg-blue-100 text-blue-700' : 
+                            ann.type === 'warning' ? 'bg-amber-100 text-amber-700' : 
+                            'bg-rose-100 text-rose-700'
+                          }`}>{ann.type}</span>
+                        </div>
+                        <p className="text-xs text-slate-500 mb-1">{ann.message}</p>
+                        <p className="text-[10px] text-slate-400 font-mono">{new Date(ann.createdAt).toLocaleString()}</p>
+                      </div>
+                      <button onClick={() => handleDeleteAnnouncement(ann.id)} className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         )}
       </main>

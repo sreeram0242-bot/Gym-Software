@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle, Megaphone } from 'lucide-react';
-import { getGyms, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours, getCustomers, getGymSettings } from '@/lib/actions';
+import { getGyms, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours, getCustomers, getGymSettings, getActiveAnnouncement } from '@/lib/actions';
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 
@@ -24,6 +24,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   } | null>(null);
 
   const [waStatus, setWaStatus] = useState<string>('connected');
+  const [globalAnnouncement, setGlobalAnnouncement] = useState<any | null>(null);
+  
+  // Track if we are in Master Admin impersonation mode
+  const isMasterAdmin = typeof window !== 'undefined' ? localStorage.getItem('is_master_admin') === 'true' : false;
 
   useEffect(() => {
     const initLayout = async () => {
@@ -31,8 +35,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setGyms(loadedGyms);
 
       const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
-      const isMasterAdmin = typeof window !== 'undefined' ? localStorage.getItem('is_master_admin') === 'true' : false;
       
+      const activeAnn = await getActiveAnnouncement();
+      setGlobalAnnouncement(activeAnn);
+
       // Find gym. Master admins can view suspended gyms.
       const matched = loadedGyms.find((g) => g.id === savedId && (g.status === 'active' || isMasterAdmin));
       
@@ -242,10 +248,55 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
 
+  if (!currentGym) return null; // Loading or unauthorized
+
+  // Handle suspended gym state for normal users
+  if (currentGym.status === 'suspended' && !isMasterAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-full max-w-md bg-white border border-rose-200 rounded-2xl shadow-xl overflow-hidden p-8">
+          <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-8 h-8 text-rose-600" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 mb-2">Account Suspended</h2>
+          <p className="text-slate-500 mb-8">
+            Your gym platform access has been temporarily suspended due to billing or policy violations. Please contact the platform administrator to restore your access.
+          </p>
+          <button
+            onClick={() => {
+              if (typeof window !== 'undefined') localStorage.removeItem('active_gym_id');
+              router.push('/');
+            }}
+            className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-md"
+          >
+            Return to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row font-sans pb-20 md:pb-0">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans md:flex-row pb-20 md:pb-0">
+      
+      {/* Global Announcement Banner */}
+      {globalAnnouncement && (
+        <div className={`fixed top-0 left-0 right-0 z-[100] px-4 py-2 flex items-center justify-center text-xs font-bold text-white ${
+          globalAnnouncement.type === 'info' ? 'bg-blue-600' :
+          globalAnnouncement.type === 'warning' ? 'bg-amber-600' : 'bg-rose-600'
+        }`}>
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="w-4 h-4" />
+            <span>{globalAnnouncement.title}: {globalAnnouncement.message}</span>
+          </div>
+          <button onClick={() => setGlobalAnnouncement(null)} className="absolute right-4 hover:bg-white/20 p-1 rounded-md">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* DESKTOP SIDEBAR */}
-      <aside className="hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen z-30 shadow-sm">
+      <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen z-30 shadow-sm ${globalAnnouncement ? 'pt-8' : ''}`}>
         {/* Brand */}
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center space-x-3">

@@ -110,3 +110,11 @@ model GymSettings {
   templateCheckOut      String?
 }
 
+model Announcement {
+  id        String @id @default(uuid())
+  title     String
+  message   String
+  type      String @default("info")
+  createdAt String
+  active    Boolean @default(true)
+}

@@ -57,6 +57,7 @@ export default function MemberManagementPage() {
     setFeeAmount(cust.feeAmount);
     setLastPaymentDate(cust.lastPaymentDate);
     setIsEditingMember(true);
+    setSelectedMember(null); // Close the details modal so the edit modal is visible
     setShowAddModal(true);
   };
 

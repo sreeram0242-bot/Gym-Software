@@ -57,7 +57,8 @@ export const ModelName = {
   Transaction: 'Transaction',
   SubscriptionPlan: 'SubscriptionPlan',
   WhatsAppSession: 'WhatsAppSession',
-  GymSettings: 'GymSettings'
+  GymSettings: 'GymSettings',
+  Announcement: 'Announcement'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -176,6 +177,18 @@ export const GymSettingsScalarFieldEnum = {
 } as const
 
 export type GymSettingsScalarFieldEnum = (typeof GymSettingsScalarFieldEnum)[keyof typeof GymSettingsScalarFieldEnum]
+
+
+export const AnnouncementScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  message: 'message',
+  type: 'type',
+  createdAt: 'createdAt',
+  active: 'active'
+} as const
+
+export type AnnouncementScalarFieldEnum = (typeof AnnouncementScalarFieldEnum)[keyof typeof AnnouncementScalarFieldEnum]
 
 
 export const SortOrder = {
