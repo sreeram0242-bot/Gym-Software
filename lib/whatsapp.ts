@@ -175,9 +175,16 @@ export class WhatsAppManager {
       const cleanText = text.trim().toLowerCase();
 
       // Ensure auto-reply is on
-      const settings = await db.gymSettings.findUnique({ where: { gymId } });
-      console.log('[WA DEBUG] Auto-reply setting:', settings?.waAutoReply);
-      if (!settings?.waAutoReply) return;
+      let waAutoReply = true;
+      try {
+        const settings = await db.gymSettings.findUnique({ where: { gymId } });
+        console.log('[WA DEBUG] Auto-reply setting:', settings?.waAutoReply);
+        waAutoReply = settings?.waAutoReply ?? true;
+      } catch (e) {
+        console.log('[WA DEBUG] Could not fetch settings (schema mismatch?), defaulting to true');
+      }
+      
+      if (!waAutoReply) return;
 
       // Extract phone
       const fullPhone = senderJid.split('@')[0];
