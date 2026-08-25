@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle, Megaphone } from 'lucide-react';
 import { getGyms, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours, getCustomers, getGymSettings } from '@/lib/actions';
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
@@ -237,6 +237,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: 'NFC Terminal', href: '/dashboard/checkin', icon: Smartphone, badge: 'NFC' },
     { label: 'Members', href: '/dashboard/members', icon: Users },
     { label: 'Reminders', href: '/dashboard/reminders', icon: Bell, badge: 'Due' },
+    { label: 'Broadcast', href: '/dashboard/broadcast', icon: Megaphone, badge: 'New' },
     { label: 'Revenue', href: '/dashboard/revenue', icon: CreditCard },
     { label: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];

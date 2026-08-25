@@ -188,13 +188,13 @@ export class WhatsAppManager {
     }
   }
 
-  static async sendMessage(gymId: string, phone: string, text: string) {
+  static async sendMessage(gymId: string, phone: string, text: string, mediaBase64?: string) {
     const sock = globalAny.WhatsAppSessions.get(gymId);
     if (!sock) return false;
     
     // Add to global queue
     return new Promise((resolve) => {
-      globalAny.WhatsAppMessageQueue.push({ gymId, phone, text, resolve });
+      globalAny.WhatsAppMessageQueue.push({ gymId, phone, text, mediaBase64, resolve });
       this.processQueue();
     });
   }
@@ -208,7 +208,7 @@ export class WhatsAppManager {
       const task = globalAny.WhatsAppMessageQueue.shift();
       if (!task) continue;
       
-      const { gymId, phone, text, resolve } = task;
+      const { gymId, phone, text, mediaBase64, resolve } = task;
       const sock = globalAny.WhatsAppSessions.get(gymId);
       
       if (!sock) {
@@ -236,7 +236,15 @@ export class WhatsAppManager {
         
         await sock.sendPresenceUpdate('paused', jid);
         
-        await sock.sendMessage(jid, { text });
+        if (mediaBase64) {
+          // Parse base64 string (e.g., "data:image/jpeg;base64,/9j/4AAQSkZ...")
+          const base64Data = mediaBase64.split(',')[1] || mediaBase64;
+          const buffer = Buffer.from(base64Data, 'base64');
+          await sock.sendMessage(jid, { image: buffer, caption: text });
+        } else {
+          await sock.sendMessage(jid, { text });
+        }
+        
         resolve(true);
       } catch (e) {
         console.error('Failed to send message:', e);
