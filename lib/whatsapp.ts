@@ -202,8 +202,8 @@ export class WhatsAppManager {
       
       if (!waAutoReply) return;
 
-      // Extract phone
-      const fullPhone = senderJid.split('@')[0];
+      // Extract phone (strip @s.whatsapp.net and any :deviceId)
+      const fullPhone = senderJid.split('@')[0].split(':')[0];
       const shortPhone = fullPhone.length === 12 && fullPhone.startsWith('91') ? fullPhone.substring(2) : fullPhone;
       console.log('[WA DEBUG] Searching customer with phone:', shortPhone);
 
