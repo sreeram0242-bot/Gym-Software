@@ -160,30 +160,41 @@ export class WhatsAppManager {
     });
 
     sock.ev.on('messages.upsert', async ({ messages, type }: { messages: any[], type: string }) => {
+      console.log('[WA DEBUG] messages.upsert triggered:', type);
       if (type !== 'notify') return;
       const m = messages[0];
       if (!m.message || m.key.fromMe) return;
 
       const senderJid = m.key.remoteJid;
+      console.log('[WA DEBUG] Sender JID:', senderJid);
       if (!senderJid || senderJid.includes('@g.us')) return;
 
       const text = m.message.conversation || m.message.extendedTextMessage?.text;
+      console.log('[WA DEBUG] Received text:', text);
       if (!text) return;
       const cleanText = text.trim().toLowerCase();
 
       // Ensure auto-reply is on
       const settings = await db.gymSettings.findUnique({ where: { gymId } });
+      console.log('[WA DEBUG] Auto-reply setting:', settings?.waAutoReply);
       if (!settings?.waAutoReply) return;
 
       // Extract phone
       const fullPhone = senderJid.split('@')[0];
       const shortPhone = fullPhone.length === 12 && fullPhone.startsWith('91') ? fullPhone.substring(2) : fullPhone;
+      console.log('[WA DEBUG] Searching customer with phone:', shortPhone);
 
       // Find customer
       const customer = await db.customer.findFirst({
         where: { gymId, phone: { contains: shortPhone }, status: 'active' }
       });
-      if (!customer) return;
+      
+      if (!customer) {
+        console.log('[WA DEBUG] Customer not found for phone:', shortPhone);
+        return;
+      }
+      
+      console.log('[WA DEBUG] Found customer:', customer.name, 'Processing keyword:', cleanText);
 
       const footer = '\n\n---\nReply *start* to see the main menu anytime.';
       let replyText = '';
@@ -219,16 +230,24 @@ export class WhatsAppManager {
       } else if (cleanText === 'start') {
         replyText = `🤖 *Gym Auto-Menu*\n\nReply with a number:\n*1️⃣* - Plan Details & Due Date\n*2️⃣* - Last 3 Payments\n*3️⃣* - Last 3 Days Attendance`;
       } else {
+        console.log('[WA DEBUG] Keyword not matched. Ignore.');
         return; 
       }
+
+      console.log('[WA DEBUG] Sending reply text:', replyText);
 
       // Read receipt simulation for two-way chat anti-ban
       try {
         await sock.readMessages([m.key]);
-      } catch (e) {}
+        console.log('[WA DEBUG] Read receipt sent');
+      } catch (e) {
+        console.log('[WA DEBUG] Read receipt failed', e);
+      }
 
       // Send the auto-reply (pass true to avoid infinite menu appending)
+      console.log('[WA DEBUG] Queuing message reply...');
       await WhatsAppManager.sendMessage(gymId, fullPhone, replyText + footer, undefined, true);
+      console.log('[WA DEBUG] Message queued successfully');
     });
 
     } catch (error: any) {
