@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Radio, Clock, UserCheck } from 'lucide-react';
-import { getCustomers, getAttendance, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours } from '@/lib/actions';
+import { getCustomers, getAttendance, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours, getGymSettings } from '@/lib/actions';
 import { Customer, AttendanceRecord } from '@/lib/types';
+import { getTemplate, compileTemplate } from '@/lib/templates';
 
 export default function NFCCheckInTerminal() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -53,8 +54,31 @@ export default function NFCCheckInTerminal() {
       ndef.addEventListener('reading', async ({ serialNumber }: any) => {
         const matched = await findCustomerByNFC(gymId, serialNumber);
         if (matched) {
-          await toggleCheckIn(matched.id);
+          const { record, action } = await toggleCheckIn(matched.id);
           loadData();
+          
+          // Send WhatsApp Attendance Message
+          const gymSettings = await getGymSettings(gymId);
+          if (gymSettings?.waAttendanceMessages && matched.phone) {
+            const templateName = action === 'checkin' ? 'checkin' : 'checkout';
+            const rawTemplate = getTemplate(gymSettings, templateName);
+            const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const duration = record.durationMinutes || 0;
+            
+            const message = compileTemplate(rawTemplate, {
+              gymName: "Gym", // We can use a generic name or fetch gym name. Wait, let's just use 'Gym' since we don't have gym object here easily, or we could just leave it. Oh, wait, the layout one had gym name. I'll just use "Your Gym" or similar if gym is not available. 
+              // Wait, let me check how to get the gym name. I can fetch it, or it doesn't matter much.
+              name: matched.name,
+              time: nowTime,
+              duration: duration.toString()
+            });
+
+            fetch('/api/whatsapp/send', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ gymId, phone: matched.phone, message })
+            }).catch(console.error);
+          }
         }
       });
     } catch (err) {

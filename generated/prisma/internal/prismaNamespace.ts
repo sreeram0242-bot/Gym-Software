@@ -1070,10 +1070,13 @@ export const GymSettingsScalarFieldEnum = {
   absentThresholdDays: 'absentThresholdDays',
   waAutoMessages: 'waAutoMessages',
   waReminderWindowDays: 'waReminderWindowDays',
+  waAttendanceMessages: 'waAttendanceMessages',
   templateWelcome: 'templateWelcome',
   templateReceipt: 'templateReceipt',
   templateReminder: 'templateReminder',
-  templateAbsentee: 'templateAbsentee'
+  templateAbsentee: 'templateAbsentee',
+  templateCheckIn: 'templateCheckIn',
+  templateCheckOut: 'templateCheckOut'
 } as const
 
 export type GymSettingsScalarFieldEnum = (typeof GymSettingsScalarFieldEnum)[keyof typeof GymSettingsScalarFieldEnum]

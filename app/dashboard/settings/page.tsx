@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   
   const [autoMessagesEnabled, setAutoMessagesEnabled] = useState(true);
+  const [attendanceMessagesEnabled, setAttendanceMessagesEnabled] = useState(true);
   const [reminderWindowDays, setReminderWindowDays] = useState(3);
   
   const [absentTrackingEnabled, setAbsentTrackingEnabled] = useState(false);
@@ -39,6 +40,7 @@ export default function SettingsPage() {
     const data = await getGymSettings(id);
     setSettings(data);
     setAutoMessagesEnabled(data.waAutoMessages ?? true);
+    setAttendanceMessagesEnabled(data.waAttendanceMessages ?? true);
     setReminderWindowDays(data.waReminderWindowDays ?? 3);
     setAbsentTrackingEnabled(data.absentTrackingEnabled ?? false);
     setAbsentThresholdDays(data.absentThresholdDays ?? 3);
@@ -52,6 +54,11 @@ export default function SettingsPage() {
   const handleToggleAutoMessages = async (enabled: boolean) => {
     setAutoMessagesEnabled(enabled);
     if (gymId) await updateGymSettings(gymId, { waAutoMessages: enabled });
+  };
+
+  const handleToggleAttendanceMessages = async (enabled: boolean) => {
+    setAttendanceMessagesEnabled(enabled);
+    if (gymId) await updateGymSettings(gymId, { waAttendanceMessages: enabled });
   };
 
   const handleReminderWindowChange = async (days: number) => {
@@ -76,6 +83,8 @@ export default function SettingsPage() {
       if (selectedTemplateType === 'receipt') updateData.templateReceipt = templateContent;
       if (selectedTemplateType === 'reminder') updateData.templateReminder = templateContent;
       if (selectedTemplateType === 'absentee') updateData.templateAbsentee = templateContent;
+      if (selectedTemplateType === 'checkin') updateData.templateCheckIn = templateContent;
+      if (selectedTemplateType === 'checkout') updateData.templateCheckOut = templateContent;
       
       const newSettings = await updateGymSettings(gymId, updateData);
       setSettings(newSettings);
@@ -299,6 +308,17 @@ export default function SettingsPage() {
 
           <div className="flex items-center justify-between border-t border-slate-100 pt-6">
             <div>
+              <h3 className="font-bold text-slate-800 text-sm">Send Attendance Messages</h3>
+              <p className="text-xs text-slate-500 mt-1">Automatically send a WhatsApp message when members tap IN or OUT.</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" className="sr-only peer" checked={attendanceMessagesEnabled} onChange={(e) => handleToggleAttendanceMessages(e.target.checked)} />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+            <div>
               <h3 className="font-bold text-slate-800 text-sm">Daily Reminder Window</h3>
               <p className="text-xs text-slate-500 mt-1 max-w-sm">Number of days before the due date to start sending daily background reminders.</p>
             </div>
@@ -381,7 +401,7 @@ export default function SettingsPage() {
 
         <div className="p-6">
           <div className="flex overflow-x-auto space-x-2 mb-4 pb-2">
-            {(['welcome', 'receipt', 'reminder', 'absentee'] as TemplateType[]).map(type => (
+            {(['welcome', 'receipt', 'reminder', 'absentee', 'checkin', 'checkout'] as TemplateType[]).map(type => (
               <button
                 key={type}
                 onClick={() => setSelectedTemplateType(type)}
@@ -391,7 +411,7 @@ export default function SettingsPage() {
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                {type === 'absentee' ? 'We Miss You (Absent)' : type}
+                {type === 'absentee' ? 'We Miss You (Absent)' : type === 'checkin' ? 'Check-In' : type === 'checkout' ? 'Check-Out' : type}
               </button>
             ))}
           </div>

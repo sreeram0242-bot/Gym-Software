@@ -43,10 +43,13 @@ export type GymSettingsMinAggregateOutputType = {
   absentThresholdDays: number | null
   waAutoMessages: boolean | null
   waReminderWindowDays: number | null
+  waAttendanceMessages: boolean | null
   templateWelcome: string | null
   templateReceipt: string | null
   templateReminder: string | null
   templateAbsentee: string | null
+  templateCheckIn: string | null
+  templateCheckOut: string | null
 }
 
 export type GymSettingsMaxAggregateOutputType = {
@@ -56,10 +59,13 @@ export type GymSettingsMaxAggregateOutputType = {
   absentThresholdDays: number | null
   waAutoMessages: boolean | null
   waReminderWindowDays: number | null
+  waAttendanceMessages: boolean | null
   templateWelcome: string | null
   templateReceipt: string | null
   templateReminder: string | null
   templateAbsentee: string | null
+  templateCheckIn: string | null
+  templateCheckOut: string | null
 }
 
 export type GymSettingsCountAggregateOutputType = {
@@ -69,10 +75,13 @@ export type GymSettingsCountAggregateOutputType = {
   absentThresholdDays: number
   waAutoMessages: number
   waReminderWindowDays: number
+  waAttendanceMessages: number
   templateWelcome: number
   templateReceipt: number
   templateReminder: number
   templateAbsentee: number
+  templateCheckIn: number
+  templateCheckOut: number
   _all: number
 }
 
@@ -94,10 +103,13 @@ export type GymSettingsMinAggregateInputType = {
   absentThresholdDays?: true
   waAutoMessages?: true
   waReminderWindowDays?: true
+  waAttendanceMessages?: true
   templateWelcome?: true
   templateReceipt?: true
   templateReminder?: true
   templateAbsentee?: true
+  templateCheckIn?: true
+  templateCheckOut?: true
 }
 
 export type GymSettingsMaxAggregateInputType = {
@@ -107,10 +119,13 @@ export type GymSettingsMaxAggregateInputType = {
   absentThresholdDays?: true
   waAutoMessages?: true
   waReminderWindowDays?: true
+  waAttendanceMessages?: true
   templateWelcome?: true
   templateReceipt?: true
   templateReminder?: true
   templateAbsentee?: true
+  templateCheckIn?: true
+  templateCheckOut?: true
 }
 
 export type GymSettingsCountAggregateInputType = {
@@ -120,10 +135,13 @@ export type GymSettingsCountAggregateInputType = {
   absentThresholdDays?: true
   waAutoMessages?: true
   waReminderWindowDays?: true
+  waAttendanceMessages?: true
   templateWelcome?: true
   templateReceipt?: true
   templateReminder?: true
   templateAbsentee?: true
+  templateCheckIn?: true
+  templateCheckOut?: true
   _all?: true
 }
 
@@ -220,10 +238,13 @@ export type GymSettingsGroupByOutputType = {
   absentThresholdDays: number
   waAutoMessages: boolean
   waReminderWindowDays: number
+  waAttendanceMessages: boolean
   templateWelcome: string | null
   templateReceipt: string | null
   templateReminder: string | null
   templateAbsentee: string | null
+  templateCheckIn: string | null
+  templateCheckOut: string | null
   _count: GymSettingsCountAggregateOutputType | null
   _avg: GymSettingsAvgAggregateOutputType | null
   _sum: GymSettingsSumAggregateOutputType | null
@@ -256,10 +277,13 @@ export type GymSettingsWhereInput = {
   absentThresholdDays?: Prisma.IntFilter<"GymSettings"> | number
   waAutoMessages?: Prisma.BoolFilter<"GymSettings"> | boolean
   waReminderWindowDays?: Prisma.IntFilter<"GymSettings"> | number
+  waAttendanceMessages?: Prisma.BoolFilter<"GymSettings"> | boolean
   templateWelcome?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateReceipt?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateReminder?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateAbsentee?: Prisma.StringNullableFilter<"GymSettings"> | string | null
+  templateCheckIn?: Prisma.StringNullableFilter<"GymSettings"> | string | null
+  templateCheckOut?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
 }
 
@@ -270,10 +294,13 @@ export type GymSettingsOrderByWithRelationInput = {
   absentThresholdDays?: Prisma.SortOrder
   waAutoMessages?: Prisma.SortOrder
   waReminderWindowDays?: Prisma.SortOrder
+  waAttendanceMessages?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrderInput | Prisma.SortOrder
   templateReceipt?: Prisma.SortOrderInput | Prisma.SortOrder
   templateReminder?: Prisma.SortOrderInput | Prisma.SortOrder
   templateAbsentee?: Prisma.SortOrderInput | Prisma.SortOrder
+  templateCheckIn?: Prisma.SortOrderInput | Prisma.SortOrder
+  templateCheckOut?: Prisma.SortOrderInput | Prisma.SortOrder
   gym?: Prisma.GymOrderByWithRelationInput
 }
 
@@ -287,10 +314,13 @@ export type GymSettingsWhereUniqueInput = Prisma.AtLeast<{
   absentThresholdDays?: Prisma.IntFilter<"GymSettings"> | number
   waAutoMessages?: Prisma.BoolFilter<"GymSettings"> | boolean
   waReminderWindowDays?: Prisma.IntFilter<"GymSettings"> | number
+  waAttendanceMessages?: Prisma.BoolFilter<"GymSettings"> | boolean
   templateWelcome?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateReceipt?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateReminder?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateAbsentee?: Prisma.StringNullableFilter<"GymSettings"> | string | null
+  templateCheckIn?: Prisma.StringNullableFilter<"GymSettings"> | string | null
+  templateCheckOut?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
 }, "id" | "gymId">
 
@@ -301,10 +331,13 @@ export type GymSettingsOrderByWithAggregationInput = {
   absentThresholdDays?: Prisma.SortOrder
   waAutoMessages?: Prisma.SortOrder
   waReminderWindowDays?: Prisma.SortOrder
+  waAttendanceMessages?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrderInput | Prisma.SortOrder
   templateReceipt?: Prisma.SortOrderInput | Prisma.SortOrder
   templateReminder?: Prisma.SortOrderInput | Prisma.SortOrder
   templateAbsentee?: Prisma.SortOrderInput | Prisma.SortOrder
+  templateCheckIn?: Prisma.SortOrderInput | Prisma.SortOrder
+  templateCheckOut?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.GymSettingsCountOrderByAggregateInput
   _avg?: Prisma.GymSettingsAvgOrderByAggregateInput
   _max?: Prisma.GymSettingsMaxOrderByAggregateInput
@@ -322,10 +355,13 @@ export type GymSettingsScalarWhereWithAggregatesInput = {
   absentThresholdDays?: Prisma.IntWithAggregatesFilter<"GymSettings"> | number
   waAutoMessages?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
   waReminderWindowDays?: Prisma.IntWithAggregatesFilter<"GymSettings"> | number
+  waAttendanceMessages?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
   templateWelcome?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   templateReceipt?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   templateReminder?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   templateAbsentee?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
+  templateCheckIn?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
+  templateCheckOut?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
 }
 
 export type GymSettingsCreateInput = {
@@ -334,10 +370,13 @@ export type GymSettingsCreateInput = {
   absentThresholdDays?: number
   waAutoMessages?: boolean
   waReminderWindowDays?: number
+  waAttendanceMessages?: boolean
   templateWelcome?: string | null
   templateReceipt?: string | null
   templateReminder?: string | null
   templateAbsentee?: string | null
+  templateCheckIn?: string | null
+  templateCheckOut?: string | null
   gym: Prisma.GymCreateNestedOneWithoutGymSettingsInput
 }
 
@@ -348,10 +387,13 @@ export type GymSettingsUncheckedCreateInput = {
   absentThresholdDays?: number
   waAutoMessages?: boolean
   waReminderWindowDays?: number
+  waAttendanceMessages?: boolean
   templateWelcome?: string | null
   templateReceipt?: string | null
   templateReminder?: string | null
   templateAbsentee?: string | null
+  templateCheckIn?: string | null
+  templateCheckOut?: string | null
 }
 
 export type GymSettingsUpdateInput = {
@@ -360,10 +402,13 @@ export type GymSettingsUpdateInput = {
   absentThresholdDays?: Prisma.IntFieldUpdateOperationsInput | number
   waAutoMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waReminderWindowDays?: Prisma.IntFieldUpdateOperationsInput | number
+  waAttendanceMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReminder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateCheckOut?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gym?: Prisma.GymUpdateOneRequiredWithoutGymSettingsNestedInput
 }
 
@@ -374,10 +419,13 @@ export type GymSettingsUncheckedUpdateInput = {
   absentThresholdDays?: Prisma.IntFieldUpdateOperationsInput | number
   waAutoMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waReminderWindowDays?: Prisma.IntFieldUpdateOperationsInput | number
+  waAttendanceMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReminder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateCheckOut?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type GymSettingsCreateManyInput = {
@@ -387,10 +435,13 @@ export type GymSettingsCreateManyInput = {
   absentThresholdDays?: number
   waAutoMessages?: boolean
   waReminderWindowDays?: number
+  waAttendanceMessages?: boolean
   templateWelcome?: string | null
   templateReceipt?: string | null
   templateReminder?: string | null
   templateAbsentee?: string | null
+  templateCheckIn?: string | null
+  templateCheckOut?: string | null
 }
 
 export type GymSettingsUpdateManyMutationInput = {
@@ -399,10 +450,13 @@ export type GymSettingsUpdateManyMutationInput = {
   absentThresholdDays?: Prisma.IntFieldUpdateOperationsInput | number
   waAutoMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waReminderWindowDays?: Prisma.IntFieldUpdateOperationsInput | number
+  waAttendanceMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReminder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateCheckOut?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type GymSettingsUncheckedUpdateManyInput = {
@@ -412,10 +466,13 @@ export type GymSettingsUncheckedUpdateManyInput = {
   absentThresholdDays?: Prisma.IntFieldUpdateOperationsInput | number
   waAutoMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waReminderWindowDays?: Prisma.IntFieldUpdateOperationsInput | number
+  waAttendanceMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReminder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateCheckOut?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type GymSettingsNullableScalarRelationFilter = {
@@ -430,10 +487,13 @@ export type GymSettingsCountOrderByAggregateInput = {
   absentThresholdDays?: Prisma.SortOrder
   waAutoMessages?: Prisma.SortOrder
   waReminderWindowDays?: Prisma.SortOrder
+  waAttendanceMessages?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrder
   templateReceipt?: Prisma.SortOrder
   templateReminder?: Prisma.SortOrder
   templateAbsentee?: Prisma.SortOrder
+  templateCheckIn?: Prisma.SortOrder
+  templateCheckOut?: Prisma.SortOrder
 }
 
 export type GymSettingsAvgOrderByAggregateInput = {
@@ -448,10 +508,13 @@ export type GymSettingsMaxOrderByAggregateInput = {
   absentThresholdDays?: Prisma.SortOrder
   waAutoMessages?: Prisma.SortOrder
   waReminderWindowDays?: Prisma.SortOrder
+  waAttendanceMessages?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrder
   templateReceipt?: Prisma.SortOrder
   templateReminder?: Prisma.SortOrder
   templateAbsentee?: Prisma.SortOrder
+  templateCheckIn?: Prisma.SortOrder
+  templateCheckOut?: Prisma.SortOrder
 }
 
 export type GymSettingsMinOrderByAggregateInput = {
@@ -461,10 +524,13 @@ export type GymSettingsMinOrderByAggregateInput = {
   absentThresholdDays?: Prisma.SortOrder
   waAutoMessages?: Prisma.SortOrder
   waReminderWindowDays?: Prisma.SortOrder
+  waAttendanceMessages?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrder
   templateReceipt?: Prisma.SortOrder
   templateReminder?: Prisma.SortOrder
   templateAbsentee?: Prisma.SortOrder
+  templateCheckIn?: Prisma.SortOrder
+  templateCheckOut?: Prisma.SortOrder
 }
 
 export type GymSettingsSumOrderByAggregateInput = {
@@ -514,10 +580,13 @@ export type GymSettingsCreateWithoutGymInput = {
   absentThresholdDays?: number
   waAutoMessages?: boolean
   waReminderWindowDays?: number
+  waAttendanceMessages?: boolean
   templateWelcome?: string | null
   templateReceipt?: string | null
   templateReminder?: string | null
   templateAbsentee?: string | null
+  templateCheckIn?: string | null
+  templateCheckOut?: string | null
 }
 
 export type GymSettingsUncheckedCreateWithoutGymInput = {
@@ -526,10 +595,13 @@ export type GymSettingsUncheckedCreateWithoutGymInput = {
   absentThresholdDays?: number
   waAutoMessages?: boolean
   waReminderWindowDays?: number
+  waAttendanceMessages?: boolean
   templateWelcome?: string | null
   templateReceipt?: string | null
   templateReminder?: string | null
   templateAbsentee?: string | null
+  templateCheckIn?: string | null
+  templateCheckOut?: string | null
 }
 
 export type GymSettingsCreateOrConnectWithoutGymInput = {
@@ -554,10 +626,13 @@ export type GymSettingsUpdateWithoutGymInput = {
   absentThresholdDays?: Prisma.IntFieldUpdateOperationsInput | number
   waAutoMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waReminderWindowDays?: Prisma.IntFieldUpdateOperationsInput | number
+  waAttendanceMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReminder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateCheckOut?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type GymSettingsUncheckedUpdateWithoutGymInput = {
@@ -566,10 +641,13 @@ export type GymSettingsUncheckedUpdateWithoutGymInput = {
   absentThresholdDays?: Prisma.IntFieldUpdateOperationsInput | number
   waAutoMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waReminderWindowDays?: Prisma.IntFieldUpdateOperationsInput | number
+  waAttendanceMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReminder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateCheckOut?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -581,10 +659,13 @@ export type GymSettingsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   absentThresholdDays?: boolean
   waAutoMessages?: boolean
   waReminderWindowDays?: boolean
+  waAttendanceMessages?: boolean
   templateWelcome?: boolean
   templateReceipt?: boolean
   templateReminder?: boolean
   templateAbsentee?: boolean
+  templateCheckIn?: boolean
+  templateCheckOut?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["gymSettings"]>
 
@@ -595,10 +676,13 @@ export type GymSettingsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   absentThresholdDays?: boolean
   waAutoMessages?: boolean
   waReminderWindowDays?: boolean
+  waAttendanceMessages?: boolean
   templateWelcome?: boolean
   templateReceipt?: boolean
   templateReminder?: boolean
   templateAbsentee?: boolean
+  templateCheckIn?: boolean
+  templateCheckOut?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["gymSettings"]>
 
@@ -609,10 +693,13 @@ export type GymSettingsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   absentThresholdDays?: boolean
   waAutoMessages?: boolean
   waReminderWindowDays?: boolean
+  waAttendanceMessages?: boolean
   templateWelcome?: boolean
   templateReceipt?: boolean
   templateReminder?: boolean
   templateAbsentee?: boolean
+  templateCheckIn?: boolean
+  templateCheckOut?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["gymSettings"]>
 
@@ -623,13 +710,16 @@ export type GymSettingsSelectScalar = {
   absentThresholdDays?: boolean
   waAutoMessages?: boolean
   waReminderWindowDays?: boolean
+  waAttendanceMessages?: boolean
   templateWelcome?: boolean
   templateReceipt?: boolean
   templateReminder?: boolean
   templateAbsentee?: boolean
+  templateCheckIn?: boolean
+  templateCheckOut?: boolean
 }
 
-export type GymSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "absentTrackingEnabled" | "absentThresholdDays" | "waAutoMessages" | "waReminderWindowDays" | "templateWelcome" | "templateReceipt" | "templateReminder" | "templateAbsentee", ExtArgs["result"]["gymSettings"]>
+export type GymSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "absentTrackingEnabled" | "absentThresholdDays" | "waAutoMessages" | "waReminderWindowDays" | "waAttendanceMessages" | "templateWelcome" | "templateReceipt" | "templateReminder" | "templateAbsentee" | "templateCheckIn" | "templateCheckOut", ExtArgs["result"]["gymSettings"]>
 export type GymSettingsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }
@@ -652,10 +742,13 @@ export type $GymSettingsPayload<ExtArgs extends runtime.Types.Extensions.Interna
     absentThresholdDays: number
     waAutoMessages: boolean
     waReminderWindowDays: number
+    waAttendanceMessages: boolean
     templateWelcome: string | null
     templateReceipt: string | null
     templateReminder: string | null
     templateAbsentee: string | null
+    templateCheckIn: string | null
+    templateCheckOut: string | null
   }, ExtArgs["result"]["gymSettings"]>
   composites: {}
 }
@@ -1086,10 +1179,13 @@ export interface GymSettingsFieldRefs {
   readonly absentThresholdDays: Prisma.FieldRef<"GymSettings", 'Int'>
   readonly waAutoMessages: Prisma.FieldRef<"GymSettings", 'Boolean'>
   readonly waReminderWindowDays: Prisma.FieldRef<"GymSettings", 'Int'>
+  readonly waAttendanceMessages: Prisma.FieldRef<"GymSettings", 'Boolean'>
   readonly templateWelcome: Prisma.FieldRef<"GymSettings", 'String'>
   readonly templateReceipt: Prisma.FieldRef<"GymSettings", 'String'>
   readonly templateReminder: Prisma.FieldRef<"GymSettings", 'String'>
   readonly templateAbsentee: Prisma.FieldRef<"GymSettings", 'String'>
+  readonly templateCheckIn: Prisma.FieldRef<"GymSettings", 'String'>
+  readonly templateCheckOut: Prisma.FieldRef<"GymSettings", 'String'>
 }
     
 

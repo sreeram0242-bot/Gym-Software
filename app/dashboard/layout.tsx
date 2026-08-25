@@ -95,6 +95,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             notificationTimeout = setTimeout(() => {
               setGlobalNotification(null);
             }, 5000);
+
+            // Fetch settings to check if Attendance WA messages are enabled
+            const gymSettings = await getGymSettings(matched.id);
+            if (gymSettings?.waAttendanceMessages && matchedCust.phone) {
+              const templateName = action === 'checkin' ? 'checkin' : 'checkout';
+              const rawTemplate = getTemplate(gymSettings, templateName);
+              
+              const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const duration = record.durationMinutes || 0;
+              
+              const message = compileTemplate(rawTemplate, {
+                gymName: matched.name,
+                name: matchedCust.name,
+                time: nowTime,
+                duration: duration.toString()
+              });
+
+              fetch('/api/whatsapp/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  gymId: matched.id,
+                  phone: matchedCust.phone,
+                  message
+                })
+              }).catch(err => console.error('Failed to send WA attendance message', err));
+            }
+
           } else {
             // New NFC Card scanned!
             if (typeof window !== 'undefined') {

@@ -49,7 +49,17 @@ We noticed you haven't checked into {{gymName}} for a few days! 🥺
 Consistency is the key to results. We'd love to see you back in the gym soon!
 
 Best,
-Team {{gymName}}`
+Team {{gymName}}`,
+
+  checkin: `👋 *Welcome to {{gymName}}, {{name}}!*
+
+You've successfully checked in at {{time}}.
+Have a great workout! 💪🔥`,
+
+  checkout: `👋 *Goodbye {{name}}!*
+
+You've checked out at {{time}} after a {{duration}} min workout.
+Great job today! See you next time! 🏋️‍♀️`
 };
 
 export type TemplateType = keyof typeof DEFAULT_TEMPLATES;
@@ -63,6 +73,8 @@ export function getTemplate(settings: any, type: TemplateType): string {
     case 'receipt': return settings.templateReceipt || DEFAULT_TEMPLATES.receipt;
     case 'reminder': return settings.templateReminder || DEFAULT_TEMPLATES.reminder;
     case 'absentee': return settings.templateAbsentee || DEFAULT_TEMPLATES.absentee;
+    case 'checkin': return settings.templateCheckIn || DEFAULT_TEMPLATES.checkin;
+    case 'checkout': return settings.templateCheckOut || DEFAULT_TEMPLATES.checkout;
     default: return DEFAULT_TEMPLATES[type];
   }
 }
