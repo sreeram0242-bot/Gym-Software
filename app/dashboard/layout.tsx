@@ -249,9 +249,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Brand */}
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-900 text-white flex items-center justify-center font-bold shadow-md shadow-blue-800/20">
-              <Dumbbell className="w-5 h-5" />
-            </div>
+            <img src="/logo.png" alt="Gym Logo" className="w-10 h-10 object-contain rounded-xl shadow-sm" />
             <div>
               <span className="font-extrabold text-slate-900 text-base tracking-tight">GymFlow</span>
               <span className="block text-xs font-semibold text-blue-900">Gym Admin</span>
@@ -331,9 +329,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* MOBILE TOP BAR */}
       <header className="md:hidden bg-white border-b border-slate-200 sticky top-0 z-40 px-4 h-14 flex items-center justify-between shadow-sm">
         <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-lg bg-blue-900 text-white flex items-center justify-center font-bold">
-            <Dumbbell className="w-4 h-4" />
-          </div>
+          <img src="/logo.png" alt="Gym Logo" className="w-8 h-8 object-contain rounded-lg" />
           <div>
             <h1 className="font-bold text-slate-900 text-sm leading-tight">{currentGym?.name || 'Gym Portal'}</h1>
             <p className="text-xs text-blue-900 font-semibold">{currentGym?.ownerName}</p>

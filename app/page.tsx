@@ -55,9 +55,7 @@ export default function LandingPage() {
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-900 flex items-center justify-center text-white shadow-md shadow-blue-800/20">
-              <Dumbbell className="w-6 h-6" />
-            </div>
+            <img src="/logo.png" alt="Gym Logo" className="w-12 h-12 object-contain rounded-xl shadow-md" />
             <div>
               <span className="font-bold text-xl tracking-tight text-slate-900">GymFlow</span>
               <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-950 border border-blue-200">SaaS v1.0</span>

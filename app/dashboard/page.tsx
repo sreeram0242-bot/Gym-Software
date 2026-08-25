@@ -83,7 +83,7 @@ export default function DashboardOverview() {
       {/* Top Banner Greeting */}
       <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-slate-900 rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-10 pointer-events-none">
-          <Dumbbell className="w-64 h-64 text-white" />
+          <img src="/logo.png" alt="Background Logo" className="w-64 h-64 object-contain opacity-20 brightness-0 invert" />
         </div>
 
         <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
