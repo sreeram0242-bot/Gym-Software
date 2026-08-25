@@ -165,7 +165,23 @@ export class WhatsAppManager {
       const m = messages[0];
       if (!m.message || m.key.fromMe) return;
 
-      const senderJid = m.key.remoteJid;
+      let senderJid = m.key.remoteJid;
+      
+      // Handle LID (Linked Identity JID) resolution
+      if (senderJid && senderJid.includes('@lid')) {
+        try {
+           const pnJid = await (sock as any).signalRepository?.lidMapping?.getPNForLID?.(senderJid);
+           if (pnJid) {
+             console.log('[WA DEBUG] Resolved LID to PN:', pnJid);
+             senderJid = pnJid;
+           } else if (m.participant) {
+             senderJid = m.participant;
+           }
+        } catch (e) {
+           console.log('[WA DEBUG] LID resolution error:', e);
+        }
+      }
+      
       console.log('[WA DEBUG] Sender JID:', senderJid);
       if (!senderJid || senderJid.includes('@g.us')) return;
 
@@ -199,6 +215,9 @@ export class WhatsAppManager {
       
       if (!customer) {
         console.log('[WA DEBUG] Customer not found for phone:', shortPhone);
+        if (senderJid.includes('@lid')) {
+           console.log('[WA DEBUG] Full Unresolved LID Message Object:', JSON.stringify(m, null, 2));
+        }
         return;
       }
       
