@@ -86,12 +86,24 @@ export function getTemplate(settings: any, type: TemplateType): string {
   }
 }
 
-export function compileTemplate(template: string, variables: Record<string, string | number>): string {
+export function compileTemplate(template: string, data: Record<string, string | number>) {
   let compiled = template;
-  for (const [key, value] of Object.entries(variables)) {
-    // Replace all instances of {{key}}
-    const regex = new RegExp(`{{${key}}}`, 'g');
-    compiled = compiled.replace(regex, String(value));
+  for (const [key, value] of Object.entries(data)) {
+    compiled = compiled.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
   }
-  return compiled;
+  
+  // ANTI-SPAM MEASURE: Invisible text salting
+  // We append 1 to 5 random Zero-Width characters to the end of the message.
+  // These characters are completely invisible to the human eye on WhatsApp,
+  // but they change the digital hash (signature) of every single message.
+  // This tricks WhatsApp's AI into thinking every message is uniquely typed
+  // rather than a 100% identical copy-pasted bulk broadcast!
+  const zeroWidthSpaces = ['\u200B', '\u200C', '\u200D', '\uFEFF'];
+  let invisibleSalt = '';
+  const saltLength = Math.floor(Math.random() * 5) + 1;
+  for (let i = 0; i < saltLength; i++) {
+    invisibleSalt += zeroWidthSpaces[Math.floor(Math.random() * zeroWidthSpaces.length)];
+  }
+  
+  return compiled + invisibleSalt;
 }
