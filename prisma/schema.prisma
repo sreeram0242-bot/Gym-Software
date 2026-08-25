@@ -101,6 +101,7 @@ model GymSettings {
   waReminderWindowDays  Int     @default(3)
   
   waAttendanceMessages  Boolean @default(true)
+  waAutoReply           Boolean @default(true)
   
   templateWelcome       String?
   templateReceipt       String?

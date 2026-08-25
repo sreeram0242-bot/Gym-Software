@@ -158,6 +158,79 @@ export class WhatsAppManager {
         globalAny.WhatsAppQRs.delete(gymId);
       }
     });
+
+    sock.ev.on('messages.upsert', async ({ messages, type }: { messages: any[], type: string }) => {
+      if (type !== 'notify') return;
+      const m = messages[0];
+      if (!m.message || m.key.fromMe) return;
+
+      const senderJid = m.key.remoteJid;
+      if (!senderJid || senderJid.includes('@g.us')) return;
+
+      const text = m.message.conversation || m.message.extendedTextMessage?.text;
+      if (!text) return;
+      const cleanText = text.trim().toLowerCase();
+
+      // Ensure auto-reply is on
+      const settings = await db.gymSettings.findUnique({ where: { gymId } });
+      if (!settings?.waAutoReply) return;
+
+      // Extract phone
+      const fullPhone = senderJid.split('@')[0];
+      const shortPhone = fullPhone.length === 12 && fullPhone.startsWith('91') ? fullPhone.substring(2) : fullPhone;
+
+      // Find customer
+      const customer = await db.customer.findFirst({
+        where: { gymId, phone: { contains: shortPhone }, status: 'active' }
+      });
+      if (!customer) return;
+
+      const footer = '\n\n---\nReply *start* to see the main menu anytime.';
+      let replyText = '';
+
+      if (cleanText === '1') {
+        replyText = `📋 *Your Plan Details*\n\n*Name:* ${customer.name}\n*Plan:* ${customer.planType}\n*Fee Amount:* ₹${customer.feeAmount}\n*Next Due Date:* ${customer.nextDueDate}`;
+      } else if (cleanText === '2') {
+        const txs = await db.transaction.findMany({
+          where: { customerId: customer.id, type: 'INCOME' },
+          orderBy: { date: 'desc' },
+          take: 3
+        });
+        if (txs.length === 0) {
+          replyText = `💰 *Payment History*\n\nNo payments found.`;
+        } else {
+          replyText = `💰 *Last 3 Payments*\n\n` + txs.map(t => `• ₹${t.amount} on ${t.date}`).join('\n');
+        }
+      } else if (cleanText === '3') {
+        const atts = await db.attendanceRecord.findMany({
+          where: { customerId: customer.id, durationMinutes: { not: null } },
+          orderBy: { checkInTime: 'desc' },
+          take: 3
+        });
+        if (atts.length === 0) {
+          replyText = `⏱️ *Recent Attendance*\n\nNo recent check-ins found.`;
+        } else {
+          replyText = `⏱️ *Last 3 Days Attendance*\n\n` + atts.map(a => {
+            const date = a.dateStr;
+            const hrs = ((a.durationMinutes || 0) / 60).toFixed(1);
+            return `• ${date}: ${hrs} hours`;
+          }).join('\n');
+        }
+      } else if (cleanText === 'start') {
+        replyText = `🤖 *Gym Auto-Menu*\n\nReply with a number:\n*1️⃣* - Plan Details & Due Date\n*2️⃣* - Last 3 Payments\n*3️⃣* - Last 3 Days Attendance`;
+      } else {
+        return; 
+      }
+
+      // Read receipt simulation for two-way chat anti-ban
+      try {
+        await sock.readMessages([m.key]);
+      } catch (e) {}
+
+      // Send the auto-reply (pass true to avoid infinite menu appending)
+      await WhatsAppManager.sendMessage(gymId, fullPhone, replyText + footer, undefined, true);
+    });
+
     } catch (error: any) {
       console.error("WhatsApp Init Error:", error);
       if (!globalAny.WhatsAppErrors) globalAny.WhatsAppErrors = new Map<string, string>();
@@ -193,13 +266,23 @@ export class WhatsAppManager {
     }
   }
 
-  static async sendMessage(gymId: string, phone: string, text: string, mediaBase64?: string) {
+  static async sendMessage(gymId: string, phone: string, text: string, mediaBase64?: string, isAutoReply: boolean = false) {
     const sock = globalAny.WhatsAppSessions.get(gymId);
     if (!sock) return false;
     
+    let finalMessage = text;
+    if (!isAutoReply) {
+      try {
+        const settings = await db.gymSettings.findUnique({ where: { gymId } });
+        if (settings?.waAutoReply) {
+          finalMessage += '\n\n---\nReply *1* to view your Plan Details\nReply *2* for Payment History\nReply *3* for Attendance Logs\nReply *start* to see this menu anytime!';
+        }
+      } catch (e) {}
+    }
+
     // Add to global queue
     return new Promise((resolve) => {
-      globalAny.WhatsAppMessageQueue.push({ gymId, phone, text, mediaBase64, resolve });
+      globalAny.WhatsAppMessageQueue.push({ gymId, phone, text: finalMessage, mediaBase64, resolve });
       this.processQueue();
     });
   }
