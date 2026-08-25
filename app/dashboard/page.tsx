@@ -61,23 +61,23 @@ export default function DashboardOverview() {
     <div className="space-y-6">
       {/* WhatsApp Disconnected Banner */}
       {(waStatus === 'disconnected' || waStatus === 'scan_qr') && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start sm:items-center justify-between gap-4 shadow-sm">
+        <Link 
+          href="/dashboard/settings"
+          className="bg-red-50 border border-red-200 hover:border-red-400 hover:bg-red-100 rounded-2xl p-4 flex items-start sm:items-center justify-between gap-4 shadow-sm transition-all block cursor-pointer group"
+        >
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 text-red-600">
+            <div className="w-10 h-10 rounded-full bg-red-100 group-hover:bg-red-200 flex items-center justify-center flex-shrink-0 text-red-600 transition-colors">
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-red-900 font-bold text-sm">WhatsApp Bot Disconnected!</h3>
-              <p className="text-red-700 text-xs mt-0.5">Automated receipts, attendance pushes, and reminders will not be sent.</p>
+              <p className="text-red-700 text-xs mt-0.5">Click here to scan the QR code and reconnect instantly.</p>
             </div>
           </div>
-          <Link 
-            href="/dashboard/settings" 
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-colors whitespace-nowrap"
-          >
-            Reconnect Now
-          </Link>
-        </div>
+          <div className="px-4 py-2 bg-red-600 text-white font-bold text-xs rounded-xl shadow-sm whitespace-nowrap">
+            Reconnect
+          </div>
+        </Link>
       )}
 
       {/* Top Banner Greeting */}
