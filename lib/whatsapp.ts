@@ -184,10 +184,11 @@ export class WhatsAppManager {
       const shortPhone = fullPhone.length === 12 && fullPhone.startsWith('91') ? fullPhone.substring(2) : fullPhone;
       console.log('[WA DEBUG] Searching customer with phone:', shortPhone);
 
-      // Find customer
-      const customer = await db.customer.findFirst({
-        where: { gymId, phone: { contains: shortPhone }, status: 'active' }
+      // Find customer safely ignoring spaces/symbols in DB
+      const activeCustomers = await db.customer.findMany({
+        where: { gymId, status: 'active' }
       });
+      const customer = activeCustomers.find(c => c.phone.replace(/\D/g, '').includes(shortPhone));
       
       if (!customer) {
         console.log('[WA DEBUG] Customer not found for phone:', shortPhone);
@@ -352,9 +353,13 @@ export class WhatsAppManager {
         const initialDelay = Math.floor(Math.random() * 2000) + 2000;
         await new Promise(r => setTimeout(r, initialDelay));
 
-        // Simulate human typing
-        await sock.presenceSubscribe(jid);
-        await sock.sendPresenceUpdate('composing', jid);
+        // Simulate human typing safely (do not block message if presence fails)
+        try {
+          await sock.presenceSubscribe(jid);
+          await sock.sendPresenceUpdate('composing', jid);
+        } catch (e) {
+          console.error('[WA DEBUG] Presence update failed, continuing anyway', e);
+        }
         
         // 2. Anti-ban measure: Real-Time Typing Simulation
         // Calculate typing delay based on message length (approx 5 chars per second)
@@ -368,7 +373,9 @@ export class WhatsAppManager {
         
         await new Promise(r => setTimeout(r, dynamicTypingDelay));
         
-        await sock.sendPresenceUpdate('paused', jid);
+        try {
+          await sock.sendPresenceUpdate('paused', jid);
+        } catch (e) {}
         
         if (mediaBase64) {
           // Parse base64 string (e.g., "data:image/jpeg;base64,/9j/4AAQSkZ...")
