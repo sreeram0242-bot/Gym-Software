@@ -235,9 +235,9 @@ export class WhatsAppManager {
           take: 3
         });
         if (txs.length === 0) {
-          replyText = `💰 *Payment History*\n\nNo payments found.`;
+          replyText = `💰 *Payment History for ${customer.name}*\n\nNo payments found.`;
         } else {
-          replyText = `💰 *Last 3 Payments*\n\n` + txs.map(t => `• ₹${t.amount} on ${t.date}`).join('\n');
+          replyText = `💰 *Last 3 Payments for ${customer.name}*\n\n` + txs.map(t => `• ₹${t.amount} on ${t.date}`).join('\n');
         }
       } else if (cleanText === '3') {
         const atts = await db.attendanceRecord.findMany({
@@ -246,16 +246,16 @@ export class WhatsAppManager {
           take: 3
         });
         if (atts.length === 0) {
-          replyText = `⏱️ *Recent Attendance*\n\nNo recent check-ins found.`;
+          replyText = `⏱️ *Recent Attendance for ${customer.name}*\n\nNo recent check-ins found.`;
         } else {
-          replyText = `⏱️ *Last 3 Days Attendance*\n\n` + atts.map(a => {
+          replyText = `⏱️ *Last 3 Days Attendance for ${customer.name}*\n\n` + atts.map(a => {
             const date = a.dateStr;
             const hrs = ((a.durationMinutes || 0) / 60).toFixed(1);
             return `• ${date}: ${hrs} hours`;
           }).join('\n');
         }
       } else if (cleanText === 'start') {
-        replyText = `🤖 *Gym Auto-Menu*\n\nReply with a number:\n*1️⃣* - Plan Details & Due Date\n*2️⃣* - Last 3 Payments\n*3️⃣* - Last 3 Days Attendance`;
+        replyText = `🤖 *Gym Auto-Menu for ${customer.name}*\n\nReply with a number:\n*1️⃣* - Plan Details & Due Date\n*2️⃣* - Last 3 Payments\n*3️⃣* - Last 3 Days Attendance`;
       } else {
         console.log('[WA DEBUG] Keyword not matched. Ignore.');
         return; 
