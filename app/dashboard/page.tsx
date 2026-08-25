@@ -12,6 +12,7 @@ export default function DashboardOverview() {
   const [attendance, setAttendance] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [activeGym, setActiveGym] = useState<any | null>(null);
+  const [waStatus, setWaStatus] = useState<string>('initializing');
 
   useEffect(() => {
     loadData();
@@ -35,6 +36,14 @@ export default function DashboardOverview() {
     setCustomers(custs);
     setAttendance(atts);
     setTransactions(txs);
+
+    try {
+      const waRes = await fetch(`/api/whatsapp/status?gymId=${savedId}`);
+      const waData = await waRes.json();
+      setWaStatus(waData.status || 'disconnected');
+    } catch (e) {
+      setWaStatus('disconnected');
+    }
   };
 
   // Calculations
@@ -50,6 +59,27 @@ export default function DashboardOverview() {
 
   return (
     <div className="space-y-6">
+      {/* WhatsApp Disconnected Banner */}
+      {waStatus === 'disconnected' && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-red-900 font-bold text-sm">WhatsApp Bot Disconnected!</h3>
+              <p className="text-red-700 text-xs mt-0.5">Automated receipts, attendance pushes, and reminders will not be sent.</p>
+            </div>
+          </div>
+          <Link 
+            href="/dashboard/settings" 
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-colors whitespace-nowrap"
+          >
+            Reconnect Now
+          </Link>
+        </div>
+      )}
+
       {/* Top Banner Greeting */}
       <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-slate-900 rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-10 pointer-events-none">

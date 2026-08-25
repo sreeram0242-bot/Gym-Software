@@ -44,7 +44,7 @@ _Best Regards,_
 
   absentee: `Hi {{name}},
 
-We noticed you haven't checked into {{gymName}} for a few days! 🥺
+We noticed you haven't checked into {{gymName}} for a few days.
 
 Consistency is the key to results. We'd love to see you back in the gym soon!
 
