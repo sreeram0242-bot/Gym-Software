@@ -13,6 +13,10 @@ if (!globalAny.WhatsAppSessions) {
   globalAny.WhatsAppSessions = new Map<string, any>();
   globalAny.WhatsAppQRs = new Map<string, string>();
   globalAny.WhatsAppStatuses = new Map<string, string>();
+  
+  // Anti-ban message queue
+  globalAny.WhatsAppMessageQueue = [];
+  globalAny.WhatsAppQueueProcessing = false;
 }
 
 import db from './db';
@@ -188,27 +192,58 @@ export class WhatsAppManager {
     const sock = globalAny.WhatsAppSessions.get(gymId);
     if (!sock) return false;
     
-    // Ensure country code is present (assuming India 91 for now if missing)
-    let cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
+    // Add to global queue
+    return new Promise((resolve) => {
+      globalAny.WhatsAppMessageQueue.push({ gymId, phone, text, resolve });
+      this.processQueue();
+    });
+  }
+
+  static async processQueue() {
+    if (globalAny.WhatsAppQueueProcessing || globalAny.WhatsAppMessageQueue.length === 0) return;
     
-    const jid = `${cleanPhone}@s.whatsapp.net`;
-    try {
-      // Anti-ban measure: simulate human typing before sending
-      await sock.presenceSubscribe(jid);
-      await sock.sendPresenceUpdate('composing', jid);
+    globalAny.WhatsAppQueueProcessing = true;
+    
+    while (globalAny.WhatsAppMessageQueue.length > 0) {
+      const task = globalAny.WhatsAppMessageQueue.shift();
+      if (!task) continue;
       
-      // Random typing delay between 1.5s and 3.5s
-      const typingDelay = Math.floor(Math.random() * 2000) + 1500;
-      await new Promise(resolve => setTimeout(resolve, typingDelay));
+      const { gymId, phone, text, resolve } = task;
+      const sock = globalAny.WhatsAppSessions.get(gymId);
       
-      await sock.sendPresenceUpdate('paused', jid);
+      if (!sock) {
+        resolve(false);
+        continue;
+      }
       
-      await sock.sendMessage(jid, { text });
-      return true;
-    } catch (e) {
-      console.error('Failed to send message:', e);
-      return false;
+      // Ensure country code is present
+      let cleanPhone = phone.replace(/\D/g, '');
+      if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
+      
+      const jid = `${cleanPhone}@s.whatsapp.net`;
+      try {
+        // Anti-ban measure: wait randomly between 2-4 seconds BEFORE starting typing
+        const initialDelay = Math.floor(Math.random() * 2000) + 2000;
+        await new Promise(r => setTimeout(r, initialDelay));
+
+        // Simulate human typing
+        await sock.presenceSubscribe(jid);
+        await sock.sendPresenceUpdate('composing', jid);
+        
+        // Random typing delay between 2s and 4.5s
+        const typingDelay = Math.floor(Math.random() * 2500) + 2000;
+        await new Promise(r => setTimeout(r, typingDelay));
+        
+        await sock.sendPresenceUpdate('paused', jid);
+        
+        await sock.sendMessage(jid, { text });
+        resolve(true);
+      } catch (e) {
+        console.error('Failed to send message:', e);
+        resolve(false);
+      }
     }
+    
+    globalAny.WhatsAppQueueProcessing = false;
   }
 }
