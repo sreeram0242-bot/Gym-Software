@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle, Megaphone } from 'lucide-react';
+import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle, Megaphone, Lock, CheckCircle } from 'lucide-react';
 import { getGyms, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours, getCustomers, getGymSettings, getActiveAnnouncement } from '@/lib/actions';
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
@@ -25,6 +25,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const [waStatus, setWaStatus] = useState<string>('connected');
   const [globalAnnouncement, setGlobalAnnouncement] = useState<any | null>(null);
+  const [globalToast, setGlobalToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
   
   // Track if we are in Master Admin impersonation mode
   const isMasterAdmin = typeof window !== 'undefined' ? localStorage.getItem('is_master_admin') === 'true' : false;
@@ -126,7 +127,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   phone: matchedCust.phone,
                   message
                 })
-              }).catch(err => console.error('Failed to send WA attendance message', err));
+              }).then(res => res.json()).then(data => {
+                if (data.success && typeof window !== 'undefined') {
+                   window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Attendance message sent to ${matchedCust.name}`, type: 'success' } }));
+                } else if (typeof window !== 'undefined') {
+                   window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send attendance message: ${data.error}`, type: 'error' } }));
+                }
+              }).catch(() => {
+                if (typeof window !== 'undefined') {
+                   window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send attendance message to ${matchedCust.name}`, type: 'error' } }));
+                }
+              });
             }
 
           } else {
@@ -211,8 +222,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
       }
 
+      const handleGlobalToast = (e: any) => {
+        setGlobalToast(e.detail);
+        setTimeout(() => setGlobalToast(null), 3500);
+      };
+      window.addEventListener('global-toast', handleGlobalToast);
+
       return () => {
         window.removeEventListener('keydown', handleKeyDown as unknown as EventListener);
+        window.removeEventListener('global-toast', handleGlobalToast);
         if (notificationTimeout) clearTimeout(notificationTimeout);
         clearInterval(waInterval);
       };
@@ -295,8 +313,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       )}
 
+      {/* Global WA Disconnected Warning */}
+      {waStatus === 'disconnected' && (
+        <div className={`fixed ${globalAnnouncement ? 'top-8' : 'top-0'} left-0 right-0 z-[90] px-4 py-2 flex items-center justify-center text-xs font-bold bg-rose-600 text-white shadow-md animate-in slide-in-from-top-2`}>
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="w-4 h-4" />
+            <span>WhatsApp Disconnected: Payment reminders and notifications are paused.</span>
+            <Link href="/dashboard/settings" className="ml-2 underline hover:text-rose-100">Reconnect</Link>
+          </div>
+        </div>
+      )}
+
+      {/* Global Right-Bottom Toast for Messages */}
+      {globalToast && (
+        <div className={`fixed bottom-20 md:bottom-6 right-6 z-[200] flex items-center space-x-2 px-4 py-3 rounded-xl shadow-xl animate-in slide-in-from-right-4 fade-in ${
+          globalToast.type === 'error' ? 'bg-rose-600 text-white' : 
+          globalToast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white'
+        }`}>
+          {globalToast.type === 'error' ? <AlertTriangle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+          <span className="font-bold text-sm">{globalToast.message}</span>
+        </div>
+      )}
+
       {/* DESKTOP SIDEBAR */}
-      <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen z-30 shadow-sm ${globalAnnouncement ? 'pt-8' : ''}`}>
+      <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen z-30 shadow-sm ${globalAnnouncement ? 'pt-8' : ''} ${waStatus === 'disconnected' ? 'pt-16' : ''}`}>
         {/* Brand */}
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -409,22 +449,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* MAIN VIEW */}
       <main className="flex-1 overflow-x-hidden p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
-        {waStatus === 'disconnected' && (
-          <div className="mb-6 bg-rose-50 border border-rose-200 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-4">
-            <div className="flex items-center space-x-3 mb-3 sm:mb-0">
-              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shrink-0">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-rose-900 text-sm">WhatsApp Bot is Disconnected</h3>
-                <p className="text-xs text-rose-700">Automated payment reminders and notifications are currently paused. Please scan the QR code to reconnect.</p>
-              </div>
-            </div>
-            <Link href="/dashboard/settings" className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-sm whitespace-nowrap transition-colors">
-              Reconnect WhatsApp
-            </Link>
-          </div>
-        )}
         {children}
       </main>
 

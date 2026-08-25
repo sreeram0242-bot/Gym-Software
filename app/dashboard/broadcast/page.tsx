@@ -88,14 +88,25 @@ export default function BroadcastPage() {
 
       const data = await res.json();
       if (data.success) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Queued ${data.queuedCount} broadcast messages.`, type: 'success' } }));
+        }
         setSuccessCount(data.queuedCount);
         setMessage('');
         removeImage();
       } else {
-        setErrorMsg(data.error || 'Failed to send broadcast');
+        const errorText = data.error || 'Failed to send broadcast';
+        setErrorMsg(errorText);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: errorText, type: 'error' } }));
+        }
       }
     } catch (e) {
-      setErrorMsg('Network error while sending broadcast');
+      const errorText = 'Network error while sending broadcast';
+      setErrorMsg(errorText);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: errorText, type: 'error' } }));
+      }
     } finally {
       setIsSending(false);
     }

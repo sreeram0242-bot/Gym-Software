@@ -39,6 +39,7 @@ export default function MemberManagementPage() {
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
   const [renewMonths, setRenewMonths] = useState(1);
   const [isEditingMember, setIsEditingMember] = useState(false);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
 
   // Custom UI Overlays
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -57,6 +58,7 @@ export default function MemberManagementPage() {
     setFeeAmount(cust.feeAmount);
     setLastPaymentDate(cust.lastPaymentDate);
     setIsEditingMember(true);
+    setEditingMemberId(cust.id);
     setSelectedMember(null); // Close the details modal so the edit modal is visible
     setShowAddModal(true);
   };
@@ -90,6 +92,7 @@ export default function MemberManagementPage() {
     if (found) {
       setSelectedMember(found);
       setIsEditingMember(true);
+      setEditingMemberId(found.id);
       setName(found.name);
       setPhone(found.phone);
       setNfcCardId(found.nfcCardId);
@@ -109,6 +112,7 @@ export default function MemberManagementPage() {
       const nfcId = e.detail?.nfcId;
       if (nfcId) {
         setIsEditingMember(false);
+        setEditingMemberId(null);
         setName('');
         setPhone('');
         setNfcCardId(nfcId);
@@ -128,6 +132,7 @@ export default function MemberManagementPage() {
     
     if (newNfc || openAdd === 'true') {
       setIsEditingMember(false);
+      setEditingMemberId(null);
       setName('');
       setPhone('');
       setNfcCardId(newNfc || '');
@@ -189,14 +194,14 @@ export default function MemberManagementPage() {
     const cleanPhone = phone.replace(/\D/g, '');
     
     const existingPhone = customers.find(c => c.phone.replace(/\D/g, '') === cleanPhone);
-    if (existingPhone && (!isEditingMember || existingPhone.id !== selectedMember?.id)) {
+    if (existingPhone && (!isEditingMember || existingPhone.id !== editingMemberId)) {
       setErrorMsg(`Phone number already in use by ${existingPhone.name}. A number is for one customer only.`);
       return;
     }
 
     const newNfc = nfcCardId.trim() || `NFC-${Math.floor(10000 + Math.random() * 90000)}`;
     const existingNfc = customers.find(c => c.nfcCardId.toLowerCase() === newNfc.toLowerCase());
-    if (existingNfc && (!isEditingMember || existingNfc.id !== selectedMember?.id)) {
+    if (existingNfc && (!isEditingMember || existingNfc.id !== editingMemberId)) {
       setErrorMsg(`NFC Card ID "${newNfc}" is already assigned to ${existingNfc.name}. An NFC card is for one customer only.`);
       return;
     }
@@ -208,8 +213,8 @@ export default function MemberManagementPage() {
     dueObj.setMonth(dueObj.getMonth() + months);
     const nextDueDate = dueObj.toISOString().split('T')[0];
 
-    if (isEditingMember && selectedMember) {
-      await updateCustomer(selectedMember.id, {
+    if (isEditingMember && editingMemberId) {
+      await updateCustomer(editingMemberId, {
         name,
         phone,
         nfcCardId: newNfc,
@@ -219,7 +224,7 @@ export default function MemberManagementPage() {
         nextDueDate
       });
       setIsEditingMember(false);
-      setSelectedMember(null);
+      setEditingMemberId(null);
     } else {
       await addCustomer({
         gymId,
@@ -253,7 +258,17 @@ export default function MemberManagementPage() {
               dueDate: nextDueDate
             }) + `\n\n_Receipt Generated: ${dateString} ${timeString}_`
           })
-        }).catch(console.error);
+        }).then(res => res.json()).then(data => {
+          if (data.success && typeof window !== 'undefined') {
+             window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Welcome message sent to ${name}`, type: 'success' } }));
+          } else if (typeof window !== 'undefined') {
+             window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send welcome message: ${data.error}`, type: 'error' } }));
+          }
+        }).catch(() => {
+          if (typeof window !== 'undefined') {
+             window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send welcome message to ${name}`, type: 'error' } }));
+          }
+        });
       }
     }
 
@@ -292,7 +307,17 @@ export default function MemberManagementPage() {
               dueDate: updated.nextDueDate
             }) + `\n\n_Date: ${dateString} ${timeString}_`
           })
-        }).catch(console.error);
+        }).then(res => res.json()).then(data => {
+          if (data.success && typeof window !== 'undefined') {
+             window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Renewal receipt sent to ${updated.name}`, type: 'success' } }));
+          } else if (typeof window !== 'undefined') {
+             window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send renewal receipt: ${data.error}`, type: 'error' } }));
+          }
+        }).catch(() => {
+          if (typeof window !== 'undefined') {
+             window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send renewal receipt to ${updated.name}`, type: 'error' } }));
+          }
+        });
       }
     }
   };
@@ -350,13 +375,19 @@ export default function MemberManagementPage() {
       });
       const data = await res.json();
       if (data.success) {
-        showToast('WhatsApp message sent successfully!', 'success');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: 'WhatsApp absentee message sent successfully!', type: 'success' } }));
+        }
       } else {
-        showToast('Failed to send message. Make sure WhatsApp is connected in Settings.', 'error');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: 'Failed to send message. Make sure WhatsApp is connected in Settings.', type: 'error' } }));
+        }
       }
     } catch (error) {
       console.error(error);
-      showToast('Error sending message', 'error');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: 'Error sending message', type: 'error' } }));
+      }
     }
   };
 
@@ -419,6 +450,7 @@ export default function MemberManagementPage() {
         <button
           onClick={() => {
             setIsEditingMember(false);
+            setEditingMemberId(null);
             setName('');
             setPhone('');
             setNfcCardId('');
@@ -633,7 +665,11 @@ export default function MemberManagementPage() {
                 {isEditingMember ? <Edit className="w-5 h-5 text-blue-900" /> : <Plus className="w-5 h-5 text-blue-900" />}
                 <span>{isEditingMember ? 'Edit Member Details' : 'Add New Member'}</span>
               </h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => {
+                setShowAddModal(false);
+                setIsEditingMember(false);
+                setEditingMemberId(null);
+              }} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
             </div>

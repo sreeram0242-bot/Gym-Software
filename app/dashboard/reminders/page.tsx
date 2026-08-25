@@ -63,7 +63,17 @@ export default function RemindersPage() {
               dueDate: updated.nextDueDate
             }) + `\n\n_Date: ${dateString} ${timeString}_`
           })
-        }).catch(console.error);
+        }).then(res => res.json()).then(data => {
+          if (data.success && typeof window !== 'undefined') {
+             window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Payment receipt sent to ${updated.name}`, type: 'success' } }));
+          } else if (typeof window !== 'undefined') {
+             window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send receipt: ${data.error}`, type: 'error' } }));
+          }
+        }).catch(() => {
+          if (typeof window !== 'undefined') {
+             window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send receipt to ${updated.name}`, type: 'error' } }));
+          }
+        });
       }
     }
   };

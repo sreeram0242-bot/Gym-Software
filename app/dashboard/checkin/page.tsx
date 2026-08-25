@@ -77,7 +77,17 @@ export default function NFCCheckInTerminal() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ gymId, phone: matched.phone, message })
-            }).catch(console.error);
+            }).then(res => res.json()).then(data => {
+              if (data.success && typeof window !== 'undefined') {
+                 window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Attendance message sent to ${matched.name}`, type: 'success' } }));
+              } else if (typeof window !== 'undefined') {
+                 window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send attendance message: ${data.error}`, type: 'error' } }));
+              }
+            }).catch(() => {
+              if (typeof window !== 'undefined') {
+                 window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send attendance message to ${matched.name}`, type: 'error' } }));
+              }
+            });
           }
         }
       });
