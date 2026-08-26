@@ -620,7 +620,7 @@ export default function MemberManagementPage() {
           />
         </div>
 
-        <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto pb-2.5 sm:pb-2">
           {(['all', 'new', 'active', 'due_soon', 'overdue', 'has_due', ...(absentTrackingEnabled ? ['absent'] : [])] as Array<'active' | 'due_soon' | 'overdue' | 'all' | 'new' | 'absent' | 'has_due'>).map((st) => (
             <button
               key={st}
