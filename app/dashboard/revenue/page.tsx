@@ -956,6 +956,8 @@ export default function RevenuePage() {
             </div>
           </div>
         </div>
+      )}
+
       {/* MODAL: EXPORT CSV */}
       {showExportModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">

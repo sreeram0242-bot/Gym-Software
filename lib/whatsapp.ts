@@ -193,8 +193,9 @@ export class WhatsAppManager {
 
       // Ensure auto-reply is on
       let waAutoReply = true;
+      let settings: any = null;
       try {
-        const settings = await db.gymSettings.findUnique({ where: { gymId } });
+        settings = await db.gymSettings.findUnique({ where: { gymId } });
         console.log('[WA DEBUG] Auto-reply setting:', settings?.waAutoReply);
         waAutoReply = settings?.waAutoReply ?? true;
       } catch (e) {
@@ -270,7 +271,7 @@ export class WhatsAppManager {
           if (gym) gymName = gym.name;
         } catch (e) {}
 
-        const joinDate = customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : 'N/A';
+        const joinDate = customer.joinedDate ? new Date(customer.joinedDate).toLocaleDateString() : 'N/A';
         
         replyText = compileTemplate(rawTemplate, {
           gymName: gymName,
