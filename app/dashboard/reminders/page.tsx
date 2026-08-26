@@ -173,7 +173,7 @@ export default function RemindersPage() {
                       </div>
 
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 mt-1">
-                        <span className="font-mono">📱 {cust.phone}</span>
+                        <span className="font-mono flex items-center gap-1"><Phone className="w-3 h-3" /> {cust.phone}</span>
                         <span>Plan: <strong>{cust.planType}</strong> (₹{cust.feeAmount})</span>
                         <span>Due Date: <strong className={isOverdue ? 'text-rose-600' : 'text-amber-700'}>{cust.nextDueDate}</strong></span>
                       </div>

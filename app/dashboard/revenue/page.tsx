@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2, Edit2, Download } from 'lucide-react';
+import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2, Edit2, Download, Banknote, Smartphone, ArrowLeftRight } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, updateTransaction, deleteTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan } from '@/lib/actions';
 import { Transaction, SubscriptionPlan } from '@/lib/types';
@@ -436,26 +436,26 @@ export default function RevenuePage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block mb-0.5">💵 Cash in Hand</span>
+            <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block mb-0.5 flex items-center gap-1"><Banknote className="w-3.5 h-3.5" /> Cash in Hand</span>
             <div className="text-xl font-black text-emerald-950">₹{cashTotal.toLocaleString()}</div>
           </div>
-          <span className="text-2xl">💵</span>
+          <Banknote className="w-7 h-7 text-emerald-300" />
         </div>
 
         <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-blue-800 uppercase tracking-wider block mb-0.5">📱 UPI / GPay / Bank</span>
+            <span className="text-xs font-bold text-blue-800 uppercase tracking-wider block mb-0.5 flex items-center gap-1"><Smartphone className="w-3.5 h-3.5" /> UPI / GPay / Bank</span>
             <div className="text-xl font-black text-blue-950">₹{upiTotal.toLocaleString()}</div>
           </div>
-          <span className="text-2xl">📱</span>
+          <Smartphone className="w-7 h-7 text-blue-300" />
         </div>
 
         <div className="bg-purple-50/70 border border-purple-200 rounded-2xl p-4 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-purple-800 uppercase tracking-wider block mb-0.5">💳 Card Payments</span>
+            <span className="text-xs font-bold text-purple-800 uppercase tracking-wider block mb-0.5 flex items-center gap-1"><CreditCard className="w-3.5 h-3.5" /> Card Payments</span>
             <div className="text-xl font-black text-purple-950">₹{cardTotal.toLocaleString()}</div>
           </div>
-          <span className="text-2xl">💳</span>
+          <CreditCard className="w-7 h-7 text-purple-300" />
         </div>
       </div>
 
@@ -512,7 +512,7 @@ export default function RevenuePage() {
                   paymentModeFilter === m ? 'bg-emerald-700 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                <span>{m === 'CASH' ? '💵 Cash' : m === 'UPI' ? '📱 UPI' : m === 'CARD' ? '💳 Card' : 'All Modes'}</span>
+                <span className="flex items-center gap-1">{m === 'CASH' ? <><Banknote className="w-3 h-3" /> Cash</> : m === 'UPI' ? <><Smartphone className="w-3 h-3" /> UPI</> : m === 'CARD' ? <><CreditCard className="w-3 h-3" /> Card</> : 'All Modes'}</span>
               </button>
             ))}
           </div>
@@ -552,9 +552,9 @@ export default function RevenuePage() {
                   </td>
 
                   <td className="py-3 px-4">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap">
-                      {tx.paymentMethod === 'UPI' ? '📱 UPI' : tx.paymentMethod === 'CARD' ? '💳 Card' : tx.paymentMethod === 'SPLIT' ? '🔀 Split' : '💵 Cash'}
-                    </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap flex items-center gap-1">
+                        {tx.paymentMethod === 'UPI' ? <><Smartphone className="w-2.5 h-2.5" /> UPI</> : tx.paymentMethod === 'CARD' ? <><CreditCard className="w-2.5 h-2.5" /> Card</> : tx.paymentMethod === 'SPLIT' ? <><ArrowLeftRight className="w-2.5 h-2.5" /> Split</> : <><Banknote className="w-2.5 h-2.5" /> Cash</>}
+                      </span>
                   </td>
 
                   <td className="py-3 px-4 text-slate-600 font-medium">{tx.category}</td>
@@ -688,7 +688,7 @@ export default function RevenuePage() {
                           : 'bg-slate-50 text-slate-700 border border-slate-300 hover:bg-slate-100'
                       }`}
                     >
-                      <span>{mode === 'CASH' ? '💵' : mode === 'UPI' ? '📱' : '💳'}</span>
+                      {mode === 'CASH' ? <Banknote className="w-3.5 h-3.5" /> : mode === 'UPI' ? <Smartphone className="w-3.5 h-3.5" /> : <CreditCard className="w-3.5 h-3.5" />}
                       <span>{mode === 'UPI' ? 'UPI' : mode}</span>
                     </button>
                   ))}
@@ -862,7 +862,7 @@ export default function RevenuePage() {
                           : 'bg-slate-50 text-slate-700 border border-slate-300 hover:bg-slate-100'
                       }`}
                     >
-                      <span className="text-base">{mode === 'CASH' ? '💵' : mode === 'UPI' ? '📱' : mode === 'CARD' ? '💳' : '🔀'}</span>
+                      {mode === 'CASH' ? <Banknote className="w-4 h-4" /> : mode === 'UPI' ? <Smartphone className="w-4 h-4" /> : mode === 'CARD' ? <CreditCard className="w-4 h-4" /> : <ArrowLeftRight className="w-4 h-4" />}
                       <span className="text-[11px]">{mode === 'UPI' ? 'UPI' : mode}</span>
                     </button>
                   ))}

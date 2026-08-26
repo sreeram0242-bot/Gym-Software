@@ -80,10 +80,10 @@ export default function NFCCheckInTerminal() {
             const matched = await findCustomerByFingerprint(currentGymId, data.fingerprintId);
             if (matched) {
               await handleCheckInToggle(matched, currentGymId);
-              setFpStatus('✅ Scan registered! Place finger again for next member.');
+              setFpStatus('Scan registered! Place finger again for next member.');
               setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 3000);
             } else {
-              setFpStatus('⚠️ Fingerprint not registered. Try again or check member profile.');
+              setFpStatus('Fingerprint not registered. Try again or check member profile.');
               setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 3000);
             }
           }
@@ -94,7 +94,7 @@ export default function NFCCheckInTerminal() {
 
       ws.onerror = () => {
         setFpConnected(false);
-        setFpStatus('⚠️ Cannot connect to fingerprint bridge agent. Is it running on this PC?');
+        setFpStatus('Cannot connect to fingerprint bridge agent. Is it running on this PC?');
       };
 
       ws.onclose = () => {
@@ -219,7 +219,7 @@ export default function NFCCheckInTerminal() {
               }`}
             >
               <Radio className="w-4 h-4" />
-              <span>{isScanning ? '● Web NFC Active' : 'Enable Web NFC'}</span>
+              <span>{isScanning ? 'Web NFC Active' : 'Enable Web NFC'}</span>
             </button>
           )}
 

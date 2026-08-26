@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, ShoppingCart, Trash2, Edit2, X, Check, AlertTriangle, TrendingUp, Search, ChevronDown } from 'lucide-react';
+import { Package, Plus, ShoppingCart, Trash2, Edit2, X, Check, AlertTriangle, TrendingUp, Search, Banknote, Smartphone, CreditCard, ArrowLeftRight, Phone } from 'lucide-react';
 import { getProducts, addProduct, updateProduct, deleteProduct, recordProductSale, getProductSales, getCustomers } from '@/lib/actions';
 
 const CATEGORIES = ['Supplement', 'Accessory', 'Drink', 'Snack', 'Apparel', 'Equipment', 'Other'];
@@ -140,7 +140,7 @@ export default function ProductsPage() {
         customerId: selectedCust?.id || null,
         customerName: selectedCust?.name || posCustomerName || null
       });
-      setLastSaleMsg(`✅ Sale of ₹${cartTotal.toLocaleString('en-IN')} recorded! Revenue ledger updated.`);
+      setLastSaleMsg(`Sale of ₹${cartTotal.toLocaleString('en-IN')} recorded! Revenue ledger updated.`);
       setCart([]);
       setPosCustomer(null);
       setPosCustomerName('');
@@ -182,14 +182,14 @@ export default function ProductsPage() {
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="flex border-b border-slate-100">
           {[
-            { key: 'pos', label: '🛒 Point of Sale', count: cart.length > 0 ? cart.length : undefined },
-            { key: 'catalog', label: '📦 Product Catalog', count: products.length },
-            { key: 'sales', label: '📊 Sales History', count: productSales.length },
+            { key: 'pos', icon: <ShoppingCart className="w-4 h-4" />, label: 'Point of Sale', count: cart.length > 0 ? cart.length : undefined },
+            { key: 'catalog', icon: <Package className="w-4 h-4" />, label: 'Product Catalog', count: products.length },
+            { key: 'sales', icon: <TrendingUp className="w-4 h-4" />, label: 'Sales History', count: productSales.length },
           ].map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
               className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold whitespace-nowrap border-b-2 -mb-px transition-colors ${activeTab === tab.key ? 'border-slate-900 text-slate-900 bg-slate-50' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
             >
-              {tab.label}
+              {tab.icon}{tab.label}
               {tab.count !== undefined && <span className="bg-slate-200 text-slate-700 text-xs font-bold px-1.5 py-0.5 rounded-full">{tab.count}</span>}
             </button>
           ))}
@@ -359,7 +359,7 @@ export default function ProductsPage() {
                                 setShowPosCustomerDropdown(false);
                               }} className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 border-b border-slate-50 last:border-0">
                                 <div className="font-bold text-slate-800">{c.name}</div>
-                                <div className="text-[10px] text-slate-500">📞 {c.phone} {c.nfcCardId && `• 💳 ${c.nfcCardId}`}</div>
+                                <div className="text-[10px] text-slate-500 flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> {c.phone} {c.nfcCardId && <><CreditCard className="w-2.5 h-2.5" /> {c.nfcCardId}</>}</div>
                               </button>
                             ))}
                             {customers.filter(c => 
@@ -379,7 +379,10 @@ export default function ProductsPage() {
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">Payment Mode</label>
                         <div className="grid grid-cols-4 gap-1">
                           {(['CASH', 'UPI', 'CARD', 'SPLIT'] as const).map(m => (
-                            <button key={m} onClick={() => setPosPaymentMethod(m)} className={`py-1.5 text-xs font-bold rounded-lg border transition-colors ${posPaymentMethod === m ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400'}`}>{m === 'SPLIT' ? '🔀' : m === 'CASH' ? '💵' : m === 'UPI' ? '📱' : '💳'}{' '}{m === 'SPLIT' ? 'Split' : m}</button>
+                            <button key={m} onClick={() => setPosPaymentMethod(m)} className={`py-1.5 text-xs font-bold rounded-lg border transition-colors flex items-center justify-center gap-1 ${posPaymentMethod === m ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400'}`}>
+                              {m === 'CASH' ? <Banknote className="w-3 h-3" /> : m === 'UPI' ? <Smartphone className="w-3 h-3" /> : m === 'CARD' ? <CreditCard className="w-3 h-3" /> : <ArrowLeftRight className="w-3 h-3" />}
+                              {m === 'SPLIT' ? 'Split' : m}
+                            </button>
                           ))}
                         </div>
                         {posPaymentMethod === 'SPLIT' && (

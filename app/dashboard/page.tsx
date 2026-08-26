@@ -211,7 +211,7 @@ export default function DashboardOverview() {
               <p className="text-xs text-slate-500">Live check-in feed via NFC tag or phone lookup</p>
             </div>
             <Link href="/dashboard/checkin" className="text-xs font-bold text-blue-900 hover:text-blue-950">
-              Launch Scanner →
+              Launch Scanner <ChevronRight className="w-3.5 h-3.5 inline" />
             </Link>
           </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell } from 'lucide-react';
+import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell, Banknote, Smartphone, ArrowLeftRight, Tag, ChevronRight } from 'lucide-react';
 import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, collectPendingBalance, getGyms, getGymSettings } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
@@ -631,7 +631,7 @@ export default function MemberManagementPage() {
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {st === 'due_soon' ? 'Due Soon' : st === 'new' ? 'New Members' : st === 'has_due' ? '⚠️ Pending Due' : st === 'absent' ? `Absent (${absentThresholdDays}+ Days)` : st}
+              {st === 'due_soon' ? 'Due Soon' : st === 'new' ? 'New Members' : st === 'has_due' ? 'Pending Due' : st === 'absent' ? `Absent (${absentThresholdDays}+ Days)` : st}
             </button>
           ))}
           
@@ -679,14 +679,14 @@ export default function MemberManagementPage() {
                     </div>
                     <div>
                       <h3 className="font-bold text-slate-900 text-sm">{cust.name}</h3>
-                      <div className="text-xs text-slate-500 font-mono">📱 {cust.phone}</div>
+                      <div className="text-xs text-slate-500 font-mono flex items-center gap-1"><Phone className="w-3 h-3" /> {cust.phone}</div>
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-1.5">
                     {(cust.pendingBalance || 0) > 0 && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-300 shadow-sm animate-pulse">
-                        ⚠️ ₹{cust.pendingBalance} Due
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-300 shadow-sm animate-pulse flex items-center gap-1">
+                        <AlertTriangle className="w-2.5 h-2.5" /> ₹{cust.pendingBalance} Due
                       </span>
                     )}
                     <span
@@ -770,7 +770,8 @@ export default function MemberManagementPage() {
                       className="text-xs font-black text-amber-900 bg-amber-100 hover:bg-amber-200 px-2.5 py-1.5 rounded-lg flex items-center space-x-1 transition-colors border border-amber-300 shadow-sm"
                       title="Collect remaining balance"
                     >
-                      <span>💰 Collect Due</span>
+                      <Banknote className="w-3.5 h-3.5" />
+                      <span>Collect Due</span>
                     </button>
                   )}
                   {isAbsent(cust.id) && (
@@ -793,7 +794,7 @@ export default function MemberManagementPage() {
                   }}
                   className="text-xs font-bold text-blue-900 hover:text-blue-950 flex items-center"
                 >
-                  View Full Profile →
+                  View Full Profile <ChevronRight className="w-3.5 h-3.5 inline" />
                 </button>
               </div>
             </div>
@@ -975,7 +976,8 @@ export default function MemberManagementPage() {
                               : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
                           }`}
                         >
-                          <span>⏳ Mark as Balance Due</span>
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>Mark as Balance Due</span>
                         </button>
                         <button
                           type="button"
@@ -986,7 +988,8 @@ export default function MemberManagementPage() {
                               : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
                           }`}
                         >
-                          <span>🏷️ Treat as Discount</span>
+                          <Tag className="w-3.5 h-3.5" />
+                          <span>Treat as Discount</span>
                         </button>
                       </div>
 
@@ -1016,13 +1019,13 @@ export default function MemberManagementPage() {
                           key={mode}
                           type="button"
                           onClick={() => setPaymentMethod(mode)}
-                          className={`py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center justify-center ${
+                          className={`py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center justify-center gap-0.5 ${
                             paymentMethod === mode
                               ? 'bg-blue-900 text-white shadow-sm ring-1 ring-blue-900'
                               : 'bg-white text-slate-700 border border-slate-300'
                           }`}
                         >
-                          <span>{mode === 'CASH' ? '💵' : mode === 'UPI' ? '📱' : mode === 'CARD' ? '💳' : '🔀'}</span>
+                          {mode === 'CASH' ? <Banknote className="w-3.5 h-3.5" /> : mode === 'UPI' ? <Smartphone className="w-3.5 h-3.5" /> : mode === 'CARD' ? <CreditCard className="w-3.5 h-3.5" /> : <ArrowLeftRight className="w-3.5 h-3.5" />}
                           <span>{mode === 'UPI' ? 'UPI' : mode}</span>
                         </button>
                       ))}
@@ -1031,7 +1034,7 @@ export default function MemberManagementPage() {
                     {paymentMethod === 'SPLIT' && (
                       <div className="mt-2 p-2 bg-blue-50/70 border border-blue-200 rounded-lg grid grid-cols-2 gap-2 animate-in fade-in duration-150">
                         <div>
-                          <label className="block text-[10px] font-bold text-slate-700 mb-0.5">💵 Cash (₹)</label>
+                          <label className="block text-[10px] font-bold text-slate-700 mb-0.5 flex items-center gap-1"><Banknote className="w-3 h-3" /> Cash (Rs.)</label>
                           <input
                             type="number"
                             min={0}
@@ -1041,7 +1044,7 @@ export default function MemberManagementPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-slate-700 mb-0.5">📱 UPI (₹)</label>
+                          <label className="block text-[10px] font-bold text-slate-700 mb-0.5 flex items-center gap-1"><Smartphone className="w-3 h-3" /> UPI (Rs.)</label>
                           <input
                             type="number"
                             min={0}
@@ -1087,7 +1090,7 @@ export default function MemberManagementPage() {
                 </div>
                 <div>
                   <h3 className="font-black text-slate-900 text-lg">{selectedMember.name}</h3>
-                  <div className="text-xs text-slate-500 font-mono">📱 {selectedMember.phone}</div>
+                  <div className="text-xs text-slate-500 font-mono flex items-center gap-1"><Phone className="w-3 h-3" /> {selectedMember.phone}</div>
                 </div>
               </div>
 
@@ -1132,7 +1135,7 @@ export default function MemberManagementPage() {
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl col-span-2">
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="text-amber-800 font-bold block">⚠️ Pending Dues / Unpaid Balance</span>
+                        <span className="text-amber-800 font-bold block flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Pending Dues / Unpaid Balance</span>
                         <span className="text-[11px] text-amber-700 font-medium">
                           {selectedMember.balanceDueDate ? `Due before: ${selectedMember.balanceDueDate}` : 'No deadline specified'}
                         </span>
@@ -1211,7 +1214,7 @@ export default function MemberManagementPage() {
                             : 'bg-white text-slate-700 border border-slate-300'
                         }`}
                       >
-                        ⏳ Balance Due
+                        <Clock className="w-3.5 h-3.5" /> Balance Due
                       </button>
                       <button
                         type="button"
@@ -1222,7 +1225,7 @@ export default function MemberManagementPage() {
                             : 'bg-white text-slate-700 border border-slate-300'
                         }`}
                       >
-                        🏷️ Discount
+                        <Tag className="w-3.5 h-3.5" /> Discount
                       </button>
                     </div>
 
@@ -1255,7 +1258,7 @@ export default function MemberManagementPage() {
                             : 'bg-white text-slate-700 border border-slate-300'
                         }`}
                       >
-                        <span>{mode === 'CASH' ? '💵' : mode === 'UPI' ? '📱' : mode === 'CARD' ? '💳' : '🔀'}</span>
+                          {mode === 'CASH' ? <Banknote className="w-3.5 h-3.5" /> : mode === 'UPI' ? <Smartphone className="w-3.5 h-3.5" /> : mode === 'CARD' ? <CreditCard className="w-3.5 h-3.5" /> : <ArrowLeftRight className="w-3.5 h-3.5" />}
                         <span className="text-[10px]">{mode === 'UPI' ? 'UPI' : mode}</span>
                       </button>
                     ))}
@@ -1264,7 +1267,7 @@ export default function MemberManagementPage() {
                   {renewPaymentMethod === 'SPLIT' && (
                     <div className="mt-2 p-2 bg-white border border-blue-200 rounded-lg grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-600">💵 Cash (₹)</label>
+                        <label className="block text-[10px] font-bold text-slate-600 flex items-center gap-1"><Banknote className="w-3 h-3" /> Cash (Rs.)</label>
                         <input
                           type="number"
                           value={renewSplitCash}
@@ -1273,7 +1276,7 @@ export default function MemberManagementPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-600">📱 UPI (₹)</label>
+                        <label className="block text-[10px] font-bold text-slate-600 flex items-center gap-1"><Smartphone className="w-3 h-3" /> UPI (Rs.)</label>
                         <input
                           type="number"
                           value={renewSplitUpi}
@@ -1355,8 +1358,8 @@ export default function MemberManagementPage() {
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
             <div className="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
               <div className="flex items-center space-x-2.5">
-                <div className="w-10 h-10 bg-amber-100 text-amber-800 rounded-xl flex items-center justify-center font-bold text-lg">
-                  💰
+                <div className="w-10 h-10 bg-amber-100 text-amber-800 rounded-xl flex items-center justify-center">
+                  <Banknote className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="font-black text-slate-900 text-base">Collect Due Balance</h3>
@@ -1406,7 +1409,8 @@ export default function MemberManagementPage() {
                           : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
                       }`}
                     >
-                      <span>⏳ Keep as Balance</span>
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Keep as Balance</span>
                     </button>
                     <button
                       type="button"
@@ -1417,7 +1421,8 @@ export default function MemberManagementPage() {
                           : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
                       }`}
                     >
-                      <span>🏷️ Treat as Discount</span>
+                      <Tag className="w-3.5 h-3.5" />
+                      <span>Treat as Discount</span>
                     </button>
                   </div>
                 </div>
@@ -1434,13 +1439,13 @@ export default function MemberManagementPage() {
                       key={mode}
                       type="button"
                       onClick={() => setCollectDuePaymentMethod(mode)}
-                      className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center space-y-1 ${
+                      className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 ${
                         collectDuePaymentMethod === mode
                           ? 'bg-blue-900 text-white shadow-sm ring-2 ring-blue-900 ring-offset-1'
                           : 'bg-slate-50 text-slate-700 border border-slate-300 hover:bg-slate-100'
                       }`}
                     >
-                      <span className="text-base">{mode === 'CASH' ? '💵' : mode === 'UPI' ? '📱' : mode === 'CARD' ? '💳' : '🔀'}</span>
+                      {mode === 'CASH' ? <Banknote className="w-4 h-4" /> : mode === 'UPI' ? <Smartphone className="w-4 h-4" /> : mode === 'CARD' ? <CreditCard className="w-4 h-4" /> : <ArrowLeftRight className="w-4 h-4" />}
                       <span className="text-[11px]">{mode === 'UPI' ? 'UPI' : mode}</span>
                     </button>
                   ))}
@@ -1449,7 +1454,7 @@ export default function MemberManagementPage() {
                 {collectDuePaymentMethod === 'SPLIT' && (
                   <div className="mt-3 p-3 bg-blue-50/70 border border-blue-200 rounded-xl grid grid-cols-2 gap-3 animate-in fade-in duration-150">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">💵 Cash (₹)</label>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1"><Banknote className="w-3 h-3" /> Cash (Rs.)</label>
                       <input
                         type="number"
                         min={0}
@@ -1459,7 +1464,7 @@ export default function MemberManagementPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">📱 UPI (₹)</label>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1"><Smartphone className="w-3 h-3" /> UPI (Rs.)</label>
                       <input
                         type="number"
                         min={0}

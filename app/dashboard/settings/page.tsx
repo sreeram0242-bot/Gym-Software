@@ -5,7 +5,7 @@ import {
   Settings, Smartphone, MessageSquare, ShieldCheck, Store, FileText,
   Save, RefreshCw, LogOut, CheckCircle2, AlertTriangle, Fingerprint,
   Radio, Lock, Eye, EyeOff, Package, Wifi, WifiOff, Send, RotateCcw,
-  ChevronRight, Key
+  ChevronRight, Key, Search, Shield, Check
 } from 'lucide-react';
 import { getTemplate, TemplateType, DEFAULT_TEMPLATES } from '@/lib/templates';
 import { getGymSettings, updateGymSettings, getGyms, changeGymPassword } from '@/lib/actions';
@@ -194,10 +194,10 @@ export default function SettingsPage() {
   };
 
   const ATTENDANCE_MODES = [
-    { key: 'MANUAL', label: 'Manual Search Only', icon: '🔍', desc: 'Staff searches by name to check-in. No hardware required.' },
-    { key: 'NFC', label: 'NFC Card Only', icon: '📡', desc: 'Members tap their NFC card at the terminal. (Current behavior)' },
-    { key: 'FINGERPRINT', label: 'Fingerprint Only', icon: '🔏', desc: 'Mantra MFS100 USB fingerprint scanner. Local bridge agent required.' },
-    { key: 'BOTH', label: 'NFC + Fingerprint', icon: '🛡️', desc: 'Both NFC and fingerprint scanner active simultaneously.' },
+    { key: 'MANUAL', label: 'Manual Search Only', icon: <Search className="w-4 h-4" />, desc: 'Staff searches by name to check-in. No hardware required.' },
+    { key: 'NFC', label: 'NFC Card Only', icon: <Radio className="w-4 h-4" />, desc: 'Members tap their NFC card at the terminal. (Current behavior)' },
+    { key: 'FINGERPRINT', label: 'Fingerprint Only', icon: <Fingerprint className="w-4 h-4" />, desc: 'Mantra MFS100 USB fingerprint scanner. Local bridge agent required.' },
+    { key: 'BOTH', label: 'NFC + Fingerprint', icon: <Shield className="w-4 h-4" />, desc: 'Both NFC and fingerprint scanner active simultaneously.' },
   ];
 
   return (
@@ -423,7 +423,7 @@ export default function SettingsPage() {
                     <button key={mode.key} onClick={() => handleAttendanceModeChange(mode.key as any)}
                       className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${attendanceMode === mode.key ? 'border-slate-900 bg-slate-50 shadow-sm' : 'border-slate-200 hover:border-slate-400'}`}
                     >
-                      <span className="text-2xl leading-none mt-0.5">{mode.icon}</span>
+                      {mode.icon}
                       <div>
                         <p className={`text-sm font-bold ${attendanceMode === mode.key ? 'text-slate-900' : 'text-slate-700'}`}>{mode.label}</p>
                         <p className="text-xs text-slate-500 mt-0.5">{mode.desc}</p>
@@ -514,11 +514,11 @@ export default function SettingsPage() {
                     <CheckCircle2 className="w-4 h-4" /> Store is enabled
                   </div>
                   <ul className="text-sm text-emerald-700 space-y-1">
-                    <li>✅ Product catalog with categories (Supplements, Accessories, Drinks, etc.)</li>
-                    <li>✅ Point-of-Sale cart with cash / UPI / card / split payments</li>
-                    <li>✅ Live stock tracking & low-stock alerts</li>
-                    <li>✅ Every sale auto-creates an Income entry in Revenue Hub</li>
-                    <li>✅ Sales history tab with date filters</li>
+                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Product catalog with categories (Supplements, Accessories, Drinks, etc.)</li>
+                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Point-of-Sale cart with cash / UPI / card / split payments</li>
+                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Live stock tracking &amp; low-stock alerts</li>
+                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Every sale auto-creates an Income entry in Revenue Hub</li>
+                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Sales history tab with date filters</li>
                   </ul>
                   <p className="text-xs text-emerald-600 mt-3 font-medium">Navigate to "Store / POS" in the sidebar to add products and start selling.</p>
                 </div>
