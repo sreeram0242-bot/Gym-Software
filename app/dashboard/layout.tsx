@@ -38,9 +38,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setGyms(loadedGyms);
 
       const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
-      
-      const activeAnn = await getActiveAnnouncement();
-      setGlobalAnnouncement(activeAnn);
 
       // Find gym. Master admins can view suspended gyms.
       const matched = loadedGyms.find((g: any) => g.id === savedId && (g.status === 'active' || isMasterAdmin));
