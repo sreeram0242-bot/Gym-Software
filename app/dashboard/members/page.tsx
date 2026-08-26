@@ -799,8 +799,8 @@ export default function MemberManagementPage() {
       {/* MODAL: ADD NEW MEMBER */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in duration-150">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-xl border border-slate-200 animate-in fade-in zoom-in duration-150 max-h-[95vh] overflow-y-auto flex flex-col">
+            <div className="flex justify-between items-center pb-2.5 border-b border-slate-200 mb-3 shrink-0">
               <h3 className="font-bold text-slate-900 text-lg flex items-center space-x-2">
                 {isEditingMember ? <Edit className="w-5 h-5 text-blue-900" /> : <Plus className="w-5 h-5 text-blue-900" />}
                 <span>{isEditingMember ? 'Edit Member Details' : 'Add New Member'}</span>
@@ -814,7 +814,7 @@ export default function MemberManagementPage() {
               </button>
             </div>
 
-            <form onSubmit={handleAddMember} className="space-y-4">
+            <form onSubmit={handleAddMember} className="space-y-3">
               {errorMsg && (
                 <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-lg flex items-center space-x-2">
                   <AlertCircle className="w-4 h-4" />
@@ -837,11 +837,11 @@ export default function MemberManagementPage() {
                   placeholder="e.g. Vikram Sharma"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-800 outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-800 outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Phone Number *
@@ -852,7 +852,7 @@ export default function MemberManagementPage() {
                     placeholder="e.g. 9876543210"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-800 outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-800 outline-none"
                   />
                 </div>
 
@@ -870,12 +870,12 @@ export default function MemberManagementPage() {
                         e.preventDefault();
                       }
                     }}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Membership Plan
@@ -891,7 +891,7 @@ export default function MemberManagementPage() {
                         if (!isEditingMember) setPaidAmount(selectedPlan.price);
                       }
                     }}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold text-slate-800 outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold text-slate-800 outline-none"
                   >
                     {plans.length === 0 ? (
                       <option disabled value="">No plans available</option>
@@ -918,14 +918,14 @@ export default function MemberManagementPage() {
                       setFeeAmount(val);
                       if (!isEditingMember && Number(paidAmount) > val) setPaidAmount(val);
                     }}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold text-slate-900 outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold text-slate-900 outline-none"
                   />
                 </div>
               </div>
 
               {!isEditingMember && (
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                         Amount Paid Today (₹)
@@ -936,7 +936,7 @@ export default function MemberManagementPage() {
                         max={feeAmount}
                         value={paidAmount}
                         onChange={(e) => setPaidAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-black text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-600"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm font-black text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-600"
                       />
                     </div>
 
@@ -948,13 +948,13 @@ export default function MemberManagementPage() {
                         type="date"
                         value={lastPaymentDate}
                         onChange={(e) => setLastPaymentDate(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-medium outline-none"
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium outline-none"
                       />
                     </div>
                   </div>
 
                   {Number(paidAmount) < Number(feeAmount) && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2.5 animate-in fade-in duration-200">
+                    <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg space-y-2 animate-in fade-in duration-200">
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-bold text-amber-900">Remaining Unpaid:</span>
                         <span className="font-mono font-black text-sm text-amber-700">₹{Number(feeAmount) - Number(paidAmount)}</span>
@@ -989,63 +989,63 @@ export default function MemberManagementPage() {
                         <div className="pt-1">
                           <label className="block text-[11px] font-bold text-amber-950 mb-1">
                             Balance Due Date (Optional)
+                        <div className="pt-0.5">
+                          <label className="block text-[10px] font-bold text-amber-950 mb-0.5">
+                            Balance Due Date
                           </label>
                           <input
                             type="date"
                             value={balanceDueDate}
                             onChange={(e) => setBalanceDueDate(e.target.value)}
-                            className="w-full px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-medium text-slate-800 outline-none"
+                            className="w-full px-2 py-1 bg-white border border-amber-300 rounded-lg text-xs font-medium outline-none focus:border-amber-500"
                           />
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Payment Method Selector Buttons */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">
                       Payment Mode
                     </label>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-4 gap-1.5">
                       {(['CASH', 'UPI', 'CARD', 'SPLIT'] as const).map((mode) => (
                         <button
                           key={mode}
                           type="button"
                           onClick={() => setPaymentMethod(mode)}
-                          className={`py-2 px-2 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center space-y-1 ${
+                          className={`py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center justify-center ${
                             paymentMethod === mode
-                              ? 'bg-blue-900 text-white shadow-sm ring-2 ring-blue-900 ring-offset-1'
-                              : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
+                              ? 'bg-blue-900 text-white shadow-sm ring-1 ring-blue-900'
+                              : 'bg-white text-slate-700 border border-slate-300'
                           }`}
                         >
-                          <span className="text-sm">
-                            {mode === 'CASH' ? '💵' : mode === 'UPI' ? '📱' : mode === 'CARD' ? '💳' : '🔀'}
-                          </span>
-                          <span>{mode === 'UPI' ? 'UPI / GPay' : mode}</span>
+                          <span>{mode === 'CASH' ? '💵' : mode === 'UPI' ? '📱' : mode === 'CARD' ? '💳' : '🔀'}</span>
+                          <span>{mode === 'UPI' ? 'UPI' : mode}</span>
                         </button>
                       ))}
                     </div>
 
                     {paymentMethod === 'SPLIT' && (
-                      <div className="mt-3 p-3 bg-blue-50/70 border border-blue-200 rounded-lg grid grid-cols-2 gap-3 animate-in fade-in duration-150">
+                      <div className="mt-2 p-2 bg-blue-50/70 border border-blue-200 rounded-lg grid grid-cols-2 gap-2 animate-in fade-in duration-150">
                         <div>
-                          <label className="block text-[11px] font-bold text-slate-700 mb-1">💵 Cash Amount (₹)</label>
+                          <label className="block text-[10px] font-bold text-slate-700 mb-0.5">💵 Cash (₹)</label>
                           <input
                             type="number"
                             min={0}
                             value={splitCash}
                             onChange={(e) => setSplitCash(e.target.value === '' ? '' : Number(e.target.value))}
-                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
+                            className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-bold text-slate-700 mb-1">📱 UPI Amount (₹)</label>
+                          <label className="block text-[10px] font-bold text-slate-700 mb-0.5">📱 UPI (₹)</label>
                           <input
                             type="number"
                             min={0}
                             value={splitUpi}
                             onChange={(e) => setSplitUpi(e.target.value === '' ? '' : Number(e.target.value))}
-                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
+                            className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
                           />
                         </div>
                       </div>
@@ -1054,17 +1054,17 @@ export default function MemberManagementPage() {
                 </div>
               )}
 
-              <div className="pt-4 flex justify-end space-x-3">
+              <div className="pt-3 flex justify-end space-x-3 border-t border-slate-100 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-blue-900 hover:bg-blue-950 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                  className="px-5 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
                 >
                   {isEditingMember ? 'Save Changes' : 'Save Member & Collect Fee'}
                 </button>
