@@ -5,8 +5,9 @@ import {
   Settings, Smartphone, MessageSquare, ShieldCheck, Store, FileText,
   Save, RefreshCw, LogOut, CheckCircle2, AlertTriangle, Fingerprint,
   Radio, Lock, Eye, EyeOff, Package, Wifi, WifiOff, Send, RotateCcw,
-  ChevronRight, Key, Search, Shield, Check
+  ChevronRight, Key, Search, Shield, Check, QrCode, Printer
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { getTemplate, TemplateType, DEFAULT_TEMPLATES } from '@/lib/templates';
 import { getGymSettings, updateGymSettings, getGyms, changeGymPassword } from '@/lib/actions';
 
@@ -96,6 +97,45 @@ export default function SettingsPage() {
     setAttendanceMode((data.attendanceMode as any) ?? 'NFC');
     setFpPort(data.fingerprintAgentPort ?? 8765);
     setProductsEnabled(data.productsEnabled ?? false);
+  };
+
+  const handlePrintQRCode = () => {
+    const printWindow = window.open('', '', 'height=600,width=800');
+    if (!printWindow) return;
+    
+    const qrSvg = document.getElementById('wa-invite-qr')?.outerHTML;
+    const phone = settings?.ownerPhone || 'your gym number';
+    const gymName = settings?.gymName || 'Our Gym';
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print WhatsApp Invite QR</title>
+          <style>
+            body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #fff; text-align: center; }
+            h1 { font-size: 32px; font-weight: 900; color: #0f172a; margin-bottom: 10px; }
+            p { font-size: 18px; color: #475569; margin-bottom: 30px; }
+            .qr-container { padding: 20px; background: #fff; border: 4px solid #1e40af; border-radius: 20px; }
+            svg { width: 300px; height: 300px; }
+            .footer { margin-top: 20px; font-size: 16px; color: #0f172a; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <h1>Welcome to ${gymName}</h1>
+          <p>Scan this code to instantly activate your live check-in & automated services!</p>
+          <div class="qr-container">
+            ${qrSvg || ''}
+          </div>
+          <div class="footer">Or message "Start" to ${phone} on WhatsApp</div>
+          <script>
+            window.onload = () => {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   useEffect(() => {
@@ -363,6 +403,45 @@ export default function SettingsPage() {
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* Printable Invite QR Code */}
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-1">
+                      <QrCode className="w-5 h-5 text-blue-700" /> WhatsApp Invite QR Code
+                    </h3>
+                    <p className="text-xs text-slate-500 max-w-sm">
+                      Print this QR code and place it at your front desk. Customers can simply scan it to automatically message "Start" and activate your bot, without needing to save your number.
+                    </p>
+                  </div>
+                  
+                  {settings?.ownerPhone ? (
+                    <div className="flex flex-col items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                      <div className="bg-white p-2 rounded-lg shadow-sm border border-slate-200">
+                        <QRCodeSVG 
+                          id="wa-invite-qr"
+                          value={`https://wa.me/91${settings.ownerPhone}?text=Start`}
+                          size={120}
+                          level="H"
+                          includeMargin={false}
+                          fgColor="#0f172a"
+                        />
+                      </div>
+                      <button 
+                        onClick={handlePrintQRCode}
+                        className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold rounded-lg flex items-center gap-2 transition-colors w-full justify-center"
+                      >
+                        <Printer className="w-3.5 h-3.5" /> Print Poster
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200 font-semibold max-w-[200px] text-center">
+                      Please enter your "Owner Phone" in the General tab first to generate your QR Code.
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Automation Toggles */}
