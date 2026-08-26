@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell, Banknote, Smartphone, ArrowLeftRight, Tag, ChevronRight } from 'lucide-react';
+import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell, Banknote, Smartphone, ArrowLeftRight, Tag, ChevronRight, Fingerprint } from 'lucide-react';
 import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, collectPendingBalance, getGyms, getGymSettings } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
@@ -28,6 +28,8 @@ export default function MemberManagementPage() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [nfcCardId, setNfcCardId] = useState('');
+  const [fingerprintId, setFingerprintId] = useState('');
+  const [fpScanning, setFpScanning] = useState(false);
   const [planType, setPlanType] = useState<string>('Monthly');
   const [feeAmount, setFeeAmount] = useState<number | string>(2500);
   const [paidAmount, setPaidAmount] = useState<number | string>(2500);
@@ -74,7 +76,8 @@ export default function MemberManagementPage() {
   const handleEditInit = (cust: any) => {
     setName(cust.name);
     setPhone(cust.phone);
-    setNfcCardId(cust.nfcCardId);
+    setNfcCardId(cust.nfcCardId || '');
+    setFingerprintId(cust.fingerprintId || '');
     setPlanType(cust.planType);
     setFeeAmount(cust.feeAmount);
     setPaidAmount(cust.feeAmount);
@@ -158,6 +161,7 @@ export default function MemberManagementPage() {
       setName('');
       setPhone('');
       setNfcCardId(newNfc || '');
+      setFingerprintId('');
       setFeeAmount(2500);
       setInfoMsg('');
       setErrorMsg('');
@@ -240,6 +244,7 @@ export default function MemberManagementPage() {
         name,
         phone,
         nfcCardId: newNfc,
+        fingerprintId: fingerprintId || null,
         planType,
         feeAmount: Number(feeAmount),
         lastPaymentDate,
@@ -260,6 +265,7 @@ export default function MemberManagementPage() {
         name,
         phone,
         nfcCardId: newNfc,
+        fingerprintId: fingerprintId || null,
         planType,
         feeAmount: totalPlanPrice,
         paidAmount: actualPaid,
@@ -444,6 +450,55 @@ export default function MemberManagementPage() {
     return parseFloat(avg.toFixed(1));
   };
 
+  const handleFingerprintScan = () => {
+    setFpScanning(true);
+    setErrorMsg('');
+    const port = settings?.fingerprintAgentPort || 8765;
+    try {
+      const ws = new WebSocket(`ws://localhost:${port}`);
+      
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ action: 'scan' }));
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'scan_result') {
+            if (data.success && data.fingerprintId) {
+              setFingerprintId(data.fingerprintId);
+              setInfoMsg('Fingerprint registered successfully!');
+            } else {
+              setErrorMsg(data.error || 'Failed to scan fingerprint.');
+            }
+            ws.close();
+            setFpScanning(false);
+          }
+        } catch (e) {
+          console.error("Failed to parse FP message", e);
+        }
+      };
+      
+      ws.onerror = () => {
+        setErrorMsg('Scanner agent not running. Run resources/fingerprint_agent.py');
+        setFpScanning(false);
+        ws.close();
+      };
+      
+      setTimeout(() => {
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+          ws.close();
+          setFpScanning(false);
+          setErrorMsg('Fingerprint scan timed out (15s).');
+        }
+      }, 15000);
+      
+    } catch (e) {
+      setErrorMsg('Could not connect to local scanner agent.');
+      setFpScanning(false);
+    }
+  };
+
   const getLastAttendanceDate = (custId: string) => {
     const atts = attendance.filter(a => a.customerId === custId);
     if (atts.length === 0) return null;
@@ -570,6 +625,7 @@ export default function MemberManagementPage() {
             setName('');
             setPhone('');
             setNfcCardId('');
+            setFingerprintId('');
             setFeeAmount(2500);
             setInfoMsg('');
             setErrorMsg('');
@@ -847,7 +903,7 @@ export default function MemberManagementPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Phone Number *
@@ -868,7 +924,7 @@ export default function MemberManagementPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. NFC-88219 (or auto-gen)"
+                    placeholder="Auto-gen or tap"
                     value={nfcCardId}
                     onChange={(e) => setNfcCardId(e.target.value)}
                     onKeyDown={(e) => {
@@ -878,6 +934,31 @@ export default function MemberManagementPage() {
                     }}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+                    <Fingerprint className="w-3 h-3 text-blue-900" /> Biometric Data
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      placeholder={fingerprintId ? "Registered" : "No Fingerprint"}
+                      value={fingerprintId ? "Registered" : ""}
+                      className="w-full px-2 py-2 bg-slate-100 border border-slate-300 rounded-lg text-sm font-bold text-blue-900 outline-none cursor-not-allowed"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleFingerprintScan}
+                      disabled={fpScanning}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold shrink-0 transition-colors ${
+                        fpScanning ? 'bg-amber-100 text-amber-700 animate-pulse' : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
+                      }`}
+                    >
+                      {fpScanning ? 'Scanning...' : 'Scan'}
+                    </button>
+                  </div>
                 </div>
               </div>
 
