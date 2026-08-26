@@ -366,7 +366,7 @@ export default function RevenuePage() {
     });
 
     const gyms = await getGyms();
-    const gym = gyms.find(g => g.id === gymId);
+    const gym = gyms.find((g: any) => g.id === gymId);
     const gymName = gym?.name || 'Gym Ledger Report';
     
     const doc = new jsPDF('landscape');
