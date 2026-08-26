@@ -1081,6 +1081,8 @@ export const CustomerScalarFieldEnum = {
   feeAmount: 'feeAmount',
   lastPaymentDate: 'lastPaymentDate',
   nextDueDate: 'nextDueDate',
+  pendingBalance: 'pendingBalance',
+  balanceDueDate: 'balanceDueDate',
   status: 'status',
   joinedDate: 'joinedDate'
 } as const
@@ -1111,6 +1113,10 @@ export const TransactionScalarFieldEnum = {
   category: 'category',
   description: 'description',
   date: 'date',
+  paymentMethod: 'paymentMethod',
+  splitDetails: 'splitDetails',
+  paidAmount: 'paidAmount',
+  discountAmount: 'discountAmount',
   customerId: 'customerId',
   customerName: 'customerName'
 } as const

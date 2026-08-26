@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell } from 'lucide-react';
-import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, getGyms, getGymSettings } from '@/lib/actions';
+import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, collectPendingBalance, getGyms, getGymSettings } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 
@@ -16,7 +16,7 @@ export default function MemberManagementPage() {
   const [settings, setSettings] = useState<any>(null);
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'active' | 'due_soon' | 'overdue' | 'all' | 'new' | 'absent'>('all');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'due_soon' | 'overdue' | 'all' | 'new' | 'absent' | 'has_due'>('all');
   const [timeFilter, setTimeFilter] = useState<'all_time' | 'today' | 'this_week' | 'this_month'>('all_time');
   const [planFilter, setPlanFilter] = useState<string>('all');
   
@@ -30,6 +30,12 @@ export default function MemberManagementPage() {
   const [nfcCardId, setNfcCardId] = useState('');
   const [planType, setPlanType] = useState<string>('Monthly');
   const [feeAmount, setFeeAmount] = useState(2500);
+  const [paidAmount, setPaidAmount] = useState<number>(2500);
+  const [remainingType, setRemainingType] = useState<'BALANCE' | 'DISCOUNT'>('BALANCE');
+  const [balanceDueDate, setBalanceDueDate] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
+  const [splitCash, setSplitCash] = useState<number>(0);
+  const [splitUpi, setSplitUpi] = useState<number>(0);
   const [lastPaymentDate, setLastPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
@@ -38,8 +44,22 @@ export default function MemberManagementPage() {
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
   const [renewMonths, setRenewMonths] = useState(1);
+  const [renewPaidAmount, setRenewPaidAmount] = useState<number>(2500);
+  const [renewRemainingType, setRenewRemainingType] = useState<'BALANCE' | 'DISCOUNT'>('BALANCE');
+  const [renewBalanceDueDate, setRenewBalanceDueDate] = useState<string>('');
+  const [renewPaymentMethod, setRenewPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
+  const [renewSplitCash, setRenewSplitCash] = useState<number>(0);
+  const [renewSplitUpi, setRenewSplitUpi] = useState<number>(0);
   const [isEditingMember, setIsEditingMember] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+
+  // Collect Due Modal State
+  const [showCollectDueModal, setShowCollectDueModal] = useState(false);
+  const [collectDueMember, setCollectDueMember] = useState<any | null>(null);
+  const [collectDueAmount, setCollectDueAmount] = useState<number>(0);
+  const [collectDuePaymentMethod, setCollectDuePaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
+  const [collectDueSplitCash, setCollectDueSplitCash] = useState<number>(0);
+  const [collectDueSplitUpi, setCollectDueSplitUpi] = useState<number>(0);
 
   // Custom UI Overlays
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -56,6 +76,7 @@ export default function MemberManagementPage() {
     setNfcCardId(cust.nfcCardId);
     setPlanType(cust.planType);
     setFeeAmount(cust.feeAmount);
+    setPaidAmount(cust.feeAmount);
     setLastPaymentDate(cust.lastPaymentDate);
     setIsEditingMember(true);
     setEditingMemberId(cust.id);
@@ -226,13 +247,26 @@ export default function MemberManagementPage() {
       setIsEditingMember(false);
       setEditingMemberId(null);
     } else {
+      const totalPlanPrice = Number(feeAmount);
+      const actualPaid = Number(paidAmount);
+      const diff = Math.max(0, totalPlanPrice - actualPaid);
+      const finalPendingBalance = diff > 0 && remainingType === 'BALANCE' ? diff : 0;
+      const discountAmount = diff > 0 && remainingType === 'DISCOUNT' ? diff : 0;
+      const splitData = paymentMethod === 'SPLIT' ? { cash: Number(splitCash), upi: Number(splitUpi) } : undefined;
+
       await addCustomer({
         gymId,
         name,
         phone,
         nfcCardId: newNfc,
         planType,
-        feeAmount: Number(feeAmount),
+        feeAmount: totalPlanPrice,
+        paidAmount: actualPaid,
+        pendingBalance: finalPendingBalance,
+        balanceDueDate: finalPendingBalance > 0 ? balanceDueDate : null,
+        discountAmount,
+        paymentMethod,
+        splitDetails: splitData,
         lastPaymentDate,
         nextDueDate
       });
@@ -242,6 +276,10 @@ export default function MemberManagementPage() {
         const now = new Date();
         const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const dateString = now.toLocaleDateString();
+
+        const pendingText = finalPendingBalance > 0 
+          ? `\n⏳ *Pending Balance:* ₹${finalPendingBalance}${balanceDueDate ? ` (Due by ${balanceDueDate})` : ''}` 
+          : '';
 
         fetch('/api/whatsapp/send', {
           method: 'POST',
@@ -254,9 +292,9 @@ export default function MemberManagementPage() {
               gymName,
               phone,
               plan: planType,
-              amount: feeAmount,
+              amount: actualPaid,
               dueDate: nextDueDate
-            }) + `\n\n_Receipt Generated: ${dateString} ${timeString}_`
+            }) + `${pendingText}\n\n_Receipt Generated: ${dateString} ${timeString}_`
           })
         }).then(res => res.json()).then(data => {
           if (data.success && typeof window !== 'undefined') {
@@ -281,16 +319,39 @@ export default function MemberManagementPage() {
   };
 
   const handleRenewPayment = async (cust: any) => {
-    const updated = await renewMemberPayment(cust.id, renewMonths, cust.feeAmount * renewMonths);
+    const totalPlanPrice = cust.feeAmount * renewMonths;
+    const actualPaid = Number(renewPaidAmount);
+    const diff = Math.max(0, totalPlanPrice - actualPaid);
+    const finalPendingBalance = diff > 0 && renewRemainingType === 'BALANCE' ? diff : 0;
+    const discountAmount = diff > 0 && renewRemainingType === 'DISCOUNT' ? diff : 0;
+    const splitData = renewPaymentMethod === 'SPLIT' ? { cash: Number(renewSplitCash), upi: Number(renewSplitUpi) } : undefined;
+
+    const updated = await renewMemberPayment(
+      cust.id, 
+      renewMonths, 
+      totalPlanPrice, 
+      actualPaid, 
+      renewPaymentMethod, 
+      splitData, 
+      finalPendingBalance, 
+      finalPendingBalance > 0 ? renewBalanceDueDate : null, 
+      discountAmount
+    );
+
     if (updated) {
       setSelectedMember(updated);
       loadData();
+      showToast(`Membership successfully renewed for ${updated.name}!`, 'success');
 
       const autoMessagesEnabled = settings?.waAutoMessages ?? true;
       if (autoMessagesEnabled) {
         const now = new Date();
         const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const dateString = now.toLocaleDateString();
+
+        const pendingText = finalPendingBalance > 0 
+          ? `\n⏳ *Pending Balance:* ₹${finalPendingBalance}${renewBalanceDueDate ? ` (Due by ${renewBalanceDueDate})` : ''}` 
+          : '';
 
         fetch('/api/whatsapp/send', {
           method: 'POST',
@@ -303,9 +364,9 @@ export default function MemberManagementPage() {
               gymName,
               phone: updated.phone,
               plan: updated.planType,
-              amount: cust.feeAmount * renewMonths,
+              amount: actualPaid,
               dueDate: updated.nextDueDate
-            }) + `\n\n_Date: ${dateString} ${timeString}_`
+            }) + `${pendingText}\n\n_Date: ${dateString} ${timeString}_`
           })
         }).then(res => res.json()).then(data => {
           if (data.success && typeof window !== 'undefined') {
@@ -319,6 +380,33 @@ export default function MemberManagementPage() {
           }
         });
       }
+    }
+  };
+
+  const handleCollectDueSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!collectDueMember || collectDueAmount <= 0) return;
+
+    try {
+      const splitData = collectDuePaymentMethod === 'SPLIT' 
+        ? { cash: Number(collectDueSplitCash), upi: Number(collectDueSplitUpi) } 
+        : undefined;
+
+      const updated = await collectPendingBalance(
+        collectDueMember.id,
+        Number(collectDueAmount),
+        collectDuePaymentMethod,
+        splitData
+      );
+
+      setShowCollectDueModal(false);
+      if (selectedMember && selectedMember.id === collectDueMember.id) {
+        setSelectedMember(updated);
+      }
+      showToast(`Collected ₹${collectDueAmount} from ${collectDueMember.name}! Remaining balance: ₹${updated.pendingBalance || 0}`, 'success');
+      loadData();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to record balance payment', 'error');
     }
   };
 
@@ -403,10 +491,12 @@ export default function MemberManagementPage() {
     );
 
     let matchesStatus = true;
-    if (statusFilter !== 'all' && statusFilter !== 'new' && statusFilter !== 'absent') {
+    if (statusFilter !== 'all' && statusFilter !== 'new' && statusFilter !== 'absent' && statusFilter !== 'has_due') {
       matchesStatus = c.status === statusFilter;
     } else if (statusFilter === 'absent') {
       matchesStatus = isAbsent(c.id);
+    } else if (statusFilter === 'has_due') {
+      matchesStatus = (c.pendingBalance || 0) > 0;
     }
 
     let matchesTime = true;
@@ -505,7 +595,7 @@ export default function MemberManagementPage() {
         </div>
 
         <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-          {(['all', 'new', 'active', 'due_soon', 'overdue', ...(absentTrackingEnabled ? ['absent'] : [])] as Array<'active' | 'due_soon' | 'overdue' | 'all' | 'new' | 'absent'>).map((st) => (
+          {(['all', 'new', 'active', 'due_soon', 'overdue', 'has_due', ...(absentTrackingEnabled ? ['absent'] : [])] as Array<'active' | 'due_soon' | 'overdue' | 'all' | 'new' | 'absent' | 'has_due'>).map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
@@ -515,7 +605,7 @@ export default function MemberManagementPage() {
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {st === 'due_soon' ? 'Due Soon' : st === 'new' ? 'New Members' : st === 'absent' ? `Absent (${absentThresholdDays}+ Days)` : st}
+              {st === 'due_soon' ? 'Due Soon' : st === 'new' ? 'New Members' : st === 'has_due' ? '⚠️ Pending Due' : st === 'absent' ? `Absent (${absentThresholdDays}+ Days)` : st}
             </button>
           ))}
           
@@ -567,19 +657,26 @@ export default function MemberManagementPage() {
                     </div>
                   </div>
 
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      isAbsent(cust.id) 
-                        ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                        : cust.status === 'active'
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : cust.status === 'due_soon'
-                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                        : 'bg-rose-50 text-rose-700 border border-rose-200'
-                    }`}
-                  >
-                    {isAbsent(cust.id) ? 'Absent' : cust.status === 'active' ? 'Active' : cust.status === 'due_soon' ? 'Due Soon' : 'Overdue'}
-                  </span>
+                  <div className="flex items-center space-x-1.5">
+                    {(cust.pendingBalance || 0) > 0 && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-300 shadow-sm animate-pulse">
+                        ⚠️ ₹{cust.pendingBalance} Due
+                      </span>
+                    )}
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        isAbsent(cust.id) 
+                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                          : cust.status === 'active'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : cust.status === 'due_soon'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : 'bg-rose-50 text-rose-700 border border-rose-200'
+                      }`}
+                    >
+                      {isAbsent(cust.id) ? 'Absent' : cust.status === 'active' ? 'Active' : cust.status === 'due_soon' ? 'Due Soon' : 'Overdue'}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="space-y-2 text-xs text-slate-600">
@@ -597,6 +694,13 @@ export default function MemberManagementPage() {
                     <span className="text-slate-400 font-medium">Next Due Date:</span>
                     <span className="font-bold text-blue-950">{cust.nextDueDate}</span>
                   </div>
+
+                  {(cust.pendingBalance || 0) > 0 && (
+                    <div className="flex justify-between items-center bg-amber-50/70 p-2 rounded-lg border border-amber-200 text-amber-900">
+                      <span className="font-bold text-[11px]">Pending Balance:</span>
+                      <span className="font-mono font-black text-amber-700">₹{cust.pendingBalance} {cust.balanceDueDate ? `(by ${cust.balanceDueDate})` : ''}</span>
+                    </div>
+                  )}
 
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-medium">Monthly Avg Workout:</span>
@@ -626,21 +730,36 @@ export default function MemberManagementPage() {
                 </div>
               )}
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
-                {isAbsent(cust.id) ? (
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSendAbsenteeMsg(cust);
-                    }}
-                    className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition-colors border border-emerald-200 shadow-sm"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    <span>Send "We miss you!"</span>
-                  </button>
-                ) : (
-                  <div />
-                )}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
+                <div className="flex items-center space-x-1.5">
+                  {(cust.pendingBalance || 0) > 0 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCollectDueMember(cust);
+                        setCollectDueAmount(cust.pendingBalance);
+                        setCollectDuePaymentMethod('CASH');
+                        setShowCollectDueModal(true);
+                      }}
+                      className="text-xs font-black text-amber-900 bg-amber-100 hover:bg-amber-200 px-2.5 py-1.5 rounded-lg flex items-center space-x-1 transition-colors border border-amber-300 shadow-sm"
+                      title="Collect remaining balance"
+                    >
+                      <span>💰 Collect Due</span>
+                    </button>
+                  )}
+                  {isAbsent(cust.id) && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSendAbsenteeMsg(cust);
+                      }}
+                      className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg flex items-center space-x-1.5 transition-colors border border-emerald-200 shadow-sm"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>"Miss you!"</span>
+                    </button>
+                  )}
+                </div>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -748,6 +867,7 @@ export default function MemberManagementPage() {
                       const selectedPlan = plans.find(plan => plan.name === p);
                       if (selectedPlan) {
                         setFeeAmount(selectedPlan.price);
+                        if (!isEditingMember) setPaidAmount(selectedPlan.price);
                       }
                     }}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold text-slate-800 outline-none"
@@ -757,7 +877,7 @@ export default function MemberManagementPage() {
                     ) : (
                       plans.map(p => (
                         <option key={p.id} value={p.name}>
-                          {p.name} ({p.durationMonths} {p.durationMonths === 1 ? 'Month' : 'Months'})
+                          {p.name} ({p.durationMonths} {p.durationMonths === 1 ? 'Month' : 'Months'}) - ₹{p.price}
                         </option>
                       ))
                     )}
@@ -766,29 +886,152 @@ export default function MemberManagementPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Fee Amount (₹)
+                    Plan Price / Total Fee (₹)
                   </label>
                   <input
                     type="number"
                     required
                     value={feeAmount}
-                    onChange={(e) => setFeeAmount(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setFeeAmount(val);
+                      if (!isEditingMember && paidAmount > val) setPaidAmount(val);
+                    }}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold text-slate-900 outline-none"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  First Payment Date
-                </label>
-                <input
-                  type="date"
-                  value={lastPaymentDate}
-                  onChange={(e) => setLastPaymentDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium outline-none"
-                />
-              </div>
+              {!isEditingMember && (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Amount Paid Today (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={feeAmount}
+                        value={paidAmount}
+                        onChange={(e) => setPaidAmount(Number(e.target.value))}
+                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-black text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-600"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        First Payment Date
+                      </label>
+                      <input
+                        type="date"
+                        value={lastPaymentDate}
+                        onChange={(e) => setLastPaymentDate(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-medium outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {paidAmount < feeAmount && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2.5 animate-in fade-in duration-200">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-amber-900">Remaining Unpaid:</span>
+                        <span className="font-mono font-black text-sm text-amber-700">₹{feeAmount - paidAmount}</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setRemainingType('BALANCE')}
+                          className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
+                            remainingType === 'BALANCE'
+                              ? 'bg-amber-600 text-white shadow-sm'
+                              : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
+                          }`}
+                        >
+                          <span>⏳ Mark as Balance Due</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRemainingType('DISCOUNT')}
+                          className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
+                            remainingType === 'DISCOUNT'
+                              ? 'bg-purple-600 text-white shadow-sm'
+                              : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
+                          }`}
+                        >
+                          <span>🏷️ Treat as Discount</span>
+                        </button>
+                      </div>
+
+                      {remainingType === 'BALANCE' && (
+                        <div className="pt-1">
+                          <label className="block text-[11px] font-bold text-amber-950 mb-1">
+                            Balance Due Date (Optional)
+                          </label>
+                          <input
+                            type="date"
+                            value={balanceDueDate}
+                            onChange={(e) => setBalanceDueDate(e.target.value)}
+                            className="w-full px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-medium text-slate-800 outline-none"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Payment Method Selector Buttons */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                      Payment Mode
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {(['CASH', 'UPI', 'CARD', 'SPLIT'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setPaymentMethod(mode)}
+                          className={`py-2 px-2 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center space-y-1 ${
+                            paymentMethod === mode
+                              ? 'bg-blue-900 text-white shadow-sm ring-2 ring-blue-900 ring-offset-1'
+                              : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
+                          }`}
+                        >
+                          <span className="text-sm">
+                            {mode === 'CASH' ? '💵' : mode === 'UPI' ? '📱' : mode === 'CARD' ? '💳' : '🔀'}
+                          </span>
+                          <span>{mode === 'UPI' ? 'UPI / GPay' : mode}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {paymentMethod === 'SPLIT' && (
+                      <div className="mt-3 p-3 bg-blue-50/70 border border-blue-200 rounded-lg grid grid-cols-2 gap-3 animate-in fade-in duration-150">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">💵 Cash Amount (₹)</label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={splitCash}
+                            onChange={(e) => setSplitCash(Number(e.target.value))}
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">📱 UPI Amount (₹)</label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={splitUpi}
+                            onChange={(e) => setSplitUpi(Number(e.target.value))}
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="pt-4 flex justify-end space-x-3">
                 <button
@@ -861,6 +1104,33 @@ export default function MemberManagementPage() {
                   <span className="text-slate-400 font-semibold block mb-0.5">Next Due Date</span>
                   <span className="font-bold text-amber-700">{selectedMember.nextDueDate}</span>
                 </div>
+
+                {(selectedMember.pendingBalance || 0) > 0 && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl col-span-2">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="text-amber-800 font-bold block">⚠️ Pending Dues / Unpaid Balance</span>
+                        <span className="text-[11px] text-amber-700 font-medium">
+                          {selectedMember.balanceDueDate ? `Due before: ${selectedMember.balanceDueDate}` : 'No deadline specified'}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-mono font-black text-amber-800 text-base">₹{selectedMember.pendingBalance}</span>
+                        <button
+                          onClick={() => {
+                            setCollectDueMember(selectedMember);
+                            setCollectDueAmount(selectedMember.pendingBalance);
+                            setCollectDuePaymentMethod('CASH');
+                            setShowCollectDueModal(true);
+                          }}
+                          className="block mt-1 px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] rounded-lg shadow-sm"
+                        >
+                          Collect Balance
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Fee Renewal Action Box */}
@@ -870,23 +1140,135 @@ export default function MemberManagementPage() {
                   <span>Renew Membership & Record Payment</span>
                 </div>
 
-                <div className="flex items-center space-x-3">
-                  <select
-                    value={renewMonths}
-                    onChange={(e) => setRenewMonths(Number(e.target.value))}
-                    className="bg-white border border-slate-300 rounded-lg p-2 font-bold text-slate-800 text-xs"
-                  >
-                    <option value={1}>+1 Month Renewal (₹{selectedMember.feeAmount})</option>
-                    <option value={3}>+3 Months Renewal (₹{selectedMember.feeAmount * 3})</option>
-                    <option value={6}>+6 Months Renewal (₹{selectedMember.feeAmount * 6})</option>
-                    <option value={12}>+1 Year Renewal (₹{selectedMember.feeAmount * 12})</option>
-                  </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Renewal Plan Period</label>
+                    <select
+                      value={renewMonths}
+                      onChange={(e) => {
+                        const m = Number(e.target.value);
+                        setRenewMonths(m);
+                        setRenewPaidAmount(selectedMember.feeAmount * m);
+                      }}
+                      className="w-full bg-white border border-slate-300 rounded-lg p-2 font-bold text-slate-800 text-xs outline-none"
+                    >
+                      <option value={1}>+1 Month (₹{selectedMember.feeAmount})</option>
+                      <option value={3}>+3 Months (₹{selectedMember.feeAmount * 3})</option>
+                      <option value={6}>+6 Months (₹{selectedMember.feeAmount * 6})</option>
+                      <option value={12}>+1 Year (₹{selectedMember.feeAmount * 12})</option>
+                    </select>
+                  </div>
 
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Amount Paid Today (₹)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={renewPaidAmount}
+                      onChange={(e) => setRenewPaidAmount(Number(e.target.value))}
+                      className="w-full bg-white border border-slate-300 rounded-lg p-2 font-black text-emerald-700 text-xs outline-none"
+                    />
+                  </div>
+                </div>
+
+                {renewPaidAmount < selectedMember.feeAmount * renewMonths && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2 text-xs">
+                    <div className="flex justify-between font-bold text-amber-900">
+                      <span>Remaining Unpaid:</span>
+                      <span className="font-mono text-amber-700">₹{selectedMember.feeAmount * renewMonths - renewPaidAmount}</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRenewRemainingType('BALANCE')}
+                        className={`py-1.5 px-2 rounded-lg text-[11px] font-bold ${
+                          renewRemainingType === 'BALANCE'
+                            ? 'bg-amber-600 text-white shadow-sm'
+                            : 'bg-white text-slate-700 border border-slate-300'
+                        }`}
+                      >
+                        ⏳ Balance Due
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRenewRemainingType('DISCOUNT')}
+                        className={`py-1.5 px-2 rounded-lg text-[11px] font-bold ${
+                          renewRemainingType === 'DISCOUNT'
+                            ? 'bg-purple-600 text-white shadow-sm'
+                            : 'bg-white text-slate-700 border border-slate-300'
+                        }`}
+                      >
+                        🏷️ Discount
+                      </button>
+                    </div>
+
+                    {renewRemainingType === 'BALANCE' && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-amber-900 mb-0.5">Due By Date</label>
+                        <input
+                          type="date"
+                          value={renewBalanceDueDate}
+                          onChange={(e) => setRenewBalanceDueDate(e.target.value)}
+                          className="w-full px-2 py-1 bg-white border border-amber-300 rounded text-xs"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Payment Method Selector for Renewal */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Payment Mode</label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(['CASH', 'UPI', 'CARD', 'SPLIT'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setRenewPaymentMethod(mode)}
+                        className={`py-1.5 px-1 rounded-lg text-[11px] font-bold transition-all flex flex-col items-center justify-center space-y-0.5 ${
+                          renewPaymentMethod === mode
+                            ? 'bg-blue-900 text-white shadow-sm'
+                            : 'bg-white text-slate-700 border border-slate-300'
+                        }`}
+                      >
+                        <span>{mode === 'CASH' ? '💵' : mode === 'UPI' ? '📱' : mode === 'CARD' ? '💳' : '🔀'}</span>
+                        <span className="text-[10px]">{mode === 'UPI' ? 'UPI' : mode}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {renewPaymentMethod === 'SPLIT' && (
+                    <div className="mt-2 p-2 bg-white border border-blue-200 rounded-lg grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600">💵 Cash (₹)</label>
+                        <input
+                          type="number"
+                          value={renewSplitCash}
+                          onChange={(e) => setRenewSplitCash(Number(e.target.value))}
+                          className="w-full p-1 border border-slate-300 rounded text-xs font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600">📱 UPI (₹)</label>
+                        <input
+                          type="number"
+                          value={renewSplitUpi}
+                          onChange={(e) => setRenewSplitUpi(Number(e.target.value))}
+                          className="w-full p-1 border border-slate-300 rounded text-xs font-bold"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-1 flex justify-end">
                   <button
                     onClick={() => handleRenewPayment(selectedMember)}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors"
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl transition-colors shadow-sm flex items-center justify-center space-x-1.5"
                   >
-                    Record Payment
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Record Renewal & Send Receipt</span>
                   </button>
                 </div>
               </div>
@@ -940,6 +1322,115 @@ export default function MemberManagementPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: COLLECT PENDING DUE */}
+      {showCollectDueModal && collectDueMember && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-10 h-10 bg-amber-100 text-amber-800 rounded-xl flex items-center justify-center font-bold text-lg">
+                  💰
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-base">Collect Due Balance</h3>
+                  <p className="text-xs text-slate-500">{collectDueMember.name} • {collectDueMember.phone}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowCollectDueModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCollectDueSubmit} className="space-y-4">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex justify-between items-center text-xs">
+                <span className="font-bold text-amber-900">Total Unpaid Balance:</span>
+                <span className="font-mono font-black text-base text-amber-800">₹{collectDueMember.pendingBalance}</span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Amount To Collect Today (₹)
+                </label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  max={collectDueMember.pendingBalance}
+                  value={collectDueAmount}
+                  onChange={(e) => setCollectDueAmount(Number(e.target.value))}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-black text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-600"
+                />
+              </div>
+
+              {/* Payment Method Selector */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Payment Mode
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(['CASH', 'UPI', 'CARD', 'SPLIT'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setCollectDuePaymentMethod(mode)}
+                      className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center space-y-1 ${
+                        collectDuePaymentMethod === mode
+                          ? 'bg-blue-900 text-white shadow-sm ring-2 ring-blue-900 ring-offset-1'
+                          : 'bg-slate-50 text-slate-700 border border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="text-base">{mode === 'CASH' ? '💵' : mode === 'UPI' ? '📱' : mode === 'CARD' ? '💳' : '🔀'}</span>
+                      <span className="text-[11px]">{mode === 'UPI' ? 'UPI' : mode}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {collectDuePaymentMethod === 'SPLIT' && (
+                  <div className="mt-3 p-3 bg-blue-50/70 border border-blue-200 rounded-xl grid grid-cols-2 gap-3 animate-in fade-in duration-150">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">💵 Cash (₹)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={collectDueSplitCash}
+                        onChange={(e) => setCollectDueSplitCash(Number(e.target.value))}
+                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">📱 UPI (₹)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={collectDueSplitUpi}
+                        onChange={(e) => setCollectDueSplitUpi(Number(e.target.value))}
+                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-3 flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCollectDueModal(false)}
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs transition-colors shadow-sm"
+                >
+                  Record Payment (₹{collectDueAmount})
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

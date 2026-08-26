@@ -38,6 +38,8 @@ model Customer {
   feeAmount       Int
   lastPaymentDate String
   nextDueDate     String
+  pendingBalance  Int      @default(0)
+  balanceDueDate  String?
   status          String   @default("active")
   joinedDate      String
 
@@ -67,10 +69,14 @@ model Transaction {
   amount       Int
   category     String
   description  String
-  date         String
-  customerId   String?
-  customer     Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  customerName String?
+  date          String
+  paymentMethod String    @default("CASH") // CASH, UPI, CARD, SPLIT
+  splitDetails  String?   // JSON e.g. {"cash": 1000, "upi": 1000}
+  paidAmount    Int?
+  discountAmount Int      @default(0)
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName  String?
 }
 
 model SubscriptionPlan {

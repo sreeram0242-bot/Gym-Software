@@ -21,6 +21,8 @@ export interface Customer {
   feeAmount: number;
   lastPaymentDate: string;
   nextDueDate: string;
+  pendingBalance?: number;
+  balanceDueDate?: string | null;
   status: 'active' | 'overdue' | 'due_soon';
   joinedDate: string;
   notes?: string;
@@ -46,6 +48,10 @@ export interface Transaction {
   category: string;
   description: string;
   date: string; // YYYY-MM-DD
+  paymentMethod?: 'CASH' | 'UPI' | 'CARD' | 'SPLIT' | string;
+  splitDetails?: string | null;
+  paidAmount?: number | null;
+  discountAmount?: number;
   customerId?: string;
   customerName?: string;
 }

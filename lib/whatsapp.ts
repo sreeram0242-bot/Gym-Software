@@ -227,7 +227,10 @@ export class WhatsAppManager {
       let replyText = '';
 
       if (cleanText === '1') {
-        replyText = `📋 *Your Plan Details*\n\n*Name:* ${customer.name}\n*Plan:* ${customer.planType}\n*Fee Amount:* ₹${customer.feeAmount}\n*Next Due Date:* ${customer.nextDueDate}`;
+        const balanceNotice = (customer.pendingBalance || 0) > 0 
+          ? `\n⏳ *Pending Balance:* ₹${customer.pendingBalance}${customer.balanceDueDate ? ` (Due by ${customer.balanceDueDate})` : ''}`
+          : '';
+        replyText = `📋 *Your Plan Details*\n\n*Name:* ${customer.name}\n*Plan:* ${customer.planType}\n*Fee Amount:* ₹${customer.feeAmount}${balanceNotice}\n*Next Due Date:* ${customer.nextDueDate}`;
       } else if (cleanText === '2') {
         const txs = await db.transaction.findMany({
           where: { customerId: customer.id, type: 'INCOME' },
@@ -237,7 +240,10 @@ export class WhatsAppManager {
         if (txs.length === 0) {
           replyText = `💰 *Payment History for ${customer.name}*\n\nNo payments found.`;
         } else {
-          replyText = `💰 *Last 3 Payments for ${customer.name}*\n\n` + txs.map(t => `• ₹${t.amount} on ${t.date}`).join('\n');
+          replyText = `💰 *Last 3 Payments for ${customer.name}*\n\n` + txs.map(t => {
+            const methodTag = t.paymentMethod ? ` [${t.paymentMethod}]` : '';
+            return `• ₹${t.amount}${methodTag} on ${t.date}`;
+          }).join('\n');
         }
       } else if (cleanText === '3') {
         const atts = await db.attendanceRecord.findMany({
@@ -254,8 +260,11 @@ export class WhatsAppManager {
             return `• ${date}: ${hrs} hours`;
           }).join('\n');
         }
-      } else if (cleanText === 'start') {
-        replyText = `🤖 *Gym Auto-Menu for ${customer.name}*\n\nReply with a number:\n*1️⃣* - Plan Details & Due Date\n*2️⃣* - Last 3 Payments\n*3️⃣* - Last 3 Days Attendance`;
+      } else if (['start', 'hi', 'hello', 'hey', 'menu'].includes(cleanText)) {
+        const balanceNotice = (customer.pendingBalance || 0) > 0 
+          ? `\n⚠️ *Pending Dues:* ₹${customer.pendingBalance}`
+          : '';
+        replyText = `🤖 *Gym Auto-Menu for ${customer.name}*${balanceNotice}\n\nReply with a number:\n*1️⃣* - Plan Details & Due Date\n*2️⃣* - Last 3 Payments\n*3️⃣* - Last 3 Days Attendance`;
       } else {
         console.log('[WA DEBUG] Keyword not matched. Ignore.');
         return; 

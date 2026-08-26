@@ -64,6 +64,12 @@ export async function getCustomers(gymId?: string) {
 }
 
 export async function addCustomer(data: any) {
+  const paidAmount = data.paidAmount !== undefined ? Number(data.paidAmount) : Number(data.feeAmount);
+  const pendingBalance = data.pendingBalance !== undefined ? Number(data.pendingBalance) : 0;
+  const discountAmount = data.discountAmount !== undefined ? Number(data.discountAmount) : 0;
+  const paymentMethod = data.paymentMethod || 'CASH';
+  const splitDetails = data.splitDetails ? (typeof data.splitDetails === 'string' ? data.splitDetails : JSON.stringify(data.splitDetails)) : null;
+
   const newCust = await prisma.customer.create({
     data: {
       gymId: data.gymId,
@@ -72,6 +78,8 @@ export async function addCustomer(data: any) {
       nfcCardId: data.nfcCardId,
       planType: data.planType,
       feeAmount: data.feeAmount,
+      pendingBalance: pendingBalance,
+      balanceDueDate: data.balanceDueDate || null,
       lastPaymentDate: data.lastPaymentDate,
       nextDueDate: data.nextDueDate,
       status: 'active',
@@ -79,18 +87,24 @@ export async function addCustomer(data: any) {
     }
   });
 
-  await prisma.transaction.create({
-    data: {
-      gymId: newCust.gymId,
-      type: 'INCOME',
-      amount: newCust.feeAmount,
-      category: 'Membership Fee',
-      description: `New Joiner: ${newCust.name} (${newCust.planType})`,
-      date: newCust.joinedDate,
-      customerId: newCust.id,
-      customerName: newCust.name
-    }
-  });
+  if (paidAmount > 0) {
+    await prisma.transaction.create({
+      data: {
+        gymId: newCust.gymId,
+        type: 'INCOME',
+        amount: paidAmount,
+        paidAmount: paidAmount,
+        discountAmount: discountAmount,
+        paymentMethod: paymentMethod,
+        splitDetails: splitDetails,
+        category: 'Membership Fee',
+        description: `New Joiner: ${newCust.name} (${newCust.planType})${pendingBalance > 0 ? ` [₹${pendingBalance} Due]` : ''}${discountAmount > 0 ? ` [₹${discountAmount} Disc]` : ''}`,
+        date: newCust.joinedDate,
+        customerId: newCust.id,
+        customerName: newCust.name
+      }
+    });
+  }
 
   return newCust;
 }
@@ -122,9 +136,22 @@ export async function deleteCustomer(id: string) {
   }
 }
 
-export async function renewMemberPayment(customerId: string, addedMonths: number, amount: number) {
+export async function renewMemberPayment(
+  customerId: string, 
+  addedMonths: number, 
+  totalAmount: number,
+  paidAmount?: number,
+  paymentMethod: string = 'CASH',
+  splitDetails?: any,
+  pendingBalance: number = 0,
+  balanceDueDate?: string | null,
+  discountAmount: number = 0
+) {
   const c = await prisma.customer.findUnique({ where: { id: customerId } });
   if (!c) return undefined;
+
+  const actualPaid = paidAmount !== undefined ? Number(paidAmount) : Number(totalAmount);
+  const formattedSplit = splitDetails ? (typeof splitDetails === 'string' ? splitDetails : JSON.stringify(splitDetails)) : null;
 
   const today = new Date().toISOString().split('T')[0];
   const currentDue = new Date(c.nextDueDate > today ? c.nextDueDate : today);
@@ -136,7 +163,52 @@ export async function renewMemberPayment(customerId: string, addedMonths: number
     data: {
       lastPaymentDate: today,
       nextDueDate: newDueDate,
+      pendingBalance: pendingBalance,
+      balanceDueDate: balanceDueDate || null,
       status: 'active'
+    }
+  });
+
+  if (actualPaid > 0) {
+    await prisma.transaction.create({
+      data: {
+        gymId: updatedCust.gymId,
+        type: 'INCOME',
+        amount: actualPaid,
+        paidAmount: actualPaid,
+        discountAmount: discountAmount,
+        paymentMethod: paymentMethod,
+        splitDetails: formattedSplit,
+        category: 'Membership Fee Renewal',
+        description: `Fee Renewal for ${updatedCust.name} (+${addedMonths} Mo)${pendingBalance > 0 ? ` [₹${pendingBalance} Due]` : ''}${discountAmount > 0 ? ` [₹${discountAmount} Disc]` : ''}`,
+        date: today,
+        customerId: updatedCust.id,
+        customerName: updatedCust.name
+      }
+    });
+  }
+
+  return updatedCust;
+}
+
+export async function collectPendingBalance(
+  customerId: string,
+  amountToCollect: number,
+  paymentMethod: string = 'CASH',
+  splitDetails?: any
+) {
+  const c = await prisma.customer.findUnique({ where: { id: customerId } });
+  if (!c) throw new Error('Customer not found');
+
+  const newBalance = Math.max(0, (c.pendingBalance || 0) - amountToCollect);
+  const today = new Date().toISOString().split('T')[0];
+  const formattedSplit = splitDetails ? (typeof splitDetails === 'string' ? splitDetails : JSON.stringify(splitDetails)) : null;
+
+  const updatedCust = await prisma.customer.update({
+    where: { id: customerId },
+    data: {
+      pendingBalance: newBalance,
+      balanceDueDate: newBalance === 0 ? null : c.balanceDueDate
     }
   });
 
@@ -144,9 +216,12 @@ export async function renewMemberPayment(customerId: string, addedMonths: number
     data: {
       gymId: updatedCust.gymId,
       type: 'INCOME',
-      amount,
-      category: 'Membership Fee Renewal',
-      description: `Fee Renewal for ${updatedCust.name} (+${addedMonths} Month/s)`,
+      amount: amountToCollect,
+      paidAmount: amountToCollect,
+      paymentMethod: paymentMethod,
+      splitDetails: formattedSplit,
+      category: 'Pending Balance Collection',
+      description: `Balance Clearance for ${updatedCust.name} (${newBalance === 0 ? 'Fully Cleared' : `₹${newBalance} Still Remaining`})`,
       date: today,
       customerId: updatedCust.id,
       customerName: updatedCust.name
@@ -233,11 +308,16 @@ export async function getTransactions(gymId?: string) {
 }
 
 export async function addTransaction(tx: any) {
+  const formattedSplit = tx.splitDetails ? (typeof tx.splitDetails === 'string' ? tx.splitDetails : JSON.stringify(tx.splitDetails)) : null;
   return await prisma.transaction.create({
     data: {
       gymId: tx.gymId,
       type: tx.type,
-      amount: tx.amount,
+      amount: Number(tx.amount),
+      paidAmount: tx.paidAmount !== undefined ? Number(tx.paidAmount) : Number(tx.amount),
+      discountAmount: tx.discountAmount ? Number(tx.discountAmount) : 0,
+      paymentMethod: tx.paymentMethod || 'CASH',
+      splitDetails: formattedSplit,
       category: tx.category,
       description: tx.description,
       date: tx.date,
@@ -245,6 +325,34 @@ export async function addTransaction(tx: any) {
       customerName: tx.customerName || null
     }
   });
+}
+
+export async function updateTransaction(id: string, data: any) {
+  const updateData: any = {};
+  if (data.amount !== undefined) updateData.amount = Number(data.amount);
+  if (data.paidAmount !== undefined) updateData.paidAmount = Number(data.paidAmount);
+  if (data.category !== undefined) updateData.category = data.category;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.date !== undefined) updateData.date = data.date;
+  if (data.paymentMethod !== undefined) updateData.paymentMethod = data.paymentMethod;
+  if (data.splitDetails !== undefined) {
+    updateData.splitDetails = typeof data.splitDetails === 'string' ? data.splitDetails : JSON.stringify(data.splitDetails);
+  }
+
+  return await prisma.transaction.update({
+    where: { id },
+    data: updateData
+  });
+}
+
+export async function deleteTransaction(id: string) {
+  try {
+    await prisma.transaction.delete({ where: { id } });
+    return true;
+  } catch (e) {
+    console.error('Failed to delete transaction:', e);
+    return false;
+  }
 }
 
 // --- SUBSCRIPTION PLANS ---

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2, Edit2 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan } from '@/lib/actions';
+import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, updateTransaction, deleteTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan } from '@/lib/actions';
 import { Transaction, SubscriptionPlan } from '@/lib/types';
 
 export default function RevenuePage() {
@@ -11,6 +11,7 @@ export default function RevenuePage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE' | 'NEW_MEMBERS'>('ALL');
+  const [paymentModeFilter, setPaymentModeFilter] = useState<'ALL' | 'CASH' | 'UPI' | 'CARD'>('ALL');
 
   // Global Filter State
   const [globalTimeFilter, setGlobalTimeFilter] = useState<'ALL' | 'TODAY' | 'THIS_MONTH' | 'THIS_YEAR' | 'CUSTOM'>('ALL');
@@ -23,6 +24,17 @@ export default function RevenuePage() {
   const [expenseAmount, setExpenseAmount] = useState(5000);
   const [expenseDesc, setExpenseDesc] = useState('');
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [expensePaymentMethod, setExpensePaymentMethod] = useState<'CASH' | 'UPI' | 'CARD'>('CASH');
+
+  // Edit Transaction Modal
+  const [showEditTxModal, setShowEditTxModal] = useState(false);
+  const [editingTxId, setEditingTxId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState<number>(0);
+  const [editCategory, setEditCategory] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editPaymentMethod, setEditPaymentMethod] = useState('CASH');
+  const [deleteTxDialog, setDeleteTxDialog] = useState<{ id: string; desc: string; amount: number } | null>(null);
 
   // Settings Modal
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -61,11 +73,47 @@ export default function RevenuePage() {
       amount: Number(expenseAmount),
       category: expenseCategory,
       description: expenseDesc,
-      date: expenseDate
+      date: expenseDate,
+      paymentMethod: expensePaymentMethod
     });
 
     setShowExpenseModal(false);
     setExpenseDesc('');
+    loadData();
+  };
+
+  const handleEditTxInit = (tx: any) => {
+    setEditingTxId(tx.id);
+    setEditAmount(tx.amount);
+    setEditCategory(tx.category);
+    setEditDesc(tx.description);
+    setEditDate(tx.date);
+    setEditPaymentMethod(tx.paymentMethod || 'CASH');
+    setShowEditTxModal(true);
+  };
+
+  const handleEditTxSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTxId || editAmount <= 0) return;
+
+    await updateTransaction(editingTxId, {
+      amount: Number(editAmount),
+      paidAmount: Number(editAmount),
+      category: editCategory,
+      description: editDesc,
+      date: editDate,
+      paymentMethod: editPaymentMethod
+    });
+
+    setShowEditTxModal(false);
+    setEditingTxId(null);
+    loadData();
+  };
+
+  const handleDeleteTxConfirm = async () => {
+    if (!deleteTxDialog) return;
+    await deleteTransaction(deleteTxDialog.id);
+    setDeleteTxDialog(null);
     loadData();
   };
 
@@ -160,6 +208,37 @@ export default function RevenuePage() {
   const netProfit = totalIncome - totalExpenses;
   const newMembersCount = allCustomers.filter(c => c.gymId === gymId && isDateInGlobalFilter(c.joinedDate)).length;
 
+  // Breakdown by Payment Mode
+  const cashTotal = filteredGlobalTxs
+    .filter(t => t.type === 'INCOME')
+    .reduce((acc, cur) => {
+      if (cur.paymentMethod === 'CASH') return acc + cur.amount;
+      if (cur.paymentMethod === 'SPLIT' && cur.splitDetails) {
+        try {
+          const parsed = typeof cur.splitDetails === 'string' ? JSON.parse(cur.splitDetails) : cur.splitDetails;
+          return acc + (parsed.cash || 0);
+        } catch (e) { return acc; }
+      }
+      return acc;
+    }, 0);
+
+  const upiTotal = filteredGlobalTxs
+    .filter(t => t.type === 'INCOME')
+    .reduce((acc, cur) => {
+      if (cur.paymentMethod === 'UPI') return acc + cur.amount;
+      if (cur.paymentMethod === 'SPLIT' && cur.splitDetails) {
+        try {
+          const parsed = typeof cur.splitDetails === 'string' ? JSON.parse(cur.splitDetails) : cur.splitDetails;
+          return acc + (parsed.upi || 0);
+        } catch (e) { return acc; }
+      }
+      return acc;
+    }, 0);
+
+  const cardTotal = filteredGlobalTxs
+    .filter(t => t.type === 'INCOME' && t.paymentMethod === 'CARD')
+    .reduce((acc, cur) => acc + cur.amount, 0);
+
   // Monthly Chart Mock Data aggregation
   const chartData = [
     { name: 'May', Income: 14000, Expense: 8000, Net: 6000 },
@@ -170,6 +249,12 @@ export default function RevenuePage() {
 
   const filteredTxs = transactions.filter((t) => {
     if (!isDateInGlobalFilter(t.date)) return false;
+
+    if (paymentModeFilter !== 'ALL') {
+      if (paymentModeFilter === 'CASH' && t.paymentMethod !== 'CASH' && t.paymentMethod !== 'SPLIT') return false;
+      if (paymentModeFilter === 'UPI' && t.paymentMethod !== 'UPI' && t.paymentMethod !== 'SPLIT') return false;
+      if (paymentModeFilter === 'CARD' && t.paymentMethod !== 'CARD') return false;
+    }
 
     if (filterType === 'ALL') return true;
     if (filterType === 'NEW_MEMBERS') {
@@ -308,6 +393,33 @@ export default function RevenuePage() {
         </div>
       </div>
 
+      {/* Payment Modes Collection Breakdown Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block mb-0.5">💵 Cash in Hand</span>
+            <div className="text-xl font-black text-emerald-950">₹{cashTotal.toLocaleString()}</div>
+          </div>
+          <span className="text-2xl">💵</span>
+        </div>
+
+        <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <span className="text-xs font-bold text-blue-800 uppercase tracking-wider block mb-0.5">📱 UPI / GPay / Bank</span>
+            <div className="text-xl font-black text-blue-950">₹{upiTotal.toLocaleString()}</div>
+          </div>
+          <span className="text-2xl">📱</span>
+        </div>
+
+        <div className="bg-purple-50/70 border border-purple-200 rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <span className="text-xs font-bold text-purple-800 uppercase tracking-wider block mb-0.5">💳 Card Payments</span>
+            <div className="text-xl font-black text-purple-950">₹{cardTotal.toLocaleString()}</div>
+          </div>
+          <span className="text-2xl">💳</span>
+        </div>
+      </div>
+
       {/* Visual Revenue vs Expense Chart */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
         <h2 className="font-bold text-slate-900 text-base mb-1">Income vs Expense Monthly Trend</h2>
@@ -338,19 +450,32 @@ export default function RevenuePage() {
             <p className="text-xs text-slate-500">History of customer membership payments and gym expenses.</p>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             {(['ALL', 'INCOME', 'EXPENSE', 'NEW_MEMBERS'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setFilterType(t)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                  filterType === t ? 'bg-blue-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                  filterType === t ? 'bg-blue-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                {t === 'NEW_MEMBERS' ? 'New Members Income' : t}
+                {t === 'NEW_MEMBERS' ? 'New Members' : t}
               </button>
             ))}
 
+            <span className="text-slate-300">|</span>
+
+            {(['ALL', 'CASH', 'UPI', 'CARD'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setPaymentModeFilter(m)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap flex items-center space-x-1 ${
+                  paymentModeFilter === m ? 'bg-emerald-700 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <span>{m === 'CASH' ? '💵 Cash' : m === 'UPI' ? '📱 UPI' : m === 'CARD' ? '💳 Card' : 'All Modes'}</span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -360,9 +485,11 @@ export default function RevenuePage() {
               <tr className="bg-slate-100/70 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
                 <th className="py-3 px-4">Type</th>
                 <th className="py-3 px-4">Description / Customer</th>
+                <th className="py-3 px-4">Mode</th>
                 <th className="py-3 px-4">Category</th>
                 <th className="py-3 px-4">Date</th>
                 <th className="py-3 px-4 text-right">Amount (₹)</th>
+                <th className="py-3 px-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 text-xs sm:text-sm">
@@ -385,6 +512,12 @@ export default function RevenuePage() {
                     {tx.customerName && <div className="text-[11px] text-slate-500 font-normal">Customer: {tx.customerName}</div>}
                   </td>
 
+                  <td className="py-3 px-4">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap">
+                      {tx.paymentMethod === 'UPI' ? '📱 UPI' : tx.paymentMethod === 'CARD' ? '💳 Card' : tx.paymentMethod === 'SPLIT' ? '🔀 Split' : '💵 Cash'}
+                    </span>
+                  </td>
+
                   <td className="py-3 px-4 text-slate-600 font-medium">{tx.category}</td>
                   <td className="py-3 px-4 text-slate-500 font-mono text-xs">{tx.date}</td>
                   <td
@@ -394,8 +527,33 @@ export default function RevenuePage() {
                   >
                     {tx.type === 'INCOME' ? '+' : '-'}₹{tx.amount.toLocaleString()}
                   </td>
+                  <td className="py-3 px-4 text-center">
+                    <div className="flex items-center justify-center space-x-1">
+                      <button
+                        onClick={() => handleEditTxInit(tx)}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Edit Bill / Transaction"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTxDialog({ id: tx.id, desc: tx.description, amount: tx.amount })}
+                        className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                        title="Delete Bill"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
+              {filteredTxs.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-slate-400 font-medium text-xs">
+                    No transactions found for the selected filters.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -473,6 +631,29 @@ export default function RevenuePage() {
                   onChange={(e) => setExpenseDate(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Payment Mode
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['CASH', 'UPI', 'CARD'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setExpensePaymentMethod(mode)}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
+                        expensePaymentMethod === mode
+                          ? 'bg-rose-600 text-white shadow-sm'
+                          : 'bg-slate-50 text-slate-700 border border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>{mode === 'CASH' ? '💵' : mode === 'UPI' ? '📱' : '💳'}</span>
+                      <span>{mode === 'UPI' ? 'UPI' : mode}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="pt-4 flex justify-end space-x-3">
@@ -554,6 +735,145 @@ export default function RevenuePage() {
                    {editingPlanId ? 'Update Package' : 'Add Package'}
                  </button>
                </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT TRANSACTION / BILL */}
+      {showEditTxModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
+              <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
+                <Edit2 className="w-5 h-5 text-blue-900" />
+                <span>Edit Bill / Transaction</span>
+              </h3>
+              <button onClick={() => setShowEditTxModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditTxSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Amount (₹) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(Number(e.target.value))}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-black text-slate-900 outline-none focus:ring-2 focus:ring-blue-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Category *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Description / Details *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Transaction Date
+                </label>
+                <input
+                  type="date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Payment Mode
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(['CASH', 'UPI', 'CARD', 'SPLIT'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setEditPaymentMethod(mode)}
+                      className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center space-y-1 ${
+                        editPaymentMethod === mode
+                          ? 'bg-blue-900 text-white shadow-sm ring-2 ring-blue-900 ring-offset-1'
+                          : 'bg-slate-50 text-slate-700 border border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="text-base">{mode === 'CASH' ? '💵' : mode === 'UPI' ? '📱' : mode === 'CARD' ? '💳' : '🔀'}</span>
+                      <span className="text-[11px]">{mode === 'UPI' ? 'UPI' : mode}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditTxModal(false)}
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-blue-900 hover:bg-blue-950 text-white font-bold rounded-xl text-xs transition-colors shadow-sm"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DELETE TRANSACTION CONFIRMATION */}
+      {deleteTxDialog && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center text-rose-600 mb-4">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h2 className="text-lg font-black text-slate-900 mb-1">Delete Transaction?</h2>
+            <p className="text-slate-600 text-xs font-medium mb-4 leading-relaxed">
+              Are you sure you want to permanently delete this bill entry (<span className="font-bold text-slate-900">{deleteTxDialog.desc} - ₹{deleteTxDialog.amount}</span>)? This will adjust your total revenue calculations.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTxDialog(null)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteTxConfirm}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition-colors shadow-sm"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
