@@ -24,7 +24,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   } | null>(null);
 
   const [waStatus, setWaStatus] = useState<string>('connected');
-  const [globalAnnouncement, setGlobalAnnouncement] = useState<any | null>(null);
   const [globalToast, setGlobalToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
   const [productsEnabled, setProductsEnabled] = useState<boolean>(false);
   const [attendanceMode, setAttendanceMode] = useState<string>('NFC');
@@ -334,29 +333,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className={`min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans md:flex-row pb-20 md:pb-0 ${!animationsEnabled ? 'animations-disabled' : ''}`}>
       
-      {/* Global Announcement Banner */}
-      {globalAnnouncement && (
-        <div className={`fixed top-0 left-0 right-0 z-[100] px-4 py-2 flex items-center justify-center text-xs font-bold text-white ${
-          globalAnnouncement.type === 'info' ? 'bg-blue-600' :
-          globalAnnouncement.type === 'warning' ? 'bg-amber-600' : 'bg-rose-600'
-        }`}>
-          <div className="flex items-center space-x-2">
-            <AlertTriangle className="w-4 h-4" />
-            <span>{globalAnnouncement.title}: {globalAnnouncement.message}</span>
-          </div>
-          <button onClick={() => setGlobalAnnouncement(null)} className="absolute right-4 hover:bg-white/20 p-1 rounded-md">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+
 
       {/* Global WA Disconnected Warning */}
       {waStatus !== 'connected' && (
-        <div className={`fixed ${globalAnnouncement ? 'top-8' : 'top-0'} left-0 right-0 z-[90] px-4 py-2 flex items-center justify-center text-xs font-bold bg-rose-600 text-white shadow-md animate-in slide-in-from-top-2`}>
+        <div className={`fixed top-0 left-0 right-0 z-[90] px-4 py-2 flex items-center justify-center text-xs font-bold bg-rose-600 text-white shadow-md animate-in slide-in-from-top-2`}>
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4" />
             <span>WhatsApp Disconnected: Payment reminders and notifications are paused.</span>
-            <Link href="/dashboard/settings" className="ml-2 underline hover:text-rose-100">Reconnect</Link>
+            <Link href="/dashboard/settings?tab=whatsapp" className="ml-2 underline hover:text-rose-100">Reconnect</Link>
           </div>
         </div>
       )}
@@ -373,7 +358,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* DESKTOP SIDEBAR */}
-      <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky z-30 shadow-sm ${globalAnnouncement && waStatus !== 'connected' ? 'top-16 h-[calc(100vh-4rem)]' : globalAnnouncement || waStatus !== 'connected' ? 'top-8 h-[calc(100vh-2rem)]' : 'top-0 h-screen'}`}>
+      <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky z-30 shadow-sm ${waStatus !== 'connected' ? 'top-8 h-[calc(100vh-2rem)]' : 'top-0 h-screen'}`}>
         {/* Brand */}
         <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white text-slate-900">
           <div className="flex items-center space-x-3">

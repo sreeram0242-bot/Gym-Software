@@ -88,6 +88,12 @@ export default function SettingsPage() {
     setGymId(savedId);
     setGymUserId(savedUserId || '');
     if (savedId) loadSettings(savedId);
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') as TabType;
+      if (tabParam && TABS.some(t => t.key === tabParam)) setActiveTab(tabParam);
+    }
   }, []);
 
   const loadSettings = async (id: string) => {
@@ -446,9 +452,14 @@ export default function SettingsPage() {
                         <p className="text-xs text-slate-500 mt-2">WhatsApp → Linked Devices → Link a device</p>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-3 text-slate-500 text-sm py-4">
-                        <RefreshCw className={`w-5 h-5 ${waLoading ? 'animate-spin' : ''}`} />
-                        {waLoading ? 'Connecting to WhatsApp...' : 'Waiting for QR code...'}
+                      <div className="flex items-center justify-between py-4">
+                        <div className="flex items-center gap-3 text-slate-500 text-sm">
+                          <RefreshCw className={`w-5 h-5 ${waLoading ? 'animate-spin' : ''}`} />
+                          <span>Waiting for QR code...</span>
+                        </div>
+                        <button onClick={handleDisconnectWA} className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg border border-rose-200 transition-colors">
+                          Reset Connection
+                        </button>
                       </div>
                     )}
                   </div>
