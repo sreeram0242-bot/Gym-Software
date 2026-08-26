@@ -373,7 +373,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* DESKTOP SIDEBAR */}
-      <aside className={`hidden md:flex md:w-64 bg-blue-900 border-r border-slate-200 flex-col sticky top-0 h-screen z-30 shadow-sm ${globalAnnouncement ? 'pt-8' : ''} ${waStatus !== 'connected' ? 'pt-16' : ''}`}>
+      <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky z-30 shadow-sm ${globalAnnouncement && waStatus !== 'connected' ? 'top-16 h-[calc(100vh-4rem)]' : globalAnnouncement || waStatus !== 'connected' ? 'top-8 h-[calc(100vh-2rem)]' : 'top-0 h-screen'}`}>
         {/* Brand */}
         <div className="p-4 border-b border-blue-950 flex items-center justify-between bg-blue-900 text-white">
           <div className="flex items-center space-x-3">
@@ -384,9 +384,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </div>
-
-        {/* Sidebar Nav Content Wrapper (White Background) */}
-        <div className="flex-1 bg-white flex flex-col overflow-hidden">
 
         {/* Gym Tenant Info (Static) */}
         <div className="p-3 border-b border-slate-200 bg-slate-50/70">
@@ -454,7 +451,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <LogOut className="w-4 h-4" />
             <span>Secure Logout</span>
           </button>
-        </div>
         </div>
       </aside>
 
