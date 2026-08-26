@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2, Edit2, Download, Banknote, Smartphone, ArrowLeftRight } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, updateTransaction, deleteTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan } from '@/lib/actions';
+import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, updateTransaction, deleteTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan, getGyms } from '@/lib/actions';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { Transaction, SubscriptionPlan } from '@/lib/types';
 
 export default function RevenuePage() {
@@ -324,6 +326,71 @@ export default function RevenuePage() {
     const dateLabel = exportDateFrom && exportDateTo ? `${exportDateFrom}-to-${exportDateTo}` : 'export';
     link.download = `gymflow-transactions-${dateLabel}.csv`;
     link.click();
+    setShowExportModal(false);
+  };
+
+  const executeExportPDF = async () => {
+    let exportTxs = transactions;
+
+    if (exportDateFrom && exportDateTo) {
+      const from = new Date(exportDateFrom);
+      const to = new Date(exportDateTo);
+      to.setHours(23, 59, 59, 999);
+      exportTxs = exportTxs.filter(t => {
+        const d = new Date(t.date);
+        return d >= from && d <= to;
+      });
+    } else {
+       exportTxs = filteredTxs;
+    }
+
+    let runningBalance = 0;
+    const chronologicalTxs = [...exportTxs].reverse();
+
+    const body = chronologicalTxs.map(t => {
+      if (t.type === 'INCOME') runningBalance += t.amount;
+      else if (t.type === 'EXPENSE') runningBalance -= t.amount;
+
+      return [
+        new Date(t.date).toLocaleDateString(),
+        t.type,
+        t.category,
+        t.description?.replace(/"/g, "'") || '-',
+        t.paymentMethod || 'CASH',
+        `${t.amount}`,
+        `${t.paidAmount ?? t.amount}`,
+        `${t.discountAmount ?? 0}`,
+        t.customerName || '-',
+        `${runningBalance}`
+      ];
+    });
+
+    const gyms = await getGyms();
+    const gym = gyms.find(g => g.id === gymId);
+    const gymName = gym?.name || 'Gym Ledger Report';
+    
+    const doc = new jsPDF('landscape');
+    
+    // Header
+    doc.setFontSize(22);
+    doc.text(gymName, 14, 22);
+    
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    const dateLabel = exportDateFrom && exportDateTo ? `From: ${exportDateFrom} To: ${exportDateTo}` : `Date: ${new Date().toLocaleDateString()}`;
+    doc.text(`Financial Report | ${dateLabel}`, 14, 30);
+    
+    autoTable(doc, {
+      startY: 40,
+      head: [['Date', 'Type', 'Category', 'Description', 'Payment Mode', 'Amount (Rs)', 'Paid (Rs)', 'Discount', 'Customer', 'Balance (Rs)']],
+      body: body,
+      theme: 'grid',
+      headStyles: { fillColor: [30, 58, 138] }, // Navy blue
+      styles: { fontSize: 9 },
+    });
+
+    const fileNameDate = exportDateFrom && exportDateTo ? `${exportDateFrom}-to-${exportDateTo}` : 'export';
+    doc.save(`gymflow-transactions-${fileNameDate}.pdf`);
     setShowExportModal(false);
   };
 
@@ -1000,9 +1067,15 @@ export default function RevenuePage() {
               </button>
               <button
                 onClick={executeExport}
+                className="flex-1 py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-sm transition-colors shadow-sm flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" /> CSV
+              </button>
+              <button
+                onClick={executeExportPDF}
                 className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors shadow-sm flex items-center justify-center gap-2"
               >
-                <Download className="w-4 h-4" /> Download
+                <Download className="w-4 h-4" /> PDF
               </button>
             </div>
           </div>
