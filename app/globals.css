@@ -20,9 +20,20 @@
   --success-light: #ecfdf5;
   --warning: #f59e0b;
   --warning-light: #fffbeb;
+
+  /* Animation speed tokens */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-html, body {
+/* ─────────────────────────────────────
+   BASE
+───────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
   overflow-x: hidden;
   width: 100%;
 }
@@ -34,56 +45,210 @@ body {
   min-height: 100vh;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
+  width: 100%;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Custom scrollbars */
-::-webkit-scrollbar {
-  width: 3px;
-  height: 3px;
-}
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
+/* ─────────────────────────────────────
+   CUSTOM SCROLLBARS
+───────────────────────────────────── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
 ::-webkit-scrollbar-thumb {
   background: #1e3a8a;
   border-radius: 4px;
+  transition: background var(--dur-base) var(--ease-in-out);
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #172554;
+::-webkit-scrollbar-thumb:hover { background: #172554; }
+
+/* ─────────────────────────────────────
+   UNIVERSAL TRANSITION
+   GPU-safe properties only: transform, opacity, background-color, border-color, box-shadow
+───────────────────────────────────── */
+a,
+button,
+[role="button"],
+label,
+select,
+.card-hover,
+.nav-link {
+  transition:
+    background-color var(--dur-fast) var(--ease-in-out),
+    color var(--dur-fast) var(--ease-in-out),
+    border-color var(--dur-fast) var(--ease-in-out),
+    box-shadow var(--dur-fast) var(--ease-in-out),
+    opacity var(--dur-fast) var(--ease-in-out),
+    transform var(--dur-fast) var(--ease-out);
+  will-change: transform;
 }
 
-/* Card glassmorphism & soft shadows */
-.card-shadow {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+/* Subtle lift on hover */
+button:not(:disabled):hover,
+[role="button"]:hover,
+.card-hover:hover {
+  transform: translateY(-1px);
 }
 
-.card-shadow-lg {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+/* Press feedback */
+button:not(:disabled):active,
+[role="button"]:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 60ms;
 }
 
-/* Touch friendly mobile buttons */
-.touch-target {
-  min-height: 44px;
-  min-width: 44px;
+/* ─────────────────────────────────────
+   INPUT FIELDS
+───────────────────────────────────── */
+input,
+textarea,
+select {
+  transition:
+    border-color var(--dur-base) var(--ease-in-out),
+    box-shadow var(--dur-base) var(--ease-in-out),
+    background-color var(--dur-base) var(--ease-in-out);
+  will-change: box-shadow;
 }
 
-/* Pulse animation for NFC Scanner */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* ─────────────────────────────────────
+   PAGE ENTER — fade + slide up on route change
+───────────────────────────────────── */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+.page-animate {
+  animation: page-enter var(--dur-slow) var(--ease-out) both;
+}
+
+/* ─────────────────────────────────────
+   TAB CONTENT — fade in when switching tabs
+───────────────────────────────────── */
+@keyframes tab-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.tab-animate {
+  animation: tab-enter var(--dur-base) var(--ease-out) both;
+}
+
+/* ─────────────────────────────────────
+   MODAL / DIALOG — scale + fade
+───────────────────────────────────── */
+@keyframes modal-enter {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+@keyframes overlay-enter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal-animate  { animation: modal-enter   var(--dur-base) var(--ease-out)    both; }
+.overlay-animate { animation: overlay-enter var(--dur-fast) var(--ease-in-out) both; }
+
+/* ─────────────────────────────────────
+   CARD / LIST ITEMS
+───────────────────────────────────── */
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.card-enter { animation: card-enter var(--dur-base) var(--ease-out) both; }
+
+/* Stagger helper — add class="stagger-list" to parent */
+.stagger-list > * { animation: card-enter var(--dur-base) var(--ease-out) both; }
+.stagger-list > *:nth-child(1)  { animation-delay:  30ms; }
+.stagger-list > *:nth-child(2)  { animation-delay:  60ms; }
+.stagger-list > *:nth-child(3)  { animation-delay:  90ms; }
+.stagger-list > *:nth-child(4)  { animation-delay: 120ms; }
+.stagger-list > *:nth-child(5)  { animation-delay: 150ms; }
+.stagger-list > *:nth-child(6)  { animation-delay: 180ms; }
+.stagger-list > *:nth-child(7)  { animation-delay: 210ms; }
+.stagger-list > *:nth-child(8)  { animation-delay: 240ms; }
+.stagger-list > *:nth-child(n+9) { animation-delay: 270ms; }
+
+/* ─────────────────────────────────────
+   TOAST / NOTIFICATION
+───────────────────────────────────── */
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateX(60px); }
+  to   { opacity: 1; transform: translateX(0);    }
+}
+
+.toast-animate { animation: toast-enter var(--dur-base) var(--ease-out) both; }
+
+/* ─────────────────────────────────────
+   BADGE / COUNTER — pop in
+───────────────────────────────────── */
+@keyframes badge-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  70%  { transform: scale(1.15); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+.badge-animate { animation: badge-pop var(--dur-base) var(--ease-out) both; }
+
+/* ─────────────────────────────────────
+   SIDEBAR ACTIVE INDICATOR
+───────────────────────────────────── */
+.nav-link-indicator {
+  transition:
+    transform  var(--dur-base) var(--ease-out),
+    opacity    var(--dur-base) var(--ease-out),
+    width      var(--dur-base) var(--ease-out);
+}
+
+/* ─────────────────────────────────────
+   SKELETON SHIMMER (for loading states)
+───────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f4f8 25%, #e2e8f0 50%, #f0f4f8 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* ─────────────────────────────────────
+   LEGACY HELPERS
+───────────────────────────────────── */
+.card-shadow    { box-shadow: 0 1px 3px 0 rgba(0,0,0,.05), 0 1px 2px -1px rgba(0,0,0,.05); }
+.card-shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,.05), 0 4px 6px -4px rgba(0,0,0,.05); }
+.touch-target   { min-height: 44px; min-width: 44px; }
+
+/* ─────────────────────────────────────
+   NFC PULSE
+───────────────────────────────────── */
 @keyframes nfc-wave {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7);
-  }
-  70% {
-    transform: scale(1.05);
-    box-shadow: 0 0 0 20px rgba(37, 99, 235, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
-  }
+  0%   { transform: scale(0.95); box-shadow: 0 0 0  0px rgba(37,99,235,0.7); }
+  70%  { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(37,99,235,0);   }
+  100% { transform: scale(0.95); box-shadow: 0 0 0  0px rgba(37,99,235,0);   }
 }
+.nfc-pulse { animation: nfc-wave 2s infinite; }
 
-.nfc-pulse {
-  animation: nfc-wave 2s infinite;
+/* ─────────────────────────────────────
+   ACCESSIBILITY — respect prefers-reduced-motion
+───────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:       0.01ms !important;
+    animation-iteration-count: 1     !important;
+    transition-duration:      0.01ms !important;
+    scroll-behavior:          auto   !important;
+  }
 }
