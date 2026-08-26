@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Settings, Smartphone, MessageSquare, ShieldCheck, Store, FileText,
   Save, RefreshCw, LogOut, CheckCircle2, AlertTriangle, Fingerprint,
   Radio, Lock, Eye, EyeOff, Package, Wifi, WifiOff, Send, RotateCcw,
-  ChevronRight, Key, Search, Shield, Check, QrCode, Printer
+  ChevronRight, Key, Search, Shield, Check, QrCode, Printer, Megaphone
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getTemplate, TemplateType, DEFAULT_TEMPLATES } from '@/lib/templates';
@@ -64,6 +65,9 @@ export default function SettingsPage() {
   // Store State
   const [productsEnabled, setProductsEnabled] = useState(false);
 
+  // UI State
+  const [animationsEnabled, setAnimationsEnabled] = useState(true);
+
   // Templates State
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('welcome');
   const [templateContent, setTemplateContent] = useState('');
@@ -97,6 +101,10 @@ export default function SettingsPage() {
     setAttendanceMode((data.attendanceMode as any) ?? 'NFC');
     setFpPort(data.fingerprintAgentPort ?? 8765);
     setProductsEnabled(data.productsEnabled ?? false);
+    
+    if (typeof window !== 'undefined') {
+      setAnimationsEnabled(localStorage.getItem('animations_enabled') !== 'false');
+    }
   };
 
   const handlePrintQRCode = () => {
@@ -233,6 +241,15 @@ export default function SettingsPage() {
     showSuccess(enabled ? 'Store / POS enabled! Refresh to see in sidebar.' : 'Store / POS disabled.');
   };
 
+  const handleAnimationsToggle = (enabled: boolean) => {
+    setAnimationsEnabled(enabled);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('animations_enabled', String(enabled));
+      window.dispatchEvent(new Event('settings_updated'));
+    }
+    showSuccess(enabled ? 'UI Animations enabled.' : 'UI Animations disabled.');
+  };
+
   const ATTENDANCE_MODES = [
     { key: 'MANUAL', label: 'Manual Search Only', icon: <Search className="w-4 h-4" />, desc: 'Staff searches by name to check-in. No hardware required.' },
     { key: 'NFC', label: 'NFC Card Only', icon: <Radio className="w-4 h-4" />, desc: 'Members tap their NFC card at the terminal. (Current behavior)' },
@@ -298,6 +315,19 @@ export default function SettingsPage() {
                       />
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* UI Preferences */}
+              <div>
+                <h3 className="text-base font-bold text-slate-800 mb-4">UI Preferences</h3>
+                <div className="bg-white border border-slate-200 rounded-xl px-4 py-2">
+                  <Toggle
+                    label="Smooth Animations"
+                    desc="Enable smooth page transitions and hover effects (disable for max performance)"
+                    enabled={animationsEnabled}
+                    onChange={handleAnimationsToggle}
+                  />
                 </div>
               </div>
 
@@ -375,6 +405,17 @@ export default function SettingsPage() {
                     {waStatus === 'connected' ? 'Connected' : 'Disconnected'}
                   </div>
                 </div>
+                
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold text-blue-900 text-sm flex items-center gap-1.5"><Megaphone className="w-4 h-4" /> Message Broadcast</h4>
+                    <p className="text-xs text-blue-700 mt-0.5">Send a message to all your members instantly.</p>
+                  </div>
+                  <Link href="/dashboard/broadcast" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors">
+                    Go to Broadcast
+                  </Link>
+                </div>
+
                 {waStatus === 'connected' ? (
                   <div className="flex gap-3">
                     <button onClick={handleTestMessage} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg flex items-center gap-2">

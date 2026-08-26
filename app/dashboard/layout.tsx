@@ -28,6 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [globalToast, setGlobalToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
   const [productsEnabled, setProductsEnabled] = useState<boolean>(false);
   const [attendanceMode, setAttendanceMode] = useState<string>('NFC');
+  const [animationsEnabled, setAnimationsEnabled] = useState<boolean>(true);
   
   // Track if we are in Master Admin impersonation mode
   const isMasterAdmin = typeof window !== 'undefined' ? localStorage.getItem('is_master_admin') === 'true' : false;
@@ -68,6 +69,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         // Use cached localStorage value as fallback
         const cached = typeof window !== 'undefined' ? localStorage.getItem('products_enabled') === 'true' : false;
         setProductsEnabled(cached);
+      }
+
+      // Check animations
+      if (typeof window !== 'undefined') {
+        const anim = localStorage.getItem('animations_enabled');
+        if (anim === 'false') setAnimationsEnabled(false);
       }
 
       // WhatsApp Status Check
@@ -287,8 +294,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Listen for settings_updated event to refresh productsEnabled
   useEffect(() => {
     const handleSettingsUpdate = () => {
-      const enabled = typeof window !== 'undefined' ? localStorage.getItem('products_enabled') === 'true' : false;
-      setProductsEnabled(enabled);
+      if (typeof window !== 'undefined') {
+        setProductsEnabled(localStorage.getItem('products_enabled') === 'true');
+        setAnimationsEnabled(localStorage.getItem('animations_enabled') !== 'false');
+      }
     };
     window.addEventListener('settings_updated', handleSettingsUpdate);
     return () => window.removeEventListener('settings_updated', handleSettingsUpdate);
@@ -323,7 +332,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans md:flex-row pb-20 md:pb-0">
+    <div className={`min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans md:flex-row pb-20 md:pb-0 ${!animationsEnabled ? 'animations-disabled' : ''}`}>
       
       {/* Global Announcement Banner */}
       {globalAnnouncement && (
@@ -366,12 +375,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* DESKTOP SIDEBAR */}
       <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen z-30 shadow-sm ${globalAnnouncement ? 'pt-8' : ''} ${waStatus !== 'connected' ? 'pt-16' : ''}`}>
         {/* Brand */}
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="p-4 border-b border-blue-950 flex items-center justify-between bg-blue-900 text-white">
           <div className="flex items-center space-x-3">
-            <img src="/logo.png" alt="Gym Logo" className="w-10 h-10 object-contain rounded-xl shadow-sm" />
+            <img src="/logo.png" alt="Gym Logo" className="w-10 h-10 object-contain rounded-xl shadow-sm bg-white p-1" />
             <div>
-              <span className="font-extrabold text-slate-900 text-base tracking-tight">GymFlow</span>
-              <span className="block text-xs font-semibold text-blue-900">Gym Admin</span>
+              <span className="font-extrabold text-white text-base tracking-tight">GymFlow</span>
+              <span className="block text-xs font-semibold text-blue-200">Gym Admin</span>
             </div>
           </div>
         </div>
@@ -482,7 +491,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* MOBILE BOTTOM NAVIGATION BAR (THUMB FRIENDLY) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 px-2 py-1.5 flex items-center justify-around shadow-lg">
-        {navItems.filter(item => item.label !== 'Reminders').map((item) => {
+        {navItems.filter(item => item.label !== 'Reminders' && item.label !== 'Broadcast').map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
           return (
