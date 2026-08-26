@@ -21,12 +21,12 @@
   --warning: #f59e0b;
   --warning-light: #fffbeb;
 
-  /* Animation speed tokens */
-  --dur-fast: 120ms;
-  --dur-base: 200ms;
-  --dur-slow: 320ms;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Animation speed tokens (iOS Spring-like) */
+  --dur-fast: 150ms;
+  --dur-base: 350ms;
+  --dur-slow: 500ms;
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in-out: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* ─────────────────────────────────────
@@ -64,23 +64,12 @@ body {
 
 /* ─────────────────────────────────────
    UNIVERSAL TRANSITION
-   GPU-safe properties only: transform, opacity, background-color, border-color, box-shadow
+   Only target specific transforms to avoid lag.
 ───────────────────────────────────── */
-a,
 button,
 [role="button"],
-label,
-select,
-.card-hover,
-.nav-link {
-  transition:
-    background-color var(--dur-fast) var(--ease-in-out),
-    color var(--dur-fast) var(--ease-in-out),
-    border-color var(--dur-fast) var(--ease-in-out),
-    box-shadow var(--dur-fast) var(--ease-in-out),
-    opacity var(--dur-fast) var(--ease-in-out),
-    transform var(--dur-fast) var(--ease-out);
-  will-change: transform;
+.card-hover {
+  transition: transform var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
 }
 
 /* Subtle lift on hover */
@@ -94,7 +83,7 @@ button:not(:disabled):hover,
 button:not(:disabled):active,
 [role="button"]:active {
   transform: translateY(0) scale(0.97);
-  transition-duration: 60ms;
+  transition-duration: 100ms;
 }
 
 /* ─────────────────────────────────────
@@ -103,11 +92,7 @@ button:not(:disabled):active,
 input,
 textarea,
 select {
-  transition:
-    border-color var(--dur-base) var(--ease-in-out),
-    box-shadow var(--dur-base) var(--ease-in-out),
-    background-color var(--dur-base) var(--ease-in-out);
-  will-change: box-shadow;
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
 }
 
 input:focus,
@@ -242,7 +227,7 @@ select:focus {
 .nfc-pulse { animation: nfc-wave 2s infinite; }
 
 /* ─────────────────────────────────────
-   ACCESSIBILITY — respect prefers-reduced-motion
+   ACCESSIBILITY & USER PREFERENCES
 ───────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -251,4 +236,11 @@ select:focus {
     transition-duration:      0.01ms !important;
     scroll-behavior:          auto   !important;
   }
+}
+
+.animations-disabled *, .animations-disabled *::before, .animations-disabled *::after {
+  animation-duration:       0.01ms !important;
+  animation-iteration-count: 1     !important;
+  transition-duration:      0.01ms !important;
+  scroll-behavior:          auto   !important;
 }
