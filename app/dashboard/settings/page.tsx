@@ -72,6 +72,7 @@ export default function SettingsPage() {
   // Templates State
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('welcome');
   const [templateContent, setTemplateContent] = useState('');
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // Password Change State
   const [currentPass, setCurrentPass] = useState('');
@@ -259,6 +260,7 @@ export default function SettingsPage() {
   ];
 
   return (
+    <>
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between">
@@ -688,7 +690,7 @@ export default function SettingsPage() {
                 <button onClick={handleSaveTemplate} className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-lg">
                   <Save className="w-4 h-4" /> Save Template
                 </button>
-                <button onClick={() => { if (confirm('Reset to default?')) setTemplateContent(DEFAULT_TEMPLATES[selectedTemplate]); }}
+                <button onClick={() => setShowResetConfirm(true)}
                   className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-lg">
                   <RotateCcw className="w-4 h-4" /> Reset to Default
                 </button>
@@ -697,6 +699,35 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
-    </div>
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" style={{ animation: animationsEnabled ? 'fadeIn 0.2s ease-out' : 'none' }}>
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+            <div className="p-5 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center flex-shrink-0 text-rose-500">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900">Reset Template?</h3>
+                <p className="text-xs text-slate-500 mt-0.5">This cannot be undone.</p>
+              </div>
+            </div>
+            <div className="p-5 bg-slate-50 flex justify-end gap-3">
+              <button onClick={() => setShowResetConfirm(false)} className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setTemplateContent(DEFAULT_TEMPLATES[selectedTemplate]);
+                  setShowResetConfirm(false);
+                }} 
+                className="px-4 py-2 text-sm font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors shadow-sm"
+              >
+                Reset to Default
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

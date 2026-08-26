@@ -375,12 +375,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* DESKTOP SIDEBAR */}
       <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky z-30 shadow-sm ${globalAnnouncement && waStatus !== 'connected' ? 'top-16 h-[calc(100vh-4rem)]' : globalAnnouncement || waStatus !== 'connected' ? 'top-8 h-[calc(100vh-2rem)]' : 'top-0 h-screen'}`}>
         {/* Brand */}
-        <div className="p-4 border-b border-slate-900 flex items-center justify-between bg-gradient-to-r from-blue-950 via-blue-900 to-slate-900 text-white">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white text-slate-900">
           <div className="flex items-center space-x-3">
-            <img src="/logo.png" alt="Gym Logo" className="w-10 h-10 object-contain rounded-xl shadow-sm bg-white p-1" />
+            <img src="/logo.png" alt="Gym Logo" className="w-10 h-10 object-contain rounded-xl shadow-sm border border-slate-200 bg-white p-1" />
             <div>
-              <span className="font-extrabold text-white text-base tracking-tight">GymFlow</span>
-              <span className="block text-xs font-semibold text-blue-200">Gym Admin</span>
+              <span className="font-extrabold text-slate-900 text-base tracking-tight">GymFlow</span>
+              <span className="block text-xs font-semibold text-slate-500">Gym Admin</span>
             </div>
           </div>
         </div>

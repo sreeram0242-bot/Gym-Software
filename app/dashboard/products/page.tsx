@@ -131,6 +131,15 @@ export default function ProductsPage() {
     try {
       const selectedCust = customers.find((c: any) => c.id === posCustomer);
       const splitDetails = posPaymentMethod === 'SPLIT' ? { cash: Number(posCashSplit) || 0, upi: Number(posUpiSplit) || 0 } : null;
+
+      if (posPaymentMethod === 'SPLIT') {
+        const splitSum = (splitDetails?.cash || 0) + (splitDetails?.upi || 0);
+        if (splitSum !== cartTotal) {
+          alert(`Split amounts (Cash: ₹${splitDetails?.cash}, UPI: ₹${splitDetails?.upi}) must equal the Cart Total (₹${cartTotal}).`);
+          setCheckoutLoading(false);
+          return;
+        }
+      }
       await recordProductSale({
         gymId,
         items: cart,

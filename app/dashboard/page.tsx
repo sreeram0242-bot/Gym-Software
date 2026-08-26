@@ -81,26 +81,26 @@ export default function DashboardOverview() {
       )}
 
       {/* Top Banner Greeting */}
-      <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-slate-900 rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-10 pointer-events-none">
-          <img src="/logo.png" alt="Background Logo" className="w-64 h-64 object-contain opacity-20 brightness-0 invert" />
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
+        <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-5 pointer-events-none">
+          <img src="/logo.png" alt="Background Logo" className="w-64 h-64 object-contain" />
         </div>
 
         <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <div className="inline-flex items-center space-x-1.5 bg-white/10 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold mb-2 text-blue-100">
-              <Zap className="w-3.5 h-3.5 text-amber-300" />
+            <div className="inline-flex items-center space-x-1.5 bg-slate-100 px-2.5 py-1 rounded-full text-xs font-semibold mb-2 text-slate-700">
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
               <span>{activeGym?.name || 'Gym Admin Portal'}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Welcome Back, {activeGym?.ownerName || 'Gym Owner'}!</h1>
-            <p className="text-blue-100 text-xs sm:text-sm mt-1">Here is your gym's live check-in feed and financial summary for today.</p>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">Welcome Back, {activeGym?.ownerName || 'Gym Owner'}!</h1>
+            <p className="text-slate-500 text-xs sm:text-sm mt-1">Here is your gym's live check-in feed and financial summary for today.</p>
           </div>
 
           <Link
             href="/dashboard/checkin"
-            className="px-4 py-2.5 bg-white text-blue-950 hover:bg-blue-50 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-md flex items-center space-x-2 flex-shrink-0"
+            className="px-4 py-2.5 bg-blue-900 text-white hover:bg-blue-950 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-md flex items-center space-x-2 flex-shrink-0"
           >
-            <Smartphone className="w-4 h-4 text-blue-900" />
+            <Smartphone className="w-4 h-4 text-white" />
             <span>Open NFC Terminal</span>
           </Link>
         </div>
@@ -111,7 +111,7 @@ export default function DashboardOverview() {
         {/* Metric 1: Total Members */}
         <Link href="/dashboard/members" className="bg-white border border-slate-200 hover:border-blue-700 p-4 rounded-xl shadow-sm transition-all group">
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Active Members</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Total Members</span>
             <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-900 flex items-center justify-center group-hover:scale-110 transition-transform">
               <Users className="w-4 h-4" />
             </div>

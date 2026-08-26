@@ -182,7 +182,7 @@ export default function RemindersPage() {
 
                   <div className="flex items-center space-x-2 flex-shrink-0">
                     <a
-                      href={`https://wa.me/91${cust.phone.replace(/\D/g, '')}?text=${waText}`}
+                      href={`https://wa.me/91${cust.phone.replace(/\D/g, '').replace(/^91/, '')}?text=${waText}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center space-x-1.5"

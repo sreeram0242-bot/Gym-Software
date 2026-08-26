@@ -50,6 +50,7 @@ export default function RevenuePage() {
   const [newPlanMonths, setNewPlanMonths] = useState<number | string>(1);
   const [newPlanPrice, setNewPlanPrice] = useState<number | string>(2500);
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+  const [deletePlanDialog, setDeletePlanDialog] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -168,8 +169,13 @@ export default function RevenuePage() {
   };
 
   const handleDeletePlan = async (id: string) => {
-    if (window.confirm('Delete this subscription package?')) {
-      await deleteSubscriptionPlan(id);
+    setDeletePlanDialog(id);
+  };
+
+  const executeDeletePlan = async () => {
+    if (deletePlanDialog) {
+      await deleteSubscriptionPlan(deletePlanDialog);
+      setDeletePlanDialog(null);
       loadData();
     }
   };
@@ -581,8 +587,8 @@ export default function RevenuePage() {
                 contentStyle={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0' }}
                 formatter={(value: any) => [`₹${Number(value).toLocaleString()}`, '']}
               />
-              <Bar dataKey="Income" fill="#2563EB" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Expense" fill="#EF4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Income" fill="#1E3A8A" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Expense" fill="#B91C1C" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -1076,6 +1082,35 @@ export default function RevenuePage() {
                 className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors shadow-sm flex items-center justify-center gap-2"
               >
                 <Download className="w-4 h-4" /> PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DELETE PLAN CONFIRMATION */}
+      {deletePlanDialog && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center text-rose-600 mb-4">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h2 className="text-lg font-black text-slate-900 mb-1">Delete Subscription Package?</h2>
+            <p className="text-slate-600 text-xs font-medium mb-4 leading-relaxed">
+              Are you sure you want to permanently delete this package? Existing members on this plan will not be affected, but new members cannot select it.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletePlanDialog(null)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeDeletePlan}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition-colors shadow-sm"
+              >
+                Delete
               </button>
             </div>
           </div>

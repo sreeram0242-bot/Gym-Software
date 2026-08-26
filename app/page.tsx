@@ -32,6 +32,7 @@ export default function LandingPage() {
       if (gymMatch) {
         if (typeof window !== 'undefined') {
           localStorage.setItem('active_gym_id', gymMatch.id);
+          localStorage.setItem('active_gym_user_id', gymMatch.userId);
         }
         router.push('/dashboard');
       } else {

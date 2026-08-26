@@ -232,6 +232,14 @@ export default function MemberManagementPage() {
       return;
     }
 
+    if (!isEditingMember && paymentMethod === 'SPLIT') {
+      const splitSum = Number(splitCash) + Number(splitUpi);
+      if (splitSum !== Number(paidAmount)) {
+        setErrorMsg(`Split amounts (Cash: ₹${splitCash}, UPI: ₹${splitUpi}) must equal the Total Paid Amount (₹${paidAmount}).`);
+        return;
+      }
+    }
+
     // Calculate due date based on plan
     const selectedPlan = plans.find(p => p.name === planType);
     const months = selectedPlan ? selectedPlan.durationMonths : 1;
@@ -278,42 +286,8 @@ export default function MemberManagementPage() {
         nextDueDate
       });
 
-      const autoMessagesEnabled = settings?.waAutoMessages ?? true;
-      if (autoMessagesEnabled) {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const dateString = now.toLocaleDateString();
-
-        const pendingText = finalPendingBalance > 0 
-          ? `\n⏳ *Pending Balance:* ₹${finalPendingBalance}${balanceDueDate ? ` (Due by ${balanceDueDate})` : ''}` 
-          : '';
-
-        fetch('/api/whatsapp/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            gymId,
-            phone,
-            message: compileTemplate(getTemplate(settings, 'welcome'), {
-              name,
-              gymName,
-              phone,
-              plan: planType,
-              amount: actualPaid,
-              dueDate: nextDueDate
-            }) + `${pendingText}\n\n_Receipt Generated: ${dateString} ${timeString}_`
-          })
-        }).then(res => res.json()).then(data => {
-          if (data.success && typeof window !== 'undefined') {
-             window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Welcome message sent to ${name}`, type: 'success' } }));
-          } else if (typeof window !== 'undefined') {
-             window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send welcome message: ${data.error}`, type: 'error' } }));
-          }
-        }).catch(() => {
-          if (typeof window !== 'undefined') {
-             window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send welcome message to ${name}`, type: 'error' } }));
-          }
-        });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Member ${name} added successfully!`, type: 'success' } }));
       }
     }
 
@@ -395,6 +369,14 @@ export default function MemberManagementPage() {
     if (!collectDueMember || Number(collectDueAmount) <= 0) return;
 
     try {
+      if (collectDuePaymentMethod === 'SPLIT') {
+        const splitSum = Number(collectDueSplitCash) + Number(collectDueSplitUpi);
+        if (splitSum !== Number(collectDueAmount)) {
+          showToast(`Split amounts must equal the Collect Amount (₹${collectDueAmount}).`, 'error');
+          return;
+        }
+      }
+
       const splitData = collectDuePaymentMethod === 'SPLIT' 
         ? { cash: Number(collectDueSplitCash), upi: Number(collectDueSplitUpi) } 
         : undefined;
@@ -918,48 +900,52 @@ export default function MemberManagementPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    NFC Tag / Card ID
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Auto-gen or tap"
-                    value={nfcCardId}
-                    onChange={(e) => setNfcCardId(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                      }
-                    }}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center gap-1">
-                    <Fingerprint className="w-3 h-3 text-blue-900" /> Biometric Data
-                  </label>
-                  <div className="flex gap-2">
+                {(!settings?.attendanceMode || settings.attendanceMode === 'NFC' || settings.attendanceMode === 'BOTH') && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                      NFC Tag / Card ID
+                    </label>
                     <input
                       type="text"
-                      readOnly
-                      placeholder={fingerprintId ? "Registered" : "No Fingerprint"}
-                      value={fingerprintId ? "Registered" : ""}
-                      className="w-full px-2 py-2 bg-slate-100 border border-slate-300 rounded-lg text-sm font-bold text-blue-900 outline-none cursor-not-allowed"
+                      placeholder="Auto-gen or tap"
+                      value={nfcCardId}
+                      onChange={(e) => setNfcCardId(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none"
                     />
-                    <button
-                      type="button"
-                      onClick={handleFingerprintScan}
-                      disabled={fpScanning}
-                      className={`px-3 py-2 rounded-lg text-xs font-bold shrink-0 transition-colors ${
-                        fpScanning ? 'bg-amber-100 text-amber-700 animate-pulse' : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
-                      }`}
-                    >
-                      {fpScanning ? 'Scanning...' : 'Scan'}
-                    </button>
                   </div>
-                </div>
+                )}
+
+                {(!settings?.attendanceMode || settings.attendanceMode === 'FINGERPRINT' || settings.attendanceMode === 'BOTH') && (
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+                      <Fingerprint className="w-3 h-3 text-blue-900" /> Biometric Data
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        placeholder={fingerprintId ? "Registered" : "No Fingerprint"}
+                        value={fingerprintId ? "Registered" : ""}
+                        className="w-full px-2 py-2 bg-slate-100 border border-slate-300 rounded-lg text-sm font-bold text-blue-900 outline-none cursor-not-allowed"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleFingerprintScan}
+                        disabled={fpScanning}
+                        className={`px-3 py-2 rounded-lg text-xs font-bold shrink-0 transition-colors ${
+                          fpScanning ? 'bg-amber-100 text-amber-700 animate-pulse' : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
+                        }`}
+                      >
+                        {fpScanning ? 'Scanning...' : 'Scan'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
