@@ -29,13 +29,13 @@ export default function MemberManagementPage() {
   const [phone, setPhone] = useState('');
   const [nfcCardId, setNfcCardId] = useState('');
   const [planType, setPlanType] = useState<string>('Monthly');
-  const [feeAmount, setFeeAmount] = useState(2500);
-  const [paidAmount, setPaidAmount] = useState<number>(2500);
+  const [feeAmount, setFeeAmount] = useState<number | string>(2500);
+  const [paidAmount, setPaidAmount] = useState<number | string>(2500);
   const [remainingType, setRemainingType] = useState<'BALANCE' | 'DISCOUNT'>('BALANCE');
   const [balanceDueDate, setBalanceDueDate] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
-  const [splitCash, setSplitCash] = useState<number>(0);
-  const [splitUpi, setSplitUpi] = useState<number>(0);
+  const [splitCash, setSplitCash] = useState<number | string>(0);
+  const [splitUpi, setSplitUpi] = useState<number | string>(0);
   const [lastPaymentDate, setLastPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
@@ -44,22 +44,22 @@ export default function MemberManagementPage() {
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
   const [renewMonths, setRenewMonths] = useState(1);
-  const [renewPaidAmount, setRenewPaidAmount] = useState<number>(2500);
+  const [renewPaidAmount, setRenewPaidAmount] = useState<number | string>(2500);
   const [renewRemainingType, setRenewRemainingType] = useState<'BALANCE' | 'DISCOUNT'>('BALANCE');
   const [renewBalanceDueDate, setRenewBalanceDueDate] = useState<string>('');
   const [renewPaymentMethod, setRenewPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
-  const [renewSplitCash, setRenewSplitCash] = useState<number>(0);
-  const [renewSplitUpi, setRenewSplitUpi] = useState<number>(0);
+  const [renewSplitCash, setRenewSplitCash] = useState<number | string>(0);
+  const [renewSplitUpi, setRenewSplitUpi] = useState<number | string>(0);
   const [isEditingMember, setIsEditingMember] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
 
   // Collect Due Modal State
   const [showCollectDueModal, setShowCollectDueModal] = useState(false);
   const [collectDueMember, setCollectDueMember] = useState<any | null>(null);
-  const [collectDueAmount, setCollectDueAmount] = useState<number>(0);
+  const [collectDueAmount, setCollectDueAmount] = useState<number | string>(0);
   const [collectDuePaymentMethod, setCollectDuePaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
-  const [collectDueSplitCash, setCollectDueSplitCash] = useState<number>(0);
-  const [collectDueSplitUpi, setCollectDueSplitUpi] = useState<number>(0);
+  const [collectDueSplitCash, setCollectDueSplitCash] = useState<number | string>(0);
+  const [collectDueSplitUpi, setCollectDueSplitUpi] = useState<number | string>(0);
 
   // Custom UI Overlays
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -385,7 +385,7 @@ export default function MemberManagementPage() {
 
   const handleCollectDueSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!collectDueMember || collectDueAmount <= 0) return;
+    if (!collectDueMember || Number(collectDueAmount) <= 0) return;
 
     try {
       const splitData = collectDuePaymentMethod === 'SPLIT' 
@@ -916,7 +916,7 @@ export default function MemberManagementPage() {
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       setFeeAmount(val);
-                      if (!isEditingMember && paidAmount > val) setPaidAmount(val);
+                      if (!isEditingMember && Number(paidAmount) > val) setPaidAmount(val);
                     }}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold text-slate-900 outline-none"
                   />
@@ -935,7 +935,7 @@ export default function MemberManagementPage() {
                         min={0}
                         max={feeAmount}
                         value={paidAmount}
-                        onChange={(e) => setPaidAmount(Number(e.target.value))}
+                        onChange={(e) => setPaidAmount(e.target.value === '' ? '' : Number(e.target.value))}
                         className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-black text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-600"
                       />
                     </div>
@@ -953,11 +953,11 @@ export default function MemberManagementPage() {
                     </div>
                   </div>
 
-                  {paidAmount < feeAmount && (
+                  {Number(paidAmount) < Number(feeAmount) && (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2.5 animate-in fade-in duration-200">
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-bold text-amber-900">Remaining Unpaid:</span>
-                        <span className="font-mono font-black text-sm text-amber-700">₹{feeAmount - paidAmount}</span>
+                        <span className="font-mono font-black text-sm text-amber-700">₹{Number(feeAmount) - Number(paidAmount)}</span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
@@ -1034,7 +1034,7 @@ export default function MemberManagementPage() {
                             type="number"
                             min={0}
                             value={splitCash}
-                            onChange={(e) => setSplitCash(Number(e.target.value))}
+                            onChange={(e) => setSplitCash(e.target.value === '' ? '' : Number(e.target.value))}
                             className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
                           />
                         </div>
@@ -1044,7 +1044,7 @@ export default function MemberManagementPage() {
                             type="number"
                             min={0}
                             value={splitUpi}
-                            onChange={(e) => setSplitUpi(Number(e.target.value))}
+                            onChange={(e) => setSplitUpi(e.target.value === '' ? '' : Number(e.target.value))}
                             className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
                           />
                         </div>
@@ -1186,17 +1186,17 @@ export default function MemberManagementPage() {
                       type="number"
                       min={0}
                       value={renewPaidAmount}
-                      onChange={(e) => setRenewPaidAmount(Number(e.target.value))}
+                      onChange={(e) => setRenewPaidAmount(e.target.value === '' ? '' : Number(e.target.value))}
                       className="w-full bg-white border border-slate-300 rounded-lg p-2 font-black text-emerald-700 text-xs outline-none"
                     />
                   </div>
                 </div>
 
-                {renewPaidAmount < selectedMember.feeAmount * renewMonths && (
+                {Number(renewPaidAmount) < selectedMember.feeAmount * renewMonths && (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2 text-xs">
                     <div className="flex justify-between font-bold text-amber-900">
                       <span>Remaining Unpaid:</span>
-                      <span className="font-mono text-amber-700">₹{selectedMember.feeAmount * renewMonths - renewPaidAmount}</span>
+                      <span className="font-mono text-amber-700">₹{selectedMember.feeAmount * renewMonths - Number(renewPaidAmount)}</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
@@ -1266,7 +1266,7 @@ export default function MemberManagementPage() {
                         <input
                           type="number"
                           value={renewSplitCash}
-                          onChange={(e) => setRenewSplitCash(Number(e.target.value))}
+                          onChange={(e) => setRenewSplitCash(e.target.value === '' ? '' : Number(e.target.value))}
                           className="w-full p-1 border border-slate-300 rounded text-xs font-bold"
                         />
                       </div>
@@ -1275,7 +1275,7 @@ export default function MemberManagementPage() {
                         <input
                           type="number"
                           value={renewSplitUpi}
-                          onChange={(e) => setRenewSplitUpi(Number(e.target.value))}
+                          onChange={(e) => setRenewSplitUpi(e.target.value === '' ? '' : Number(e.target.value))}
                           className="w-full p-1 border border-slate-300 rounded text-xs font-bold"
                         />
                       </div>
@@ -1382,7 +1382,7 @@ export default function MemberManagementPage() {
                   min={1}
                   max={collectDueMember.pendingBalance}
                   value={collectDueAmount}
-                  onChange={(e) => setCollectDueAmount(Number(e.target.value))}
+                  onChange={(e) => setCollectDueAmount(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-black text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-600"
                 />
               </div>
@@ -1418,7 +1418,7 @@ export default function MemberManagementPage() {
                         type="number"
                         min={0}
                         value={collectDueSplitCash}
-                        onChange={(e) => setCollectDueSplitCash(Number(e.target.value))}
+                        onChange={(e) => setCollectDueSplitCash(e.target.value === '' ? '' : Number(e.target.value))}
                         className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
                       />
                     </div>
@@ -1428,7 +1428,7 @@ export default function MemberManagementPage() {
                         type="number"
                         min={0}
                         value={collectDueSplitUpi}
-                        onChange={(e) => setCollectDueSplitUpi(Number(e.target.value))}
+                        onChange={(e) => setCollectDueSplitUpi(e.target.value === '' ? '' : Number(e.target.value))}
                         className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
                       />
                     </div>

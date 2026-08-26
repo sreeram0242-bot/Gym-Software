@@ -30,16 +30,16 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
   const [pName, setPName] = useState('');
   const [pCategory, setPCategory] = useState('Supplement');
-  const [pPrice, setPPrice] = useState(0);
-  const [pStock, setPStock] = useState(0);
+  const [pPrice, setPPrice] = useState<number | string>(0);
+  const [pStock, setPStock] = useState<number | string>(0);
   const [pUnit, setPUnit] = useState('unit');
   const [savingProduct, setSavingProduct] = useState(false);
 
   // POS Cart
   const [cart, setCart] = useState<CartItem[]>([]);
   const [posPaymentMethod, setPosPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
-  const [posCashSplit, setPosCashSplit] = useState(0);
-  const [posUpiSplit, setPosUpiSplit] = useState(0);
+  const [posCashSplit, setPosCashSplit] = useState<number | string>(0);
+  const [posUpiSplit, setPosUpiSplit] = useState<number | string>(0);
   const [posCustomer, setPosCustomer] = useState<string | null>(null);
   const [posCustomerName, setPosCustomerName] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -67,7 +67,7 @@ export default function ProductsPage() {
 
   const openAddModal = () => {
     setEditingProduct(null);
-    setPName(''); setPCategory('Supplement'); setPPrice(0); setPStock(0); setPUnit('unit');
+    setPName(''); setPCategory('Supplement'); setPPrice(''); setPStock(''); setPUnit('unit');
     setShowProductModal(true);
   };
 
@@ -78,13 +78,15 @@ export default function ProductsPage() {
   };
 
   const handleSaveProduct = async () => {
-    if (!pName.trim() || pPrice <= 0) return;
+    const numPrice = Number(pPrice);
+    const numStock = Number(pStock);
+    if (!pName.trim() || numPrice <= 0) return;
     setSavingProduct(true);
     try {
       if (editingProduct) {
-        await updateProduct(editingProduct.id, { name: pName, category: pCategory, price: pPrice, stock: pStock, unit: pUnit });
+        await updateProduct(editingProduct.id, { name: pName, category: pCategory, price: numPrice, stock: numStock, unit: pUnit });
       } else {
-        await addProduct({ gymId, name: pName, category: pCategory, price: pPrice, stock: pStock, unit: pUnit });
+        await addProduct({ gymId, name: pName, category: pCategory, price: numPrice, stock: numStock, unit: pUnit });
       }
       await loadAll(gymId);
       setShowProductModal(false);
@@ -126,7 +128,7 @@ export default function ProductsPage() {
     setCheckoutLoading(true);
     try {
       const selectedCust = customers.find((c: any) => c.id === posCustomer);
-      const splitDetails = posPaymentMethod === 'SPLIT' ? { cash: posCashSplit, upi: posUpiSplit } : null;
+      const splitDetails = posPaymentMethod === 'SPLIT' ? { cash: Number(posCashSplit) || 0, upi: Number(posUpiSplit) || 0 } : null;
       await recordProductSale({
         gymId,
         items: cart,
@@ -330,8 +332,8 @@ export default function ProductsPage() {
                         </div>
                         {posPaymentMethod === 'SPLIT' && (
                           <div className="grid grid-cols-2 gap-2 mt-2">
-                            <div><label className="text-xs text-slate-500 font-semibold">Cash (₹)</label><input type="number" value={posCashSplit} onChange={e => setPosCashSplit(Number(e.target.value))} className="w-full px-2 py-1.5 mt-1 bg-white border border-slate-200 rounded text-xs" /></div>
-                            <div><label className="text-xs text-slate-500 font-semibold">UPI (₹)</label><input type="number" value={posUpiSplit} onChange={e => setPosUpiSplit(Number(e.target.value))} className="w-full px-2 py-1.5 mt-1 bg-white border border-slate-200 rounded text-xs" /></div>
+                            <div><label className="text-xs text-slate-500 font-semibold">Cash (₹)</label><input type="number" value={posCashSplit} onChange={e => setPosCashSplit(e.target.value === '' ? '' : Number(e.target.value))} className="w-full px-2 py-1.5 mt-1 bg-white border border-slate-200 rounded text-xs" /></div>
+                            <div><label className="text-xs text-slate-500 font-semibold">UPI (₹)</label><input type="number" value={posUpiSplit} onChange={e => setPosUpiSplit(e.target.value === '' ? '' : Number(e.target.value))} className="w-full px-2 py-1.5 mt-1 bg-white border border-slate-200 rounded text-xs" /></div>
                           </div>
                         )}
                       </div>
@@ -415,17 +417,17 @@ export default function ProductsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Price (₹) *</label>
-                  <input type="number" value={pPrice} onChange={e => setPPrice(Number(e.target.value))} min={0} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-800 outline-none" />
+                <input type="number" value={pPrice} onChange={e => setPPrice(e.target.value === '' ? '' : Number(e.target.value))} min={0} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-800 outline-none" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Stock Quantity</label>
-                  <input type="number" value={pStock} onChange={e => setPStock(Number(e.target.value))} min={0} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-800 outline-none" />
+                <input type="number" value={pStock} onChange={e => setPStock(e.target.value === '' ? '' : Number(e.target.value))} min={0} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-800 outline-none" />
                 </div>
               </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowProductModal(false)} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
-              <button onClick={handleSaveProduct} disabled={!pName.trim() || pPrice <= 0 || savingProduct} className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">
+              <button onClick={handleSaveProduct} disabled={!pName.trim() || Number(pPrice) <= 0 || savingProduct} className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">
                 {savingProduct ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check className="w-4 h-4" />}
                 {editingProduct ? 'Save Changes' : 'Add Product'}
               </button>

@@ -21,7 +21,7 @@ export default function RevenuePage() {
   // Add Expense Modal
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [expenseCategory, setExpenseCategory] = useState('Rent');
-  const [expenseAmount, setExpenseAmount] = useState(5000);
+  const [expenseAmount, setExpenseAmount] = useState<number | string>(5000);
   const [expenseDesc, setExpenseDesc] = useState('');
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [expensePaymentMethod, setExpensePaymentMethod] = useState<'CASH' | 'UPI' | 'CARD'>('CASH');
@@ -29,7 +29,7 @@ export default function RevenuePage() {
   // Edit Transaction Modal
   const [showEditTxModal, setShowEditTxModal] = useState(false);
   const [editingTxId, setEditingTxId] = useState<string | null>(null);
-  const [editAmount, setEditAmount] = useState<number>(0);
+  const [editAmount, setEditAmount] = useState<number | string>(0);
   const [editCategory, setEditCategory] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editDate, setEditDate] = useState('');
@@ -40,8 +40,8 @@ export default function RevenuePage() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
   const [newPlanName, setNewPlanName] = useState('');
-  const [newPlanMonths, setNewPlanMonths] = useState(1);
-  const [newPlanPrice, setNewPlanPrice] = useState(2500);
+  const [newPlanMonths, setNewPlanMonths] = useState<number | string>(1);
+  const [newPlanPrice, setNewPlanPrice] = useState<number | string>(2500);
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export default function RevenuePage() {
     await addTransaction({
       gymId,
       type: 'EXPENSE',
-      amount: Number(expenseAmount),
+      amount: Number(expenseAmount) || 0,
       category: expenseCategory,
       description: expenseDesc,
       date: expenseDate,
@@ -79,6 +79,7 @@ export default function RevenuePage() {
 
     setShowExpenseModal(false);
     setExpenseDesc('');
+    setExpenseAmount(5000);
     loadData();
   };
 
@@ -94,11 +95,12 @@ export default function RevenuePage() {
 
   const handleEditTxSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingTxId || editAmount <= 0) return;
+    const numAmount = Number(editAmount);
+    if (!editingTxId || numAmount <= 0) return;
 
     await updateTransaction(editingTxId, {
-      amount: Number(editAmount),
-      paidAmount: Number(editAmount),
+      amount: numAmount,
+      paidAmount: numAmount,
       category: editCategory,
       description: editDesc,
       date: editDate,
@@ -118,21 +120,23 @@ export default function RevenuePage() {
   };
 
   const handleAddPlan = async () => {
-    if (!newPlanName || newPlanPrice <= 0 || newPlanMonths <= 0) return;
+    const numMonths = Number(newPlanMonths);
+    const numPrice = Number(newPlanPrice);
+    if (!newPlanName || numPrice <= 0 || numMonths <= 0) return;
     
     if (editingPlanId) {
       await updateSubscriptionPlan(editingPlanId, {
         name: newPlanName,
-        durationMonths: newPlanMonths,
-        price: newPlanPrice
+        durationMonths: numMonths,
+        price: numPrice
       });
       setEditingPlanId(null);
     } else {
       await addSubscriptionPlan({
         gymId,
         name: newPlanName,
-        durationMonths: newPlanMonths,
-        price: newPlanPrice
+        durationMonths: numMonths,
+        price: numPrice
       });
     }
     
@@ -637,7 +641,7 @@ export default function RevenuePage() {
                   required
                   placeholder="e.g. 5000"
                   value={expenseAmount}
-                  onChange={(e) => setExpenseAmount(Number(e.target.value))}
+                  onChange={(e) => setExpenseAmount(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-extrabold text-slate-900 outline-none"
                 />
               </div>
@@ -760,10 +764,10 @@ export default function RevenuePage() {
                  </div>
                  <div className="grid grid-cols-2 gap-3 mb-3">
                    <input type="text" placeholder="Package Name" value={newPlanName} onChange={e => setNewPlanName(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
-                   <input type="number" placeholder="Months" value={newPlanMonths} onChange={e => setNewPlanMonths(Number(e.target.value))} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
+                   <input type="number" placeholder="Months" value={newPlanMonths} onChange={e => setNewPlanMonths(e.target.value === '' ? '' : Number(e.target.value))} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
                    <div className="col-span-2 relative">
                      <span className="absolute left-3 top-2 text-slate-400 font-bold">₹</span>
-                     <input type="number" placeholder="Price" value={newPlanPrice} onChange={e => setNewPlanPrice(Number(e.target.value))} className="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
+                      <input type="number" placeholder="Price" value={newPlanPrice} onChange={e => setNewPlanPrice(e.target.value === '' ? '' : Number(e.target.value))} className="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
                    </div>
                  </div>
                  <button onClick={handleAddPlan} className="w-full py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg text-sm font-bold transition-colors">
@@ -799,7 +803,7 @@ export default function RevenuePage() {
                   required
                   min={1}
                   value={editAmount}
-                  onChange={(e) => setEditAmount(Number(e.target.value))}
+                  onChange={(e) => setEditAmount(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-black text-slate-900 outline-none focus:ring-2 focus:ring-blue-800"
                 />
               </div>
