@@ -309,9 +309,10 @@ export class WhatsAppManager {
 
     } catch (error: any) {
       console.error("WhatsApp Init Error:", error);
+      globalAny.WhatsAppStatuses.set(gymId, 'error');
       if (!globalAny.WhatsAppErrors) globalAny.WhatsAppErrors = new Map<string, string>();
       globalAny.WhatsAppErrors.set(gymId, error?.message || String(error));
-      globalAny.WhatsAppStatuses.set(gymId, 'disconnected');
+      globalAny.WhatsAppSessions.delete(gymId);
     }
   }
 
@@ -328,6 +329,10 @@ export class WhatsAppManager {
     if (sock) {
       try {
         sock.logout();
+      } catch (e) {}
+      try {
+        if (sock.ws) sock.ws.close();
+        if (sock.end) sock.end(undefined);
       } catch (e) {}
     }
     

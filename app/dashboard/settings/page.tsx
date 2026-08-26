@@ -49,6 +49,7 @@ export default function SettingsPage() {
 
   // WhatsApp State
   const [waStatus, setWaStatus] = useState<string>('disconnected');
+  const [waError, setWaError] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [waLoading, setWaLoading] = useState(true);
   const [autoMessages, setAutoMessages] = useState(true);
@@ -167,6 +168,7 @@ export default function SettingsPage() {
         const data = await res.json();
         setWaStatus(data.status);
         setQrCode(data.qr);
+        setWaError(data.error || null);
       } catch { /* offline */ } finally {
         setWaLoading(false);
       }
@@ -453,9 +455,12 @@ export default function SettingsPage() {
                       </div>
                     ) : (
                       <div className="flex items-center justify-between py-4">
-                        <div className="flex items-center gap-3 text-slate-500 text-sm">
-                          <RefreshCw className={`w-5 h-5 ${waLoading ? 'animate-spin' : ''}`} />
-                          <span>Waiting for QR code...</span>
+                        <div className="flex flex-col gap-1 text-slate-500 text-sm">
+                          <div className="flex items-center gap-3">
+                            <RefreshCw className={`w-5 h-5 ${waLoading ? 'animate-spin' : ''}`} />
+                            <span>{waStatus === 'error' ? 'Connection Error' : 'Waiting for QR code...'}</span>
+                          </div>
+                          {waError && <span className="text-rose-500 text-xs mt-1">Error: {waError}</span>}
                         </div>
                         <button onClick={handleDisconnectWA} className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg border border-rose-200 transition-colors">
                           Reset Connection

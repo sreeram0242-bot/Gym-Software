@@ -49,6 +49,8 @@ model Customer {
   attendance   AttendanceRecord[]
   transactions Transaction[]
   productSales ProductSale[]
+
+  @@index([gymId])
 }
 
 model AttendanceRecord {
@@ -63,6 +65,10 @@ model AttendanceRecord {
   checkOutTime  String?
   durationMinutes Int?
   dateStr       String
+
+  @@index([gymId])
+  @@index([customerId])
+  @@index([dateStr])
 }
 
 model Transaction {
@@ -81,6 +87,10 @@ model Transaction {
   customerId    String?
   customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   customerName  String?
+
+  @@index([gymId])
+  @@index([customerId])
+  @@index([date])
 }
 
 model SubscriptionPlan {
@@ -90,6 +100,8 @@ model SubscriptionPlan {
   name           String
   durationMonths Int
   price          Int
+
+  @@index([gymId])
 }
 
 model WhatsAppSession {
@@ -112,6 +124,8 @@ model Product {
   createdAt String
 
   saleItems ProductSaleItem[]
+
+  @@index([gymId])
 }
 
 model ProductSale {
@@ -127,6 +141,10 @@ model ProductSale {
   date          String
 
   items ProductSaleItem[]
+
+  @@index([gymId])
+  @@index([customerId])
+  @@index([date])
 }
 
 model ProductSaleItem {
