@@ -577,13 +577,14 @@ export async function collectPendingBalance(
   customerId: string,
   amountToCollect: number,
   paymentMethod: string = 'CASH',
-  splitDetails?: any
+  splitDetails?: any,
+  discountAmount: number = 0
 ) {
   const customers = await getCustomers();
   const c = customers.find((cust: any) => cust.id === customerId);
   if (!c) throw new Error('Customer not found');
 
-  const newBalance = Math.max(0, (c.pendingBalance || 0) - amountToCollect);
+  const newBalance = Math.max(0, (c.pendingBalance || 0) - amountToCollect - discountAmount);
   const today = new Date().toISOString().split('T')[0];
   const formattedSplit = splitDetails ? (typeof splitDetails === 'string' ? splitDetails : JSON.stringify(splitDetails)) : null;
 
@@ -600,12 +601,13 @@ export async function collectPendingBalance(
       data: {
         gymId: updatedCust.gymId,
         type: 'INCOME',
-        amount: amountToCollect,
+        amount: amountToCollect + discountAmount,
         paidAmount: amountToCollect,
+        discountAmount: discountAmount,
         paymentMethod: paymentMethod,
         splitDetails: formattedSplit,
         category: 'Pending Balance Collection',
-        description: `Balance Clearance for ${updatedCust.name} (${newBalance === 0 ? 'Fully Cleared' : `₹${newBalance} Still Remaining`})`,
+        description: `Balance Clearance for ${updatedCust.name} (${newBalance === 0 ? 'Fully Cleared' : `₹${newBalance} Still Remaining`})${discountAmount > 0 ? ` [₹${discountAmount} Discounted]` : ''}`,
         date: today,
         customerId: updatedCust.id,
         customerName: updatedCust.name
@@ -621,12 +623,13 @@ export async function collectPendingBalance(
       id: `tx_${Date.now()}`,
       gymId: c.gymId,
       type: 'INCOME',
-      amount: amountToCollect,
+      amount: amountToCollect + discountAmount,
       paidAmount: amountToCollect,
+      discountAmount: discountAmount,
       paymentMethod: paymentMethod,
       splitDetails: formattedSplit,
       category: 'Pending Balance Collection',
-      description: `Balance Clearance for ${c.name} (${newBalance === 0 ? 'Fully Cleared' : `₹${newBalance} Still Remaining`})`,
+      description: `Balance Clearance for ${c.name} (${newBalance === 0 ? 'Fully Cleared' : `₹${newBalance} Still Remaining`})${discountAmount > 0 ? ` [₹${discountAmount} Discounted]` : ''}`,
       date: today,
       customerId: c.id,
       customerName: c.name

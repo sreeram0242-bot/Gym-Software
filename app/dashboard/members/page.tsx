@@ -57,6 +57,7 @@ export default function MemberManagementPage() {
   const [showCollectDueModal, setShowCollectDueModal] = useState(false);
   const [collectDueMember, setCollectDueMember] = useState<any | null>(null);
   const [collectDueAmount, setCollectDueAmount] = useState<number | string>(0);
+  const [collectDueRemainingType, setCollectDueRemainingType] = useState<'BALANCE' | 'DISCOUNT'>('BALANCE');
   const [collectDuePaymentMethod, setCollectDuePaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
   const [collectDueSplitCash, setCollectDueSplitCash] = useState<number | string>(0);
   const [collectDueSplitUpi, setCollectDueSplitUpi] = useState<number | string>(0);
@@ -392,11 +393,15 @@ export default function MemberManagementPage() {
         ? { cash: Number(collectDueSplitCash), upi: Number(collectDueSplitUpi) } 
         : undefined;
 
+      const remaining = collectDueMember.pendingBalance - Number(collectDueAmount);
+      const discountAmount = collectDueRemainingType === 'DISCOUNT' ? remaining : 0;
+
       const updated = await collectPendingBalance(
         collectDueMember.id,
         Number(collectDueAmount),
         collectDuePaymentMethod,
-        splitData
+        splitData,
+        discountAmount
       );
 
       setShowCollectDueModal(false);
@@ -1383,6 +1388,40 @@ export default function MemberManagementPage() {
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-black text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-600"
                 />
               </div>
+
+              {Number(collectDueAmount) < collectDueMember.pendingBalance && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2.5 animate-in fade-in duration-200 mt-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-amber-900">Remaining Unpaid:</span>
+                    <span className="font-mono font-black text-sm text-amber-700">₹{collectDueMember.pendingBalance - Number(collectDueAmount)}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCollectDueRemainingType('BALANCE')}
+                      className={`py-2 px-3 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center space-x-1.5 ${
+                        collectDueRemainingType === 'BALANCE'
+                          ? 'bg-amber-500 text-white shadow-sm'
+                          : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>⏳ Keep as Balance</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCollectDueRemainingType('DISCOUNT')}
+                      className={`py-2 px-3 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center space-x-1.5 ${
+                        collectDueRemainingType === 'DISCOUNT'
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>🏷️ Treat as Discount</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Payment Method Selector */}
               <div>
