@@ -20,6 +20,7 @@ if (!globalAny.WhatsAppSessions) {
 }
 
 import db from './db';
+import { getTemplate, compileTemplate } from './templates';
 
 async function usePrismaAuthState(gymId: string) {
   const { initAuthCreds, BufferJSON, proto } = baileys;
@@ -260,11 +261,29 @@ export class WhatsAppManager {
             return `• ${date}: ${hrs} hours`;
           }).join('\n');
         }
-      } else if (['start', 'hi', 'hello', 'hey', 'menu'].includes(cleanText)) {
-        const balanceNotice = (customer.pendingBalance || 0) > 0 
-          ? `\n⚠️ *Pending Dues:* ₹${customer.pendingBalance}`
-          : '';
-        replyText = `🤖 *Gym Auto-Menu for ${customer.name}*${balanceNotice}\n\nReply with a number:\n*1️⃣* - Plan Details & Due Date\n*2️⃣* - Last 3 Payments\n*3️⃣* - Last 3 Days Attendance`;
+      } else if (cleanText === 'start') {
+        const rawTemplate = getTemplate(settings, 'welcome');
+        
+        let gymName = 'Our Gym';
+        try {
+          const gym = await db.gym.findUnique({ where: { id: gymId } });
+          if (gym) gymName = gym.name;
+        } catch (e) {}
+
+        const joinDate = customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : 'N/A';
+        
+        replyText = compileTemplate(rawTemplate, {
+          gymName: gymName,
+          name: customer.name,
+          phone: customer.phone,
+          plan: customer.planType,
+          amount: customer.feeAmount.toString(),
+          joinDate: joinDate,
+          dueDate: customer.nextDueDate
+        });
+        
+        // Append menu options to the welcome message
+        replyText += '\n\n---\nReply *1* to view your Plan Details\nReply *2* for Payment History\nReply *3* for Attendance Logs';
       } else {
         console.log('[WA DEBUG] Keyword not matched. Ignore.');
         return; 
@@ -280,9 +299,10 @@ export class WhatsAppManager {
         console.log('[WA DEBUG] Read receipt failed', e);
       }
 
-      // Send the auto-reply (pass true to avoid infinite menu appending)
+      // Send the auto-reply
       console.log('[WA DEBUG] Queuing message reply...');
-      await WhatsAppManager.sendMessage(gymId, fullPhone, replyText + footer, undefined, true);
+      const finalReply = cleanText === 'start' ? replyText : replyText + footer;
+      await WhatsAppManager.sendMessage(gymId, fullPhone, finalReply, undefined, true);
       console.log('[WA DEBUG] Message queued successfully');
     });
 

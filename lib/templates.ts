@@ -7,7 +7,10 @@ We're thrilled to have you join our fitness family!
 📱 *Registered Number:* {{phone}}
 💳 *Selected Plan:* {{plan}}
 💰 *Fee Paid:* ₹{{amount}}
+📅 *Date of Join:* {{joinDate}}
 📅 *Next Due Date:* {{dueDate}}
+
+✅ *WhatsApp service has been successfully started.*
 
 Let's crush those fitness goals together! 💪 See you at the gym!
 
