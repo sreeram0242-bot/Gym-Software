@@ -986,9 +986,6 @@ export default function MemberManagementPage() {
                       </div>
 
                       {remainingType === 'BALANCE' && (
-                        <div className="pt-1">
-                          <label className="block text-[11px] font-bold text-amber-950 mb-1">
-                            Balance Due Date (Optional)
                         <div className="pt-0.5">
                           <label className="block text-[10px] font-bold text-amber-950 mb-0.5">
                             Balance Due Date
