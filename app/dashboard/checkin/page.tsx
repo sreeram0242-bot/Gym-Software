@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Radio, Clock, UserCheck } from 'lucide-react';
-import { getCustomers, getAttendance, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours, getGymSettings } from '@/lib/actions';
+import React, { useState, useEffect, useRef } from 'react';
+import { Radio, Clock, UserCheck, Fingerprint, Search, Wifi, WifiOff } from 'lucide-react';
+import { getCustomers, getAttendance, findCustomerByNFC, findCustomerByFingerprint, toggleCheckIn, getMemberMonthlyAvgHours, getGymSettings } from '@/lib/actions';
 import { Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 
@@ -11,14 +11,25 @@ export default function NFCCheckInTerminal() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
 
+  // Attendance Mode from Settings
+  const [attendanceMode, setAttendanceMode] = useState<string>('NFC');
+  const [fpPort, setFpPort] = useState<number>(8765);
+
   // Web NFC State
   const [nfcSupported, setNfcSupported] = useState<boolean>(false);
   const [isScanning, setIsScanning] = useState<boolean>(false);
 
+  // Fingerprint Bridge WebSocket State
+  const [fpConnected, setFpConnected] = useState<boolean>(false);
+  const [fpStatus, setFpStatus] = useState<string>('Connecting to fingerprint agent...');
+  const fpWsRef = useRef<WebSocket | null>(null);
+
+  // Manual search state
+  const [manualSearch, setManualSearch] = useState('');
+
   useEffect(() => {
     loadData();
 
-    // Check if Web NFC API is supported
     if (typeof window !== 'undefined' && 'NDEFReader' in window) {
       setNfcSupported(true);
     }
@@ -32,14 +43,73 @@ export default function NFCCheckInTerminal() {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
-    const [custs, atts] = await Promise.all([
+    const [custs, atts, gymSettings] = await Promise.all([
       getCustomers(savedId),
-      getAttendance(savedId)
+      getAttendance(savedId),
+      getGymSettings(savedId)
     ]);
     
     setCustomers(custs);
     setAttendance(atts);
+    const mode = gymSettings?.attendanceMode || 'NFC';
+    const port = gymSettings?.fingerprintAgentPort || 8765;
+    setAttendanceMode(mode);
+    setFpPort(port);
+
+    // Connect fingerprint WebSocket if needed
+    if ((mode === 'FINGERPRINT' || mode === 'BOTH') && !fpWsRef.current) {
+      connectFingerprintBridge(savedId, port);
+    }
   };
+
+  // Connect to local MFS100 WebSocket bridge agent
+  const connectFingerprintBridge = (currentGymId: string, port: number) => {
+    try {
+      const ws = new WebSocket(`ws://localhost:${port}`);
+      fpWsRef.current = ws;
+
+      ws.onopen = () => {
+        setFpConnected(true);
+        setFpStatus('Fingerprint scanner ready — place finger on sensor');
+      };
+
+      ws.onmessage = async (event: MessageEvent) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'scan' && data.fingerprintId) {
+            const matched = await findCustomerByFingerprint(currentGymId, data.fingerprintId);
+            if (matched) {
+              await handleCheckInToggle(matched, currentGymId);
+              setFpStatus('✅ Scan registered! Place finger again for next member.');
+              setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 3000);
+            } else {
+              setFpStatus('⚠️ Fingerprint not registered. Try again or check member profile.');
+              setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 3000);
+            }
+          }
+        } catch (e) {
+          console.error('FP message parse error', e);
+        }
+      };
+
+      ws.onerror = () => {
+        setFpConnected(false);
+        setFpStatus('⚠️ Cannot connect to fingerprint bridge agent. Is it running on this PC?');
+      };
+
+      ws.onclose = () => {
+        setFpConnected(false);
+        fpWsRef.current = null;
+        setFpStatus('Fingerprint agent disconnected. Reconnecting...');
+        // Auto-retry after 5 seconds
+        setTimeout(() => connectFingerprintBridge(currentGymId, port), 5000);
+      };
+    } catch (e) {
+      setFpConnected(false);
+      setFpStatus('WebSocket not supported or bridge unreachable.');
+    }
+  };
+
 
   // Start Hardware Web NFC Scan (for devices with Web NFC support)
   const startHardwareNFCScan = async () => {
@@ -54,41 +124,7 @@ export default function NFCCheckInTerminal() {
       ndef.addEventListener('reading', async ({ serialNumber }: any) => {
         const matched = await findCustomerByNFC(gymId, serialNumber);
         if (matched) {
-          const { record, action } = await toggleCheckIn(matched.id);
-          loadData();
-          
-          // Send WhatsApp Attendance Message
-          const gymSettings = await getGymSettings(gymId);
-          if (gymSettings?.waAttendanceMessages && matched.phone) {
-            const templateName = action === 'checkin' ? 'checkin' : 'checkout';
-            const rawTemplate = getTemplate(gymSettings, templateName);
-            const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const duration = record.durationMinutes || 0;
-            
-            const message = compileTemplate(rawTemplate, {
-              gymName: "Gym", // We can use a generic name or fetch gym name. Wait, let's just use 'Gym' since we don't have gym object here easily, or we could just leave it. Oh, wait, the layout one had gym name. I'll just use "Your Gym" or similar if gym is not available. 
-              // Wait, let me check how to get the gym name. I can fetch it, or it doesn't matter much.
-              name: matched.name,
-              time: nowTime,
-              duration: duration.toString()
-            });
-
-            fetch('/api/whatsapp/send', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ gymId, phone: matched.phone, message })
-            }).then(res => res.json()).then(data => {
-              if (data.success && typeof window !== 'undefined') {
-                 window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Attendance message sent to ${matched.name}`, type: 'success' } }));
-              } else if (typeof window !== 'undefined') {
-                 window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send attendance message: ${data.error}`, type: 'error' } }));
-              }
-            }).catch(() => {
-              if (typeof window !== 'undefined') {
-                 window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Failed to send attendance message to ${matched.name}`, type: 'error' } }));
-              }
-            });
-          }
+          await handleCheckInToggle(matched, gymId);
         }
       });
     } catch (err) {
@@ -96,6 +132,35 @@ export default function NFCCheckInTerminal() {
       setIsScanning(false);
     }
   };
+
+  // Shared check-in logic used by NFC, fingerprint, and manual modes
+  const handleCheckInToggle = async (matched: any, currentGymId: string) => {
+    const { record, action } = await toggleCheckIn(matched.id);
+    loadData();
+
+    const gymSettings = await getGymSettings(currentGymId);
+    if (gymSettings?.waAttendanceMessages && matched.phone) {
+      const templateName = action === 'checkin' ? 'checkin' : 'checkout';
+      const rawTemplate = getTemplate(gymSettings, templateName);
+      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const duration = record.durationMinutes || 0;
+      const message = compileTemplate(rawTemplate, {
+        name: matched.name,
+        time: nowTime,
+        duration: duration.toString()
+      });
+      fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gymId: currentGymId, phone: matched.phone, message })
+      }).catch(() => {});
+    }
+  };
+
+  const handleManualCheckIn = async (customer: any) => {
+    await handleCheckInToggle(customer, gymId);
+  };
+
   
   const getAvg = (custId: string) => {
     const atts = attendance.filter(a => a.customerId === custId && a.durationMinutes);
@@ -134,30 +199,75 @@ export default function NFCCheckInTerminal() {
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-950 text-xs font-bold mb-2">
-            <Radio className="w-3.5 h-3.5 text-blue-900 animate-pulse" />
-            <span>NFC Attendance Terminal</span>
+            {attendanceMode === 'FINGERPRINT' ? <Fingerprint className="w-3.5 h-3.5 text-blue-900" /> : attendanceMode === 'MANUAL' ? <Search className="w-3.5 h-3.5 text-blue-900" /> : <Radio className="w-3.5 h-3.5 text-blue-900 animate-pulse" />}
+            <span>{attendanceMode === 'MANUAL' ? 'Manual Check-in' : attendanceMode === 'FINGERPRINT' ? 'Fingerprint Terminal' : attendanceMode === 'BOTH' ? 'NFC + Fingerprint Terminal' : 'NFC Attendance Terminal'}</span>
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Active Members Monitor</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Real-time view of members currently working out. Check-ins are strictly managed via NFC cards.
+            Real-time view of members currently working out.
           </p>
         </div>
 
-        {nfcSupported && (
-          <button
-            onClick={startHardwareNFCScan}
-            disabled={isScanning}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm flex items-center space-x-2 transition-all ${
-              isScanning
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
-                : 'bg-blue-900 hover:bg-blue-950 text-white'
-            }`}
-          >
-            <Radio className="w-4 h-4" />
-            <span>{isScanning ? '● Web NFC Hardware Active' : 'Enable Device Web NFC'}</span>
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* NFC Button — shown in NFC and BOTH modes */}
+          {(attendanceMode === 'NFC' || attendanceMode === 'BOTH') && nfcSupported && (
+            <button
+              onClick={startHardwareNFCScan}
+              disabled={isScanning}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm flex items-center space-x-2 transition-all ${
+                isScanning ? 'bg-emerald-50 text-emerald-700 border border-emerald-300' : 'bg-blue-900 hover:bg-blue-950 text-white'
+              }`}
+            >
+              <Radio className="w-4 h-4" />
+              <span>{isScanning ? '● Web NFC Active' : 'Enable Web NFC'}</span>
+            </button>
+          )}
+
+          {/* Fingerprint Status Badge — shown in FINGERPRINT and BOTH modes */}
+          {(attendanceMode === 'FINGERPRINT' || attendanceMode === 'BOTH') && (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border ${
+              fpConnected ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'
+            }`}>
+              {fpConnected ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+              <div>
+                <p className="font-bold">{fpConnected ? 'Scanner Connected' : 'Scanner Offline'}</p>
+                <p className="text-xs opacity-80 max-w-48 truncate">{fpStatus}</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Manual Search Bar — shown in MANUAL mode */}
+      {attendanceMode === 'MANUAL' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2"><Search className="w-4 h-4" /> Search & Check-in Member</h3>
+          <input
+            value={manualSearch}
+            onChange={e => setManualSearch(e.target.value)}
+            placeholder="Type member name..."
+            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-800 outline-none mb-3"
+          />
+          {manualSearch.trim() && (
+            <div className="space-y-2 max-h-56 overflow-auto">
+              {customers.filter((c: any) => c.name.toLowerCase().includes(manualSearch.toLowerCase())).map((c: any) => (
+                <button key={c.id} onClick={() => handleManualCheckIn(c)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl transition-colors text-left">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">{c.name}</p>
+                    <p className="text-xs text-slate-500">{c.planType}</p>
+                  </div>
+                  <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2.5 py-1 rounded-full">Check-in / Out</span>
+                </button>
+              ))}
+              {customers.filter((c: any) => c.name.toLowerCase().includes(manualSearch.toLowerCase())).length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-4">No member found</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
 
       {/* SECTION: Member Attendance Cards */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">

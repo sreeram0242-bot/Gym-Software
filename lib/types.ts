@@ -17,6 +17,7 @@ export interface Customer {
   name: string;
   phone: string;
   nfcCardId: string;
+  fingerprintId?: string | null;
   planType: string;
   feeAmount: number;
   lastPaymentDate: string;
@@ -69,4 +70,62 @@ export interface SubscriptionPlan {
   name: string;
   durationMonths: number;
   price: number;
+}
+
+export interface Product {
+  id: string;
+  gymId: string;
+  name: string;
+  category: string;
+  price: number;
+  stock: number;
+  unit: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface ProductSaleItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface ProductSale {
+  id: string;
+  gymId: string;
+  customerId?: string | null;
+  customerName?: string | null;
+  totalAmount: number;
+  paymentMethod: string;
+  splitDetails?: string | null;
+  date: string;
+  items?: ProductSaleItem[];
+}
+
+export interface GymSettings {
+  gymId: string;
+  gymName?: string;
+  ownerPhone?: string;
+  upiId?: string;
+  waConnected?: boolean;
+  waAutoMessages?: boolean;
+  waAttendanceMessages?: boolean;
+  waAutoReply?: boolean;
+  waAutoArchive?: boolean;
+  waReminderWindowDays?: number;
+  absentTrackingEnabled?: boolean;
+  absentThresholdDays?: number;
+  templateWelcome?: string;
+  templateReceipt?: string;
+  templateReminder?: string;
+  templateAbsentee?: string;
+  templateCheckIn?: string;
+  templateCheckOut?: string;
+  // Feature toggles
+  productsEnabled?: boolean;
+  // Attendance hardware: MANUAL | NFC | FINGERPRINT | BOTH
+  attendanceMode?: string;
+  fingerprintAgentPort?: number;
 }

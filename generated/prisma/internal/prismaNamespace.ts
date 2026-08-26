@@ -403,6 +403,9 @@ export const ModelName = {
   Transaction: 'Transaction',
   SubscriptionPlan: 'SubscriptionPlan',
   WhatsAppSession: 'WhatsAppSession',
+  Product: 'Product',
+  ProductSale: 'ProductSale',
+  ProductSaleItem: 'ProductSaleItem',
   GymSettings: 'GymSettings',
   Announcement: 'Announcement'
 } as const
@@ -420,7 +423,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "gym" | "customer" | "attendanceRecord" | "transaction" | "subscriptionPlan" | "whatsAppSession" | "gymSettings" | "announcement"
+    modelProps: "gym" | "customer" | "attendanceRecord" | "transaction" | "subscriptionPlan" | "whatsAppSession" | "product" | "productSale" | "productSaleItem" | "gymSettings" | "announcement"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -868,6 +871,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Product: {
+      payload: Prisma.$ProductPayload<ExtArgs>
+      fields: Prisma.ProductFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProductFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProductFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductPayload>
+        }
+        findFirst: {
+          args: Prisma.ProductFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProductFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductPayload>
+        }
+        findMany: {
+          args: Prisma.ProductFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductPayload>[]
+        }
+        create: {
+          args: Prisma.ProductCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductPayload>
+        }
+        createMany: {
+          args: Prisma.ProductCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProductCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductPayload>[]
+        }
+        delete: {
+          args: Prisma.ProductDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductPayload>
+        }
+        update: {
+          args: Prisma.ProductUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductPayload>
+        }
+        deleteMany: {
+          args: Prisma.ProductDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProductUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProductUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductPayload>[]
+        }
+        upsert: {
+          args: Prisma.ProductUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductPayload>
+        }
+        aggregate: {
+          args: Prisma.ProductAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProduct>
+        }
+        groupBy: {
+          args: Prisma.ProductGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProductGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProductCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProductCountAggregateOutputType> | number
+        }
+      }
+    }
+    ProductSale: {
+      payload: Prisma.$ProductSalePayload<ExtArgs>
+      fields: Prisma.ProductSaleFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProductSaleFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProductSaleFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalePayload>
+        }
+        findFirst: {
+          args: Prisma.ProductSaleFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProductSaleFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalePayload>
+        }
+        findMany: {
+          args: Prisma.ProductSaleFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalePayload>[]
+        }
+        create: {
+          args: Prisma.ProductSaleCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalePayload>
+        }
+        createMany: {
+          args: Prisma.ProductSaleCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProductSaleCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalePayload>[]
+        }
+        delete: {
+          args: Prisma.ProductSaleDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalePayload>
+        }
+        update: {
+          args: Prisma.ProductSaleUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalePayload>
+        }
+        deleteMany: {
+          args: Prisma.ProductSaleDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProductSaleUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProductSaleUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalePayload>[]
+        }
+        upsert: {
+          args: Prisma.ProductSaleUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalePayload>
+        }
+        aggregate: {
+          args: Prisma.ProductSaleAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProductSale>
+        }
+        groupBy: {
+          args: Prisma.ProductSaleGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProductSaleGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProductSaleCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProductSaleCountAggregateOutputType> | number
+        }
+      }
+    }
+    ProductSaleItem: {
+      payload: Prisma.$ProductSaleItemPayload<ExtArgs>
+      fields: Prisma.ProductSaleItemFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProductSaleItemFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSaleItemPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProductSaleItemFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSaleItemPayload>
+        }
+        findFirst: {
+          args: Prisma.ProductSaleItemFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSaleItemPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProductSaleItemFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSaleItemPayload>
+        }
+        findMany: {
+          args: Prisma.ProductSaleItemFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSaleItemPayload>[]
+        }
+        create: {
+          args: Prisma.ProductSaleItemCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSaleItemPayload>
+        }
+        createMany: {
+          args: Prisma.ProductSaleItemCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProductSaleItemCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSaleItemPayload>[]
+        }
+        delete: {
+          args: Prisma.ProductSaleItemDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSaleItemPayload>
+        }
+        update: {
+          args: Prisma.ProductSaleItemUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSaleItemPayload>
+        }
+        deleteMany: {
+          args: Prisma.ProductSaleItemDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProductSaleItemUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProductSaleItemUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSaleItemPayload>[]
+        }
+        upsert: {
+          args: Prisma.ProductSaleItemUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSaleItemPayload>
+        }
+        aggregate: {
+          args: Prisma.ProductSaleItemAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProductSaleItem>
+        }
+        groupBy: {
+          args: Prisma.ProductSaleItemGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProductSaleItemGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProductSaleItemCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProductSaleItemCountAggregateOutputType> | number
+        }
+      }
+    }
     GymSettings: {
       payload: Prisma.$GymSettingsPayload<ExtArgs>
       fields: Prisma.GymSettingsFieldRefs
@@ -1077,6 +1302,7 @@ export const CustomerScalarFieldEnum = {
   name: 'name',
   phone: 'phone',
   nfcCardId: 'nfcCardId',
+  fingerprintId: 'fingerprintId',
   planType: 'planType',
   feeAmount: 'feeAmount',
   lastPaymentDate: 'lastPaymentDate',
@@ -1144,6 +1370,48 @@ export const WhatsAppSessionScalarFieldEnum = {
 export type WhatsAppSessionScalarFieldEnum = (typeof WhatsAppSessionScalarFieldEnum)[keyof typeof WhatsAppSessionScalarFieldEnum]
 
 
+export const ProductScalarFieldEnum = {
+  id: 'id',
+  gymId: 'gymId',
+  name: 'name',
+  category: 'category',
+  price: 'price',
+  stock: 'stock',
+  unit: 'unit',
+  active: 'active',
+  createdAt: 'createdAt'
+} as const
+
+export type ProductScalarFieldEnum = (typeof ProductScalarFieldEnum)[keyof typeof ProductScalarFieldEnum]
+
+
+export const ProductSaleScalarFieldEnum = {
+  id: 'id',
+  gymId: 'gymId',
+  customerId: 'customerId',
+  customerName: 'customerName',
+  totalAmount: 'totalAmount',
+  paymentMethod: 'paymentMethod',
+  splitDetails: 'splitDetails',
+  date: 'date'
+} as const
+
+export type ProductSaleScalarFieldEnum = (typeof ProductSaleScalarFieldEnum)[keyof typeof ProductSaleScalarFieldEnum]
+
+
+export const ProductSaleItemScalarFieldEnum = {
+  id: 'id',
+  saleId: 'saleId',
+  productId: 'productId',
+  productName: 'productName',
+  quantity: 'quantity',
+  unitPrice: 'unitPrice',
+  totalPrice: 'totalPrice'
+} as const
+
+export type ProductSaleItemScalarFieldEnum = (typeof ProductSaleItemScalarFieldEnum)[keyof typeof ProductSaleItemScalarFieldEnum]
+
+
 export const GymSettingsScalarFieldEnum = {
   id: 'id',
   gymId: 'gymId',
@@ -1159,7 +1427,10 @@ export const GymSettingsScalarFieldEnum = {
   templateReminder: 'templateReminder',
   templateAbsentee: 'templateAbsentee',
   templateCheckIn: 'templateCheckIn',
-  templateCheckOut: 'templateCheckOut'
+  templateCheckOut: 'templateCheckOut',
+  productsEnabled: 'productsEnabled',
+  attendanceMode: 'attendanceMode',
+  fingerprintAgentPort: 'fingerprintAgentPort'
 } as const
 
 export type GymSettingsScalarFieldEnum = (typeof GymSettingsScalarFieldEnum)[keyof typeof GymSettingsScalarFieldEnum]
@@ -1412,6 +1683,9 @@ export type GlobalOmitConfig = {
   transaction?: Prisma.TransactionOmit
   subscriptionPlan?: Prisma.SubscriptionPlanOmit
   whatsAppSession?: Prisma.WhatsAppSessionOmit
+  product?: Prisma.ProductOmit
+  productSale?: Prisma.ProductSaleOmit
+  productSaleItem?: Prisma.ProductSaleItemOmit
   gymSettings?: Prisma.GymSettingsOmit
   announcement?: Prisma.AnnouncementOmit
 }

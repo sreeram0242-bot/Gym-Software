@@ -42,6 +42,7 @@ export type CustomerMinAggregateOutputType = {
   name: string | null
   phone: string | null
   nfcCardId: string | null
+  fingerprintId: string | null
   planType: string | null
   feeAmount: number | null
   lastPaymentDate: string | null
@@ -58,6 +59,7 @@ export type CustomerMaxAggregateOutputType = {
   name: string | null
   phone: string | null
   nfcCardId: string | null
+  fingerprintId: string | null
   planType: string | null
   feeAmount: number | null
   lastPaymentDate: string | null
@@ -74,6 +76,7 @@ export type CustomerCountAggregateOutputType = {
   name: number
   phone: number
   nfcCardId: number
+  fingerprintId: number
   planType: number
   feeAmount: number
   lastPaymentDate: number
@@ -102,6 +105,7 @@ export type CustomerMinAggregateInputType = {
   name?: true
   phone?: true
   nfcCardId?: true
+  fingerprintId?: true
   planType?: true
   feeAmount?: true
   lastPaymentDate?: true
@@ -118,6 +122,7 @@ export type CustomerMaxAggregateInputType = {
   name?: true
   phone?: true
   nfcCardId?: true
+  fingerprintId?: true
   planType?: true
   feeAmount?: true
   lastPaymentDate?: true
@@ -134,6 +139,7 @@ export type CustomerCountAggregateInputType = {
   name?: true
   phone?: true
   nfcCardId?: true
+  fingerprintId?: true
   planType?: true
   feeAmount?: true
   lastPaymentDate?: true
@@ -237,6 +243,7 @@ export type CustomerGroupByOutputType = {
   name: string
   phone: string
   nfcCardId: string
+  fingerprintId: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
@@ -276,6 +283,7 @@ export type CustomerWhereInput = {
   name?: Prisma.StringFilter<"Customer"> | string
   phone?: Prisma.StringFilter<"Customer"> | string
   nfcCardId?: Prisma.StringFilter<"Customer"> | string
+  fingerprintId?: Prisma.StringNullableFilter<"Customer"> | string | null
   planType?: Prisma.StringFilter<"Customer"> | string
   feeAmount?: Prisma.IntFilter<"Customer"> | number
   lastPaymentDate?: Prisma.StringFilter<"Customer"> | string
@@ -287,6 +295,7 @@ export type CustomerWhereInput = {
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
   attendance?: Prisma.AttendanceRecordListRelationFilter
   transactions?: Prisma.TransactionListRelationFilter
+  productSales?: Prisma.ProductSaleListRelationFilter
 }
 
 export type CustomerOrderByWithRelationInput = {
@@ -295,6 +304,7 @@ export type CustomerOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   nfcCardId?: Prisma.SortOrder
+  fingerprintId?: Prisma.SortOrderInput | Prisma.SortOrder
   planType?: Prisma.SortOrder
   feeAmount?: Prisma.SortOrder
   lastPaymentDate?: Prisma.SortOrder
@@ -306,6 +316,7 @@ export type CustomerOrderByWithRelationInput = {
   gym?: Prisma.GymOrderByWithRelationInput
   attendance?: Prisma.AttendanceRecordOrderByRelationAggregateInput
   transactions?: Prisma.TransactionOrderByRelationAggregateInput
+  productSales?: Prisma.ProductSaleOrderByRelationAggregateInput
 }
 
 export type CustomerWhereUniqueInput = Prisma.AtLeast<{
@@ -317,6 +328,7 @@ export type CustomerWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"Customer"> | string
   phone?: Prisma.StringFilter<"Customer"> | string
   nfcCardId?: Prisma.StringFilter<"Customer"> | string
+  fingerprintId?: Prisma.StringNullableFilter<"Customer"> | string | null
   planType?: Prisma.StringFilter<"Customer"> | string
   feeAmount?: Prisma.IntFilter<"Customer"> | number
   lastPaymentDate?: Prisma.StringFilter<"Customer"> | string
@@ -328,6 +340,7 @@ export type CustomerWhereUniqueInput = Prisma.AtLeast<{
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
   attendance?: Prisma.AttendanceRecordListRelationFilter
   transactions?: Prisma.TransactionListRelationFilter
+  productSales?: Prisma.ProductSaleListRelationFilter
 }, "id">
 
 export type CustomerOrderByWithAggregationInput = {
@@ -336,6 +349,7 @@ export type CustomerOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   nfcCardId?: Prisma.SortOrder
+  fingerprintId?: Prisma.SortOrderInput | Prisma.SortOrder
   planType?: Prisma.SortOrder
   feeAmount?: Prisma.SortOrder
   lastPaymentDate?: Prisma.SortOrder
@@ -360,6 +374,7 @@ export type CustomerScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   phone?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   nfcCardId?: Prisma.StringWithAggregatesFilter<"Customer"> | string
+  fingerprintId?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   planType?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   feeAmount?: Prisma.IntWithAggregatesFilter<"Customer"> | number
   lastPaymentDate?: Prisma.StringWithAggregatesFilter<"Customer"> | string
@@ -375,6 +390,7 @@ export type CustomerCreateInput = {
   name: string
   phone: string
   nfcCardId: string
+  fingerprintId?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
@@ -386,6 +402,7 @@ export type CustomerCreateInput = {
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
+  productSales?: Prisma.ProductSaleCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerUncheckedCreateInput = {
@@ -394,6 +411,7 @@ export type CustomerUncheckedCreateInput = {
   name: string
   phone: string
   nfcCardId: string
+  fingerprintId?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
@@ -404,6 +422,7 @@ export type CustomerUncheckedCreateInput = {
   joinedDate: string
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
+  productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerUpdateInput = {
@@ -411,6 +430,7 @@ export type CustomerUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
+  fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
@@ -422,6 +442,7 @@ export type CustomerUpdateInput = {
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
+  productSales?: Prisma.ProductSaleUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerUncheckedUpdateInput = {
@@ -430,6 +451,7 @@ export type CustomerUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
+  fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
@@ -440,6 +462,7 @@ export type CustomerUncheckedUpdateInput = {
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
+  productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerCreateManyInput = {
@@ -448,6 +471,7 @@ export type CustomerCreateManyInput = {
   name: string
   phone: string
   nfcCardId: string
+  fingerprintId?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
@@ -463,6 +487,7 @@ export type CustomerUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
+  fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
@@ -479,6 +504,7 @@ export type CustomerUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
+  fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
@@ -505,6 +531,7 @@ export type CustomerCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   nfcCardId?: Prisma.SortOrder
+  fingerprintId?: Prisma.SortOrder
   planType?: Prisma.SortOrder
   feeAmount?: Prisma.SortOrder
   lastPaymentDate?: Prisma.SortOrder
@@ -526,6 +553,7 @@ export type CustomerMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   nfcCardId?: Prisma.SortOrder
+  fingerprintId?: Prisma.SortOrder
   planType?: Prisma.SortOrder
   feeAmount?: Prisma.SortOrder
   lastPaymentDate?: Prisma.SortOrder
@@ -542,6 +570,7 @@ export type CustomerMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   nfcCardId?: Prisma.SortOrder
+  fingerprintId?: Prisma.SortOrder
   planType?: Prisma.SortOrder
   feeAmount?: Prisma.SortOrder
   lastPaymentDate?: Prisma.SortOrder
@@ -643,11 +672,28 @@ export type CustomerUpdateOneWithoutTransactionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.CustomerUpdateToOneWithWhereWithoutTransactionsInput, Prisma.CustomerUpdateWithoutTransactionsInput>, Prisma.CustomerUncheckedUpdateWithoutTransactionsInput>
 }
 
+export type CustomerCreateNestedOneWithoutProductSalesInput = {
+  create?: Prisma.XOR<Prisma.CustomerCreateWithoutProductSalesInput, Prisma.CustomerUncheckedCreateWithoutProductSalesInput>
+  connectOrCreate?: Prisma.CustomerCreateOrConnectWithoutProductSalesInput
+  connect?: Prisma.CustomerWhereUniqueInput
+}
+
+export type CustomerUpdateOneWithoutProductSalesNestedInput = {
+  create?: Prisma.XOR<Prisma.CustomerCreateWithoutProductSalesInput, Prisma.CustomerUncheckedCreateWithoutProductSalesInput>
+  connectOrCreate?: Prisma.CustomerCreateOrConnectWithoutProductSalesInput
+  upsert?: Prisma.CustomerUpsertWithoutProductSalesInput
+  disconnect?: Prisma.CustomerWhereInput | boolean
+  delete?: Prisma.CustomerWhereInput | boolean
+  connect?: Prisma.CustomerWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CustomerUpdateToOneWithWhereWithoutProductSalesInput, Prisma.CustomerUpdateWithoutProductSalesInput>, Prisma.CustomerUncheckedUpdateWithoutProductSalesInput>
+}
+
 export type CustomerCreateWithoutGymInput = {
   id?: string
   name: string
   phone: string
   nfcCardId: string
+  fingerprintId?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
@@ -658,6 +704,7 @@ export type CustomerCreateWithoutGymInput = {
   joinedDate: string
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
+  productSales?: Prisma.ProductSaleCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerUncheckedCreateWithoutGymInput = {
@@ -665,6 +712,7 @@ export type CustomerUncheckedCreateWithoutGymInput = {
   name: string
   phone: string
   nfcCardId: string
+  fingerprintId?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
@@ -675,6 +723,7 @@ export type CustomerUncheckedCreateWithoutGymInput = {
   joinedDate: string
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
+  productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerCreateOrConnectWithoutGymInput = {
@@ -712,6 +761,7 @@ export type CustomerScalarWhereInput = {
   name?: Prisma.StringFilter<"Customer"> | string
   phone?: Prisma.StringFilter<"Customer"> | string
   nfcCardId?: Prisma.StringFilter<"Customer"> | string
+  fingerprintId?: Prisma.StringNullableFilter<"Customer"> | string | null
   planType?: Prisma.StringFilter<"Customer"> | string
   feeAmount?: Prisma.IntFilter<"Customer"> | number
   lastPaymentDate?: Prisma.StringFilter<"Customer"> | string
@@ -727,6 +777,7 @@ export type CustomerCreateWithoutAttendanceInput = {
   name: string
   phone: string
   nfcCardId: string
+  fingerprintId?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
@@ -737,6 +788,7 @@ export type CustomerCreateWithoutAttendanceInput = {
   joinedDate: string
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
+  productSales?: Prisma.ProductSaleCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerUncheckedCreateWithoutAttendanceInput = {
@@ -745,6 +797,7 @@ export type CustomerUncheckedCreateWithoutAttendanceInput = {
   name: string
   phone: string
   nfcCardId: string
+  fingerprintId?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
@@ -754,6 +807,7 @@ export type CustomerUncheckedCreateWithoutAttendanceInput = {
   status?: string
   joinedDate: string
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
+  productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerCreateOrConnectWithoutAttendanceInput = {
@@ -777,6 +831,7 @@ export type CustomerUpdateWithoutAttendanceInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
+  fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
@@ -787,6 +842,7 @@ export type CustomerUpdateWithoutAttendanceInput = {
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
+  productSales?: Prisma.ProductSaleUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerUncheckedUpdateWithoutAttendanceInput = {
@@ -795,6 +851,7 @@ export type CustomerUncheckedUpdateWithoutAttendanceInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
+  fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
@@ -804,6 +861,7 @@ export type CustomerUncheckedUpdateWithoutAttendanceInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
+  productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerCreateWithoutTransactionsInput = {
@@ -811,6 +869,7 @@ export type CustomerCreateWithoutTransactionsInput = {
   name: string
   phone: string
   nfcCardId: string
+  fingerprintId?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
@@ -821,6 +880,7 @@ export type CustomerCreateWithoutTransactionsInput = {
   joinedDate: string
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
+  productSales?: Prisma.ProductSaleCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerUncheckedCreateWithoutTransactionsInput = {
@@ -829,6 +889,7 @@ export type CustomerUncheckedCreateWithoutTransactionsInput = {
   name: string
   phone: string
   nfcCardId: string
+  fingerprintId?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
@@ -838,6 +899,7 @@ export type CustomerUncheckedCreateWithoutTransactionsInput = {
   status?: string
   joinedDate: string
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
+  productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
 }
 
 export type CustomerCreateOrConnectWithoutTransactionsInput = {
@@ -861,6 +923,7 @@ export type CustomerUpdateWithoutTransactionsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
+  fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
@@ -871,6 +934,7 @@ export type CustomerUpdateWithoutTransactionsInput = {
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
+  productSales?: Prisma.ProductSaleUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerUncheckedUpdateWithoutTransactionsInput = {
@@ -879,6 +943,7 @@ export type CustomerUncheckedUpdateWithoutTransactionsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
+  fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
@@ -888,6 +953,99 @@ export type CustomerUncheckedUpdateWithoutTransactionsInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
+  productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
+}
+
+export type CustomerCreateWithoutProductSalesInput = {
+  id?: string
+  name: string
+  phone: string
+  nfcCardId: string
+  fingerprintId?: string | null
+  planType: string
+  feeAmount: number
+  lastPaymentDate: string
+  nextDueDate: string
+  pendingBalance?: number
+  balanceDueDate?: string | null
+  status?: string
+  joinedDate: string
+  gym: Prisma.GymCreateNestedOneWithoutCustomersInput
+  attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
+}
+
+export type CustomerUncheckedCreateWithoutProductSalesInput = {
+  id?: string
+  gymId: string
+  name: string
+  phone: string
+  nfcCardId: string
+  fingerprintId?: string | null
+  planType: string
+  feeAmount: number
+  lastPaymentDate: string
+  nextDueDate: string
+  pendingBalance?: number
+  balanceDueDate?: string | null
+  status?: string
+  joinedDate: string
+  attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
+}
+
+export type CustomerCreateOrConnectWithoutProductSalesInput = {
+  where: Prisma.CustomerWhereUniqueInput
+  create: Prisma.XOR<Prisma.CustomerCreateWithoutProductSalesInput, Prisma.CustomerUncheckedCreateWithoutProductSalesInput>
+}
+
+export type CustomerUpsertWithoutProductSalesInput = {
+  update: Prisma.XOR<Prisma.CustomerUpdateWithoutProductSalesInput, Prisma.CustomerUncheckedUpdateWithoutProductSalesInput>
+  create: Prisma.XOR<Prisma.CustomerCreateWithoutProductSalesInput, Prisma.CustomerUncheckedCreateWithoutProductSalesInput>
+  where?: Prisma.CustomerWhereInput
+}
+
+export type CustomerUpdateToOneWithWhereWithoutProductSalesInput = {
+  where?: Prisma.CustomerWhereInput
+  data: Prisma.XOR<Prisma.CustomerUpdateWithoutProductSalesInput, Prisma.CustomerUncheckedUpdateWithoutProductSalesInput>
+}
+
+export type CustomerUpdateWithoutProductSalesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
+  fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  planType?: Prisma.StringFieldUpdateOperationsInput | string
+  feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
+  nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
+  pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
+  balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
+  attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
+}
+
+export type CustomerUncheckedUpdateWithoutProductSalesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  gymId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
+  fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  planType?: Prisma.StringFieldUpdateOperationsInput | string
+  feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
+  nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
+  pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
+  balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerCreateManyGymInput = {
@@ -895,6 +1053,7 @@ export type CustomerCreateManyGymInput = {
   name: string
   phone: string
   nfcCardId: string
+  fingerprintId?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
@@ -910,6 +1069,7 @@ export type CustomerUpdateWithoutGymInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
+  fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
@@ -920,6 +1080,7 @@ export type CustomerUpdateWithoutGymInput = {
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
+  productSales?: Prisma.ProductSaleUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerUncheckedUpdateWithoutGymInput = {
@@ -927,6 +1088,7 @@ export type CustomerUncheckedUpdateWithoutGymInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
+  fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
@@ -937,6 +1099,7 @@ export type CustomerUncheckedUpdateWithoutGymInput = {
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
+  productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
 }
 
 export type CustomerUncheckedUpdateManyWithoutGymInput = {
@@ -944,6 +1107,7 @@ export type CustomerUncheckedUpdateManyWithoutGymInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
+  fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
@@ -962,11 +1126,13 @@ export type CustomerUncheckedUpdateManyWithoutGymInput = {
 export type CustomerCountOutputType = {
   attendance: number
   transactions: number
+  productSales: number
 }
 
 export type CustomerCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   attendance?: boolean | CustomerCountOutputTypeCountAttendanceArgs
   transactions?: boolean | CustomerCountOutputTypeCountTransactionsArgs
+  productSales?: boolean | CustomerCountOutputTypeCountProductSalesArgs
 }
 
 /**
@@ -993,6 +1159,13 @@ export type CustomerCountOutputTypeCountTransactionsArgs<ExtArgs extends runtime
   where?: Prisma.TransactionWhereInput
 }
 
+/**
+ * CustomerCountOutputType without action
+ */
+export type CustomerCountOutputTypeCountProductSalesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ProductSaleWhereInput
+}
+
 
 export type CustomerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1000,6 +1173,7 @@ export type CustomerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   name?: boolean
   phone?: boolean
   nfcCardId?: boolean
+  fingerprintId?: boolean
   planType?: boolean
   feeAmount?: boolean
   lastPaymentDate?: boolean
@@ -1011,6 +1185,7 @@ export type CustomerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
   attendance?: boolean | Prisma.Customer$attendanceArgs<ExtArgs>
   transactions?: boolean | Prisma.Customer$transactionsArgs<ExtArgs>
+  productSales?: boolean | Prisma.Customer$productSalesArgs<ExtArgs>
   _count?: boolean | Prisma.CustomerCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["customer"]>
 
@@ -1020,6 +1195,7 @@ export type CustomerSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   name?: boolean
   phone?: boolean
   nfcCardId?: boolean
+  fingerprintId?: boolean
   planType?: boolean
   feeAmount?: boolean
   lastPaymentDate?: boolean
@@ -1037,6 +1213,7 @@ export type CustomerSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   name?: boolean
   phone?: boolean
   nfcCardId?: boolean
+  fingerprintId?: boolean
   planType?: boolean
   feeAmount?: boolean
   lastPaymentDate?: boolean
@@ -1054,6 +1231,7 @@ export type CustomerSelectScalar = {
   name?: boolean
   phone?: boolean
   nfcCardId?: boolean
+  fingerprintId?: boolean
   planType?: boolean
   feeAmount?: boolean
   lastPaymentDate?: boolean
@@ -1064,11 +1242,12 @@ export type CustomerSelectScalar = {
   joinedDate?: boolean
 }
 
-export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "name" | "phone" | "nfcCardId" | "planType" | "feeAmount" | "lastPaymentDate" | "nextDueDate" | "pendingBalance" | "balanceDueDate" | "status" | "joinedDate", ExtArgs["result"]["customer"]>
+export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "name" | "phone" | "nfcCardId" | "fingerprintId" | "planType" | "feeAmount" | "lastPaymentDate" | "nextDueDate" | "pendingBalance" | "balanceDueDate" | "status" | "joinedDate", ExtArgs["result"]["customer"]>
 export type CustomerInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
   attendance?: boolean | Prisma.Customer$attendanceArgs<ExtArgs>
   transactions?: boolean | Prisma.Customer$transactionsArgs<ExtArgs>
+  productSales?: boolean | Prisma.Customer$productSalesArgs<ExtArgs>
   _count?: boolean | Prisma.CustomerCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CustomerIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1084,6 +1263,7 @@ export type $CustomerPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     gym: Prisma.$GymPayload<ExtArgs>
     attendance: Prisma.$AttendanceRecordPayload<ExtArgs>[]
     transactions: Prisma.$TransactionPayload<ExtArgs>[]
+    productSales: Prisma.$ProductSalePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1091,6 +1271,7 @@ export type $CustomerPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     name: string
     phone: string
     nfcCardId: string
+    fingerprintId: string | null
     planType: string
     feeAmount: number
     lastPaymentDate: string
@@ -1496,6 +1677,7 @@ export interface Prisma__CustomerClient<T, Null = never, ExtArgs extends runtime
   gym<T extends Prisma.GymDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.GymDefaultArgs<ExtArgs>>): Prisma.Prisma__GymClient<runtime.Types.Result.GetResult<Prisma.$GymPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   attendance<T extends Prisma.Customer$attendanceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Customer$attendanceArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AttendanceRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   transactions<T extends Prisma.Customer$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Customer$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  productSales<T extends Prisma.Customer$productSalesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Customer$productSalesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductSalePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1530,6 +1712,7 @@ export interface CustomerFieldRefs {
   readonly name: Prisma.FieldRef<"Customer", 'String'>
   readonly phone: Prisma.FieldRef<"Customer", 'String'>
   readonly nfcCardId: Prisma.FieldRef<"Customer", 'String'>
+  readonly fingerprintId: Prisma.FieldRef<"Customer", 'String'>
   readonly planType: Prisma.FieldRef<"Customer", 'String'>
   readonly feeAmount: Prisma.FieldRef<"Customer", 'Int'>
   readonly lastPaymentDate: Prisma.FieldRef<"Customer", 'String'>
@@ -1984,6 +2167,30 @@ export type Customer$transactionsArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.TransactionScalarFieldEnum | Prisma.TransactionScalarFieldEnum[]
+}
+
+/**
+ * Customer.productSales
+ */
+export type Customer$productSalesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ProductSale
+   */
+  select?: Prisma.ProductSaleSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ProductSale
+   */
+  omit?: Prisma.ProductSaleOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductSaleInclude<ExtArgs> | null
+  where?: Prisma.ProductSaleWhereInput
+  orderBy?: Prisma.ProductSaleOrderByWithRelationInput | Prisma.ProductSaleOrderByWithRelationInput[]
+  cursor?: Prisma.ProductSaleWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ProductSaleScalarFieldEnum | Prisma.ProductSaleScalarFieldEnum[]
 }
 
 /**

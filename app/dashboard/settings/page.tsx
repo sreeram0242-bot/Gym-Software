@@ -1,467 +1,573 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Smartphone, CheckCircle2, AlertTriangle, RefreshCw, LogOut, MessageSquare, Settings, Save } from 'lucide-react';
+import {
+  Settings, Smartphone, MessageSquare, ShieldCheck, Store, FileText,
+  Save, RefreshCw, LogOut, CheckCircle2, AlertTriangle, Fingerprint,
+  Radio, Lock, Eye, EyeOff, Package, Wifi, WifiOff, Send, RotateCcw,
+  ChevronRight, Key
+} from 'lucide-react';
 import { getTemplate, TemplateType, DEFAULT_TEMPLATES } from '@/lib/templates';
-import { getGymSettings, updateGymSettings } from '@/lib/actions';
+import { getGymSettings, updateGymSettings, getGyms, changeGymPassword } from '@/lib/actions';
+
+type TabType = 'general' | 'whatsapp' | 'attendance' | 'store' | 'templates';
+
+const TABS: { key: TabType; label: string; icon: React.ReactNode }[] = [
+  { key: 'general', label: 'General', icon: <Settings className="w-4 h-4" /> },
+  { key: 'whatsapp', label: 'WhatsApp', icon: <Smartphone className="w-4 h-4" /> },
+  { key: 'attendance', label: 'Attendance', icon: <Fingerprint className="w-4 h-4" /> },
+  { key: 'store', label: 'Store / POS', icon: <Store className="w-4 h-4" /> },
+  { key: 'templates', label: 'Templates', icon: <FileText className="w-4 h-4" /> },
+];
+
+function Toggle({ enabled, onChange, label, desc }: { enabled: boolean; onChange: (v: boolean) => void; label: string; desc?: string }) {
+  return (
+    <div className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
+      <div>
+        <p className="text-sm font-semibold text-slate-800">{label}</p>
+        {desc && <p className="text-xs text-slate-500 mt-0.5">{desc}</p>}
+      </div>
+      <button
+        onClick={() => onChange(!enabled)}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${enabled ? 'bg-emerald-500' : 'bg-slate-200'}`}
+      >
+        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+      </button>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState<TabType>('general');
   const [gymId, setGymId] = useState<string | null>(null);
-  const [waStatus, setWaStatus] = useState<string>('disconnected');
-  const [waError, setWaError] = useState<string | null>(null);
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const [autoMessagesEnabled, setAutoMessagesEnabled] = useState(true);
-  const [attendanceMessagesEnabled, setAttendanceMessagesEnabled] = useState(true);
-  const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
-  const [autoArchiveEnabled, setAutoArchiveEnabled] = useState(false);
-  const [reminderWindowDays, setReminderWindowDays] = useState(3);
-  
-  const [absentTrackingEnabled, setAbsentTrackingEnabled] = useState(false);
-  const [absentThresholdDays, setAbsentThresholdDays] = useState(3);
-
-  // Template State
-  const [selectedTemplateType, setSelectedTemplateType] = useState<TemplateType>('welcome');
-  const [templateContent, setTemplateContent] = useState('');
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
-  // Store full settings object
+  const [gymUserId, setGymUserId] = useState<string>('');
   const [settings, setSettings] = useState<any>(null);
+  const [saveMsg, setSaveMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // WhatsApp State
+  const [waStatus, setWaStatus] = useState<string>('disconnected');
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [waLoading, setWaLoading] = useState(true);
+  const [autoMessages, setAutoMessages] = useState(true);
+  const [attendanceMessages, setAttendanceMessages] = useState(true);
+  const [autoReply, setAutoReply] = useState(true);
+  const [autoArchive, setAutoArchive] = useState(false);
+  const [reminderDays, setReminderDays] = useState(3);
+  const [absentTracking, setAbsentTracking] = useState(false);
+  const [absentDays, setAbsentDays] = useState(3);
+
+  // Attendance Mode State
+  const [attendanceMode, setAttendanceMode] = useState<'MANUAL' | 'NFC' | 'FINGERPRINT' | 'BOTH'>('NFC');
+  const [fpPort, setFpPort] = useState(8765);
+
+  // Store State
+  const [productsEnabled, setProductsEnabled] = useState(false);
+
+  // Templates State
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('welcome');
+  const [templateContent, setTemplateContent] = useState('');
+
+  // Password Change State
+  const [currentPass, setCurrentPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState('');
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [passLoading, setPassLoading] = useState(false);
 
   useEffect(() => {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
+    const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_user_id') : null;
     setGymId(savedId);
-    
-    if (savedId) {
-      loadSettings(savedId);
-    }
+    setGymUserId(savedUserId || '');
+    if (savedId) loadSettings(savedId);
   }, []);
 
   const loadSettings = async (id: string) => {
     const data = await getGymSettings(id);
     setSettings(data);
-    setAutoMessagesEnabled(data.waAutoMessages ?? true);
-    setAttendanceMessagesEnabled(data.waAttendanceMessages ?? true);
-    setAutoReplyEnabled(data.waAutoReply ?? true);
-    setAutoArchiveEnabled(data.waAutoArchive ?? false);
-    setReminderWindowDays(data.waReminderWindowDays ?? 3);
-    setAbsentTrackingEnabled(data.absentTrackingEnabled ?? false);
-    setAbsentThresholdDays(data.absentThresholdDays ?? 3);
+    setAutoMessages(data.waAutoMessages ?? true);
+    setAttendanceMessages(data.waAttendanceMessages ?? true);
+    setAutoReply(data.waAutoReply ?? true);
+    setAutoArchive(data.waAutoArchive ?? false);
+    setReminderDays(data.waReminderWindowDays ?? 3);
+    setAbsentTracking(data.absentTrackingEnabled ?? false);
+    setAbsentDays(data.absentThresholdDays ?? 3);
+    setAttendanceMode((data.attendanceMode as any) ?? 'NFC');
+    setFpPort(data.fingerprintAgentPort ?? 8765);
+    setProductsEnabled(data.productsEnabled ?? false);
   };
 
-  // When selected template changes, or settings are loaded, update text area
   useEffect(() => {
-    setTemplateContent(getTemplate(settings, selectedTemplateType));
-  }, [settings, selectedTemplateType]);
+    setTemplateContent(getTemplate(settings, selectedTemplate));
+  }, [settings, selectedTemplate]);
 
-  const handleToggleAutoMessages = async (enabled: boolean) => {
-    setAutoMessagesEnabled(enabled);
-    if (gymId) await updateGymSettings(gymId, { waAutoMessages: enabled });
-  };
-
-  const handleToggleAttendanceMessages = async (enabled: boolean) => {
-    setAttendanceMessagesEnabled(enabled);
-    if (gymId) await updateGymSettings(gymId, { waAttendanceMessages: enabled });
-  };
-
-  const handleToggleAutoReply = async (enabled: boolean) => {
-    setAutoReplyEnabled(enabled);
-    if (gymId) await updateGymSettings(gymId, { waAutoReply: enabled });
-  };
-
-  const handleToggleAutoArchive = async (enabled: boolean) => {
-    setAutoArchiveEnabled(enabled);
-    if (gymId) await updateGymSettings(gymId, { waAutoArchive: enabled });
-  };
-
-  const handleReminderWindowChange = async (days: number) => {
-    setReminderWindowDays(days);
-    if (gymId) await updateGymSettings(gymId, { waReminderWindowDays: days });
-  };
-
-  const handleToggleAbsentTracking = async (enabled: boolean) => {
-    setAbsentTrackingEnabled(enabled);
-    if (gymId) await updateGymSettings(gymId, { absentTrackingEnabled: enabled });
-  };
-
-  const handleAbsentThresholdChange = async (days: number) => {
-    setAbsentThresholdDays(days);
-    if (gymId) await updateGymSettings(gymId, { absentThresholdDays: days });
-  };
-
-  const handleTemplateSave = async () => {
-    if (gymId) {
-      let updateData: any = {};
-      if (selectedTemplateType === 'welcome') updateData.templateWelcome = templateContent;
-      if (selectedTemplateType === 'receipt') updateData.templateReceipt = templateContent;
-      if (selectedTemplateType === 'reminder') updateData.templateReminder = templateContent;
-      if (selectedTemplateType === 'absentee') updateData.templateAbsentee = templateContent;
-      if (selectedTemplateType === 'checkin') updateData.templateCheckIn = templateContent;
-      if (selectedTemplateType === 'checkout') updateData.templateCheckOut = templateContent;
-      
-      const newSettings = await updateGymSettings(gymId, updateData);
-      setSettings(newSettings);
-      
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    }
-  };
-
-  const handleTemplateReset = () => {
-    if (confirm("Reset this template to default?")) {
-      setTemplateContent(DEFAULT_TEMPLATES[selectedTemplateType]);
-    }
-  };
-
+  // Poll WA status
   useEffect(() => {
     if (!gymId) return;
-
     const fetchStatus = async () => {
       try {
         const res = await fetch(`/api/whatsapp/status?gymId=${gymId}`);
         const data = await res.json();
         setWaStatus(data.status);
         setQrCode(data.qr);
-        if (data.error) setWaError(data.error);
-      } catch (err) {
-        console.error('Failed to fetch WA status', err);
-      } finally {
-        setIsLoading(false);
+      } catch { /* offline */ } finally {
+        setWaLoading(false);
       }
     };
-
     fetchStatus();
-    // Poll every 3 seconds while not connected
-    const interval = setInterval(() => {
-      if (waStatus !== 'connected') {
-        fetchStatus();
-      }
-    }, 3000);
-
+    const interval = setInterval(() => { if (waStatus !== 'connected') fetchStatus(); }, 3000);
     return () => clearInterval(interval);
   }, [gymId, waStatus]);
 
-  const handleDisconnect = async () => {
+  const showSuccess = (text: string) => { setSaveMsg({ type: 'success', text }); setTimeout(() => setSaveMsg(null), 3000); };
+  const showError = (text: string) => { setSaveMsg({ type: 'error', text }); setTimeout(() => setSaveMsg(null), 4000); };
+
+  const saveSetting = async (data: any) => {
+    if (gymId) { await updateGymSettings(gymId, data); showSuccess('Saved!'); }
+  };
+
+  const handleToggle = async (key: string, value: boolean, setter: (v: boolean) => void) => {
+    setter(value);
+    await saveSetting({ [key]: value });
+  };
+
+  const handlePasswordChange = async () => {
     if (!gymId) return;
-    setIsLoading(true);
+    if (!currentPass || !newPass || !confirmPass) { showError('All fields are required'); return; }
+    if (newPass.length < 4) { showError('New password must be at least 4 characters'); return; }
+    if (newPass !== confirmPass) { showError('New passwords do not match'); return; }
+    setPassLoading(true);
     try {
-      await fetch('/api/whatsapp/logout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gymId }),
-      });
-      setWaStatus('disconnected');
-      setQrCode(null);
-    } catch (err) {
-      console.error(err);
+      const result = await changeGymPassword(gymId, currentPass, newPass);
+      if (result.success) {
+        showSuccess('Password changed successfully!');
+        setCurrentPass(''); setNewPass(''); setConfirmPass('');
+      } else {
+        showError(result.error || 'Failed to change password');
+      }
     } finally {
-      setIsLoading(false);
+      setPassLoading(false);
     }
+  };
+
+  const handleDisconnectWA = async () => {
+    if (!gymId) return;
+    setWaLoading(true);
+    try {
+      await fetch('/api/whatsapp/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gymId }) });
+      setWaStatus('disconnected'); setQrCode(null);
+    } finally { setWaLoading(false); }
   };
 
   const handleTestMessage = async () => {
     if (!gymId) return;
-    const phone = prompt('Enter a phone number with country code (e.g. 919876543210):');
+    const phone = prompt('Enter phone with country code (e.g. 919876543210):');
     if (!phone) return;
-
-    try {
-      const res = await fetch('/api/whatsapp/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gymId, phone, message: 'Hello from GymFlow! 🏋️‍♂️ Your WhatsApp integration is working perfectly.' }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert('Test message sent successfully!');
-      } else {
-        alert('Failed to send test message.');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Error sending message');
-    }
+    const res = await fetch('/api/whatsapp/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gymId, phone, message: 'Hello from GymFlow! 🏋️ Your WhatsApp is working perfectly.' }) });
+    const data = await res.json();
+    if (data.success) alert('Test message sent!'); else alert('Failed to send.');
   };
 
+  const handleSaveTemplate = async () => {
+    if (!gymId) return;
+    const key: Record<TemplateType, string> = { welcome: 'templateWelcome', receipt: 'templateReceipt', reminder: 'templateReminder', absentee: 'templateAbsentee', checkin: 'templateCheckIn', checkout: 'templateCheckOut' };
+    const newSettings = await updateGymSettings(gymId, { [key[selectedTemplate]]: templateContent });
+    setSettings(newSettings);
+    showSuccess('Template saved!');
+  };
+
+  const handleAttendanceModeChange = async (mode: 'MANUAL' | 'NFC' | 'FINGERPRINT' | 'BOTH') => {
+    setAttendanceMode(mode);
+    await saveSetting({ attendanceMode: mode });
+  };
+
+  const handleProductsToggle = async (enabled: boolean) => {
+    setProductsEnabled(enabled);
+    await updateGymSettings(gymId!, { productsEnabled: enabled });
+    // Update localStorage so sidebar can react immediately
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('products_enabled', String(enabled));
+      window.dispatchEvent(new Event('settings_updated'));
+    }
+    showSuccess(enabled ? 'Store / POS enabled! Refresh to see in sidebar.' : 'Store / POS disabled.');
+  };
+
+  const ATTENDANCE_MODES = [
+    { key: 'MANUAL', label: 'Manual Search Only', icon: '🔍', desc: 'Staff searches by name to check-in. No hardware required.' },
+    { key: 'NFC', label: 'NFC Card Only', icon: '📡', desc: 'Members tap their NFC card at the terminal. (Current behavior)' },
+    { key: 'FINGERPRINT', label: 'Fingerprint Only', icon: '🔏', desc: 'Mantra MFS100 USB fingerprint scanner. Local bridge agent required.' },
+    { key: 'BOTH', label: 'NFC + Fingerprint', icon: '🛡️', desc: 'Both NFC and fingerprint scanner active simultaneously.' },
+  ];
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between">
         <div>
-          <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-800 text-xs font-bold mb-2">
-            <Settings className="w-3.5 h-3.5" />
-            <span>Settings</span>
+          <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold mb-2">
+            <Settings className="w-3.5 h-3.5" /><span>Configuration</span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Gym Configuration</h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Manage your gym's integrations and preferences.
-          </p>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Gym Settings</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Manage all gym preferences, hardware, and integrations.</p>
         </div>
+        {saveMsg && (
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold ${saveMsg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
+            {saveMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+            {saveMsg.text}
+          </div>
+        )}
       </div>
 
-      {/* WhatsApp Integration Card */}
+      {/* Tab Nav */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center space-x-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white shadow-md ${
-              waStatus === 'connected' ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-slate-800 shadow-slate-800/20'
-            }`}>
-              <MessageSquare className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-                <span>WhatsApp Bot</span>
-                {waStatus === 'connected' && (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center">
-                    <CheckCircle2 className="w-3 h-3 mr-1" /> Connected
-                  </span>
-                )}
-              </h2>
-              <p className="text-sm text-slate-500 mt-0.5">
-                Send automatic payment receipts and background reminders.
-              </p>
-            </div>
-          </div>
-          {waStatus === 'connected' && (
+        <div className="flex border-b border-slate-100 overflow-x-auto">
+          {TABS.map(tab => (
             <button
-              onClick={handleDisconnect}
-              disabled={isLoading}
-              className="px-4 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-sm rounded-xl transition-all border border-rose-200 flex items-center space-x-2 disabled:opacity-50"
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 -mb-px ${activeTab === tab.key ? 'border-slate-900 text-slate-900 bg-slate-50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
             >
-              <LogOut className="w-4 h-4" />
-              <span>Disconnect</span>
+              {tab.icon}{tab.label}
             </button>
-          )}
-        </div>
-
-        <div className="p-6 bg-slate-50">
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-              <RefreshCw className="w-8 h-8 animate-spin mb-4 text-blue-500" />
-              <p className="font-bold">Initializing WhatsApp Engine...</p>
-            </div>
-          ) : waStatus === 'connected' ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-6 border-4 border-white shadow-lg">
-                <CheckCircle2 className="w-10 h-10 text-emerald-600" />
-              </div>
-              <h3 className="text-xl font-black text-slate-900 mb-2">WhatsApp is Active!</h3>
-              <p className="text-slate-500 text-sm max-w-md text-center mb-8">
-                Your gym is now connected to WhatsApp. Payment receipts and reminders will be sent automatically from your number.
-              </p>
-              
-              <button
-                onClick={handleTestMessage}
-                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md flex items-center space-x-2 transition-all"
-              >
-                <MessageSquare className="w-5 h-5" />
-                <span>Send Test Message</span>
-              </button>
-            </div>
-          ) : qrCode ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <div className="bg-white p-4 rounded-2xl shadow-md border border-slate-100 mb-6">
-                <img src={qrCode} alt="WhatsApp QR Code" className="w-64 h-64" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Scan to Link WhatsApp</h3>
-              <ol className="text-sm text-slate-600 space-y-2 max-w-sm text-left bg-white p-4 rounded-xl border border-slate-200">
-                <li className="flex items-start"><span className="font-bold mr-2">1.</span> Open WhatsApp on your phone</li>
-                <li className="flex items-start"><span className="font-bold mr-2">2.</span> Tap Menu (⋮) or Settings and select Linked Devices</li>
-                <li className="flex items-start"><span className="font-bold mr-2">3.</span> Tap on Link a Device</li>
-                <li className="flex items-start"><span className="font-bold mr-2">4.</span> Point your phone to this screen to capture the QR code</li>
-              </ol>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-              <AlertTriangle className="w-10 h-10 mb-4 text-amber-500" />
-              <p className="font-bold text-slate-800">WhatsApp is Disconnected</p>
-              
-              {waError ? (
-                <div className="mt-4 max-w-sm text-center p-3 bg-red-50 rounded-xl border border-red-100">
-                  <p className="text-sm text-red-600 font-bold mb-1">Server Error:</p>
-                  <p className="text-xs text-red-500 font-mono break-words">{waError}</p>
-                </div>
-              ) : (
-                <p className="text-sm mt-1">Please wait while the server generates a new QR code...</p>
-              )}
-              
-              {waStatus === 'disconnected' && !isLoading && (
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-all"
-                >
-                  Try Again
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Preferences Card */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-slate-200">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-            <span>Automation Preferences</span>
-          </h2>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Configure how and when automated messages are sent.
-          </p>
-        </div>
-
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-slate-800 text-sm">Enable Automated Messages</h3>
-              <p className="text-xs text-slate-500 mt-1">If turned off, no receipts or reminders will be sent automatically.</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" checked={autoMessagesEnabled} onChange={(e) => handleToggleAutoMessages(e.target.checked)} />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between border-t border-slate-100 pt-6">
-            <div>
-              <h3 className="font-bold text-slate-800 text-sm">Send Attendance Messages</h3>
-              <p className="text-xs text-slate-500 mt-1">Automatically send a WhatsApp message when members tap IN or OUT.</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" checked={attendanceMessagesEnabled} onChange={(e) => handleToggleAttendanceMessages(e.target.checked)} />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between border-t border-slate-100 pt-6">
-            <div>
-              <h3 className="font-bold text-slate-800 text-sm">Daily Reminder Window</h3>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm">Number of days before the due date to start sending daily background reminders.</p>
-            </div>
-            <select
-              value={reminderWindowDays}
-              onChange={(e) => handleReminderWindowChange(Number(e.target.value))}
-              className="bg-slate-50 border border-slate-300 text-slate-800 font-bold text-sm rounded-lg py-2 px-3 focus:ring-2 focus:ring-blue-500 outline-none"
-            >
-              <option value={1}>1 Day Before</option>
-              <option value={2}>2 Days Before</option>
-              <option value={3}>3 Days Before</option>
-              <option value={5}>5 Days Before</option>
-              <option value={7}>7 Days Before</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Attendance & Absentee Tracking Card */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-slate-200">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-            <span>Absentee Tracking</span>
-          </h2>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Track members who haven't tapped their NFC cards recently.
-          </p>
-        </div>
-
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-slate-800 text-sm">Enable Absentee Tracking</h3>
-              <p className="text-xs text-slate-500 mt-1">If enabled, absent members will be highlighted in the Members tab.</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
-                checked={absentTrackingEnabled} 
-                onChange={(e) => handleToggleAbsentTracking(e.target.checked)} 
-              />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
-          </div>
-
-          {absentTrackingEnabled && (
-            <div className="flex items-center justify-between border-t border-slate-100 pt-6">
-              <div>
-                <h3 className="font-bold text-slate-800 text-sm">Absent Threshold (Days)</h3>
-                <p className="text-xs text-slate-500 mt-1 max-w-sm">Mark a member as absent if they haven't checked in for this many days.</p>
-              </div>
-              <select
-                value={absentThresholdDays}
-                onChange={(e) => handleAbsentThresholdChange(Number(e.target.value))}
-                className="bg-slate-50 border border-slate-300 text-slate-800 font-bold text-sm rounded-lg py-2 px-3 focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value={2}>2 Days</option>
-                <option value={3}>3 Days</option>
-                <option value={5}>5 Days</option>
-                <option value={7}>7 Days</option>
-                <option value={10}>10 Days</option>
-                <option value={14}>14 Days</option>
-              </select>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Message Templates Card */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-slate-200">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-            <span>WhatsApp Message Templates</span>
-          </h2>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Customize the automated messages sent to your members. Available variables: {`{{name}}`}, {`{{gymName}}`}, {`{{plan}}`}, {`{{amount}}`}, {`{{dueDate}}`}
-          </p>
+          ))}
         </div>
 
         <div className="p-6">
-          <div className="flex overflow-x-auto space-x-2 mb-4 pb-2">
-            {(['welcome', 'receipt', 'reminder', 'absentee', 'checkin', 'checkout'] as TemplateType[]).map(type => (
-              <button
-                key={type}
-                onClick={() => setSelectedTemplateType(type)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold capitalize whitespace-nowrap transition-colors ${
-                  selectedTemplateType === type
-                    ? 'bg-blue-900 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {type === 'absentee' ? 'We Miss You (Absent)' : type === 'checkin' ? 'Check-In' : type === 'checkout' ? 'Check-Out' : type}
-              </button>
-            ))}
-          </div>
 
-          <div className="space-y-4">
-            <textarea
-              value={templateContent}
-              onChange={(e) => setTemplateContent(e.target.value)}
-              rows={8}
-              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none resize-y"
-            />
+          {/* ─── GENERAL TAB ─── */}
+          {activeTab === 'general' && (
+            <div className="space-y-8">
+              {/* Gym Info */}
+              <div>
+                <h3 className="text-base font-bold text-slate-800 mb-4">Gym Profile</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[
+                    { label: 'Gym Name', key: 'gymName', placeholder: 'Iron Pulse Fitness' },
+                    { label: 'Owner Phone (for WhatsApp)', key: 'ownerPhone', placeholder: '9876543210' },
+                    { label: 'UPI ID', key: 'upiId', placeholder: 'gymname@upi' },
+                  ].map(field => (
+                    <div key={field.key}>
+                      <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">{field.label}</label>
+                      <input
+                        type="text"
+                        defaultValue={settings?.[field.key] || ''}
+                        onBlur={async (e) => { await saveSetting({ [field.key]: e.target.value }); }}
+                        placeholder={field.placeholder}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-slate-800 outline-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-            <div className="flex items-center justify-between">
-              <button
-                onClick={handleTemplateReset}
-                className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
-              >
-                Reset to Default
-              </button>
-              
-              <div className="flex items-center space-x-3">
-                {saveSuccess && (
-                  <span className="text-xs font-bold text-emerald-600 flex items-center">
-                    <CheckCircle2 className="w-4 h-4 mr-1" /> Saved!
-                  </span>
+              {/* Change Password */}
+              <div>
+                <h3 className="text-base font-bold text-slate-800 mb-1 flex items-center gap-2">
+                  <Key className="w-4 h-4" /> Change Password
+                </h3>
+                <p className="text-xs text-slate-500 mb-4">Update your gym login password. Current password is required for verification.</p>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4 max-w-md">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Current Password</label>
+                    <div className="relative">
+                      <input
+                        type={showCurrentPass ? 'text' : 'password'}
+                        value={currentPass}
+                        onChange={e => setCurrentPass(e.target.value)}
+                        placeholder="Enter current password"
+                        className="w-full px-3.5 py-2.5 pr-10 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-slate-800 outline-none"
+                      />
+                      <button type="button" onClick={() => setShowCurrentPass(!showCurrentPass)} className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700">
+                        {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">New Password</label>
+                    <div className="relative">
+                      <input
+                        type={showNewPass ? 'text' : 'password'}
+                        value={newPass}
+                        onChange={e => setNewPass(e.target.value)}
+                        placeholder="Enter new password"
+                        className="w-full px-3.5 py-2.5 pr-10 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-slate-800 outline-none"
+                      />
+                      <button type="button" onClick={() => setShowNewPass(!showNewPass)} className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700">
+                        {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Confirm New Password</label>
+                    <input
+                      type="password"
+                      value={confirmPass}
+                      onChange={e => setConfirmPass(e.target.value)}
+                      placeholder="Re-enter new password"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-slate-800 outline-none"
+                    />
+                  </div>
+                  <button
+                    onClick={handlePasswordChange}
+                    disabled={passLoading}
+                    className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {passLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                    {passLoading ? 'Changing...' : 'Change Password'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── WHATSAPP TAB ─── */}
+          {activeTab === 'whatsapp' && (
+            <div className="space-y-6">
+              {/* Connection Status */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                    <Smartphone className="w-4 h-4" /> WhatsApp Connection
+                  </h3>
+                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${waStatus === 'connected' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {waStatus === 'connected' ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
+                    {waStatus === 'connected' ? 'Connected' : 'Disconnected'}
+                  </div>
+                </div>
+                {waStatus === 'connected' ? (
+                  <div className="flex gap-3">
+                    <button onClick={handleTestMessage} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg flex items-center gap-2">
+                      <Send className="w-4 h-4" /> Send Test Message
+                    </button>
+                    <button onClick={handleDisconnectWA} className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-sm font-semibold rounded-lg flex items-center gap-2">
+                      <LogOut className="w-4 h-4" /> Disconnect
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    {qrCode ? (
+                      <div className="text-center">
+                        <p className="text-sm text-slate-600 mb-3 font-medium">Scan this QR code with WhatsApp on your phone</p>
+                        <div className="inline-block p-3 bg-white border-2 border-slate-200 rounded-xl">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={qrCode} alt="WhatsApp QR Code" className="w-56 h-56" />
+                        </div>
+                        <p className="text-xs text-slate-500 mt-2">WhatsApp → Linked Devices → Link a device</p>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 text-slate-500 text-sm py-4">
+                        <RefreshCw className={`w-5 h-5 ${waLoading ? 'animate-spin' : ''}`} />
+                        {waLoading ? 'Connecting to WhatsApp...' : 'Waiting for QR code...'}
+                      </div>
+                    )}
+                  </div>
                 )}
-                <button
-                  onClick={handleTemplateSave}
-                  className="px-5 py-2.5 bg-blue-900 hover:bg-blue-950 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center space-x-2"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Save Template</span>
+              </div>
+
+              {/* Automation Toggles */}
+              <div>
+                <h3 className="text-base font-bold text-slate-800 mb-3">Automation Settings</h3>
+                <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 px-4">
+                  <Toggle enabled={autoMessages} label="Auto-send Payment Receipts" desc="Send receipt automatically when a member pays" onChange={v => handleToggle('waAutoMessages', v, setAutoMessages)} />
+                  <Toggle enabled={attendanceMessages} label="Auto-send Check-in/Check-out Messages" desc="Notify members on entry and exit" onChange={v => handleToggle('waAttendanceMessages', v, setAttendanceMessages)} />
+                  <Toggle enabled={autoReply} label="Auto-reply to Member Queries" desc="Reply automatically when members message the bot" onChange={v => handleToggle('waAutoReply', v, setAutoReply)} />
+                  <Toggle enabled={autoArchive} label="Auto-archive Chats After Payment" desc="Archive conversation thread after dues are cleared" onChange={v => handleToggle('waAutoArchive', v, setAutoArchive)} />
+                </div>
+              </div>
+
+              {/* Reminder Settings */}
+              <div>
+                <h3 className="text-base font-bold text-slate-800 mb-3">Reminder Configuration</h3>
+                <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">Renewal Reminder Window</p>
+                      <p className="text-xs text-slate-500">Days before expiry to start sending reminders</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {[1, 2, 3, 5, 7].map(d => (
+                        <button key={d} onClick={async () => { setReminderDays(d); await saveSetting({ waReminderWindowDays: d }); }}
+                          className={`w-8 h-8 text-xs rounded-lg font-bold border transition-colors ${reminderDays === d ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400'}`}
+                        >{d}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="border-t border-slate-100 pt-4">
+                    <Toggle enabled={absentTracking} label="Absentee Follow-up Messages" desc="Message members who haven't visited for a while" onChange={v => handleToggle('absentTrackingEnabled', v, setAbsentTracking)} />
+                    {absentTracking && (
+                      <div className="mt-3 flex items-center gap-3">
+                        <span className="text-sm text-slate-600 font-medium">Threshold:</span>
+                        {[2, 3, 5, 7, 10].map(d => (
+                          <button key={d} onClick={async () => { setAbsentDays(d); await saveSetting({ absentThresholdDays: d }); }}
+                            className={`w-8 h-8 text-xs rounded-lg font-bold border transition-colors ${absentDays === d ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400'}`}
+                          >{d}</button>
+                        ))}
+                        <span className="text-xs text-slate-500">days absent</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── ATTENDANCE TAB ─── */}
+          {activeTab === 'attendance' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-base font-bold text-slate-800 mb-1">Attendance Mode</h3>
+                <p className="text-sm text-slate-500 mb-4">Choose how members check-in at the gym. This controls what hardware and UI the Check-in terminal uses.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {ATTENDANCE_MODES.map(mode => (
+                    <button key={mode.key} onClick={() => handleAttendanceModeChange(mode.key as any)}
+                      className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${attendanceMode === mode.key ? 'border-slate-900 bg-slate-50 shadow-sm' : 'border-slate-200 hover:border-slate-400'}`}
+                    >
+                      <span className="text-2xl leading-none mt-0.5">{mode.icon}</span>
+                      <div>
+                        <p className={`text-sm font-bold ${attendanceMode === mode.key ? 'text-slate-900' : 'text-slate-700'}`}>{mode.label}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{mode.desc}</p>
+                      </div>
+                      {attendanceMode === mode.key && <CheckCircle2 className="w-5 h-5 text-slate-900 ml-auto flex-shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fingerprint Config */}
+              {(attendanceMode === 'FINGERPRINT' || attendanceMode === 'BOTH') && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-4">
+                  <div className="flex items-center gap-2 text-blue-800 font-bold">
+                    <Fingerprint className="w-5 h-5" /> Mantra MFS100 Configuration
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    The MFS100 USB fingerprint scanner connects via a <strong>local WebSocket bridge agent</strong> installed on the gym PC. Download and run the GymFlow Bridge Agent on the PC where the MFS100 is plugged in.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <label className="block text-xs font-bold text-blue-700 uppercase tracking-wider mb-1.5">Bridge Agent WebSocket Port</label>
+                      <input
+                        type="number"
+                        value={fpPort}
+                        onChange={e => setFpPort(Number(e.target.value))}
+                        onBlur={async () => { await saveSetting({ fingerprintAgentPort: fpPort }); showSuccess('Port saved!'); }}
+                        className="w-32 px-3.5 py-2.5 bg-white border border-blue-200 rounded-lg text-sm font-mono text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div className="mt-5">
+                      <p className="text-xs text-blue-600 font-medium">Default: <code className="bg-blue-100 px-1.5 py-0.5 rounded">ws://localhost:8765</code></p>
+                    </div>
+                  </div>
+                  <div className="bg-blue-100/60 rounded-lg p-3">
+                    <p className="text-xs text-blue-700 font-semibold mb-2">How to set up fingerprint check-in:</p>
+                    <ol className="text-xs text-blue-600 space-y-1 list-decimal list-inside">
+                      <li>Install Mantra MFS100 driver on Windows PC</li>
+                      <li>Download & run the GymFlow Bridge Agent (.exe) on the same PC</li>
+                      <li>Enroll member fingerprints by editing each member profile → set Fingerprint ID</li>
+                      <li>The Check-in terminal will now detect scans automatically</li>
+                    </ol>
+                  </div>
+                </div>
+              )}
+
+              {attendanceMode === 'NFC' && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
+                  <Radio className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-800">NFC Mode Active</p>
+                    <p className="text-sm text-emerald-700">Members tap their NFC card at the web NFC terminal. Requires Android Chrome browser on the reception PC/tablet. Each member's NFC Card ID is set in their profile.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ─── STORE TAB ─── */}
+          {activeTab === 'store' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-base font-bold text-slate-800 mb-1">Store / POS Feature</h3>
+                <p className="text-sm text-slate-500 mb-4">Enable a full product catalog and Point-of-Sale system. Sell supplements, accessories, and gym merchandise — all sales auto-appear in the Revenue Hub.</p>
+                <div className="bg-white border-2 border-slate-200 rounded-xl p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${productsEnabled ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+                        <Store className={`w-6 h-6 ${productsEnabled ? 'text-emerald-600' : 'text-slate-400'}`} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800">Enable Store & POS</p>
+                        <p className="text-xs text-slate-500">Adds a "Store / POS" tab to the sidebar navigation</p>
+                      </div>
+                    </div>
+                    <button onClick={() => handleProductsToggle(!productsEnabled)}
+                      className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 ${productsEnabled ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                    >
+                      <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${productsEnabled ? 'translate-x-8' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {productsEnabled && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 text-emerald-800 font-semibold mb-2">
+                    <CheckCircle2 className="w-4 h-4" /> Store is enabled
+                  </div>
+                  <ul className="text-sm text-emerald-700 space-y-1">
+                    <li>✅ Product catalog with categories (Supplements, Accessories, Drinks, etc.)</li>
+                    <li>✅ Point-of-Sale cart with cash / UPI / card / split payments</li>
+                    <li>✅ Live stock tracking & low-stock alerts</li>
+                    <li>✅ Every sale auto-creates an Income entry in Revenue Hub</li>
+                    <li>✅ Sales history tab with date filters</li>
+                  </ul>
+                  <p className="text-xs text-emerald-600 mt-3 font-medium">Navigate to "Store / POS" in the sidebar to add products and start selling.</p>
+                </div>
+              )}
+
+              {!productsEnabled && (
+                <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center">
+                  <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm text-slate-500">Enable the Store feature above to manage products and process sales.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ─── TEMPLATES TAB ─── */}
+          {activeTab === 'templates' && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-800 mb-1">WhatsApp Message Templates</h3>
+                <p className="text-sm text-slate-500 mb-4">Customize the messages sent to members. Use placeholders like <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">{'{{name}}'}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">{'{{amount}}'}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">{'{{expiry}}'}</code>.</p>
+              </div>
+
+              {/* Template Selector */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {(['welcome', 'receipt', 'reminder', 'absentee', 'checkin', 'checkout'] as TemplateType[]).map(t => (
+                  <button key={t} onClick={() => setSelectedTemplate(t)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors ${selectedTemplate === t ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                  >{t}</button>
+                ))}
+              </div>
+
+              <textarea
+                value={templateContent}
+                onChange={e => setTemplateContent(e.target.value)}
+                rows={9}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono text-slate-800 focus:ring-2 focus:ring-slate-800 outline-none resize-none"
+              />
+
+              <div className="flex gap-3">
+                <button onClick={handleSaveTemplate} className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-lg">
+                  <Save className="w-4 h-4" /> Save Template
+                </button>
+                <button onClick={() => { if (confirm('Reset to default?')) setTemplateContent(DEFAULT_TEMPLATES[selectedTemplate]); }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-lg">
+                  <RotateCcw className="w-4 h-4" /> Reset to Default
                 </button>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

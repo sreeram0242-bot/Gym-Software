@@ -72,6 +72,21 @@ export type SubscriptionPlan = Prisma.SubscriptionPlanModel
  */
 export type WhatsAppSession = Prisma.WhatsAppSessionModel
 /**
+ * Model Product
+ * 
+ */
+export type Product = Prisma.ProductModel
+/**
+ * Model ProductSale
+ * 
+ */
+export type ProductSale = Prisma.ProductSaleModel
+/**
+ * Model ProductSaleItem
+ * 
+ */
+export type ProductSaleItem = Prisma.ProductSaleItemModel
+/**
  * Model GymSettings
  * 
  */

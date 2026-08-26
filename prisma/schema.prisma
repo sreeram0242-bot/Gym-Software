@@ -19,12 +19,14 @@ model Gym {
   createdAt    String
   memberCount  Int      @default(0)
 
-  customers    Customer[]
-  attendance   AttendanceRecord[]
-  transactions Transaction[]
+  customers         Customer[]
+  attendance        AttendanceRecord[]
+  transactions      Transaction[]
   subscriptionPlans SubscriptionPlan[]
-  whatsappSessions WhatsAppSession[]
-  gymSettings  GymSettings?
+  whatsappSessions  WhatsAppSession[]
+  gymSettings       GymSettings?
+  products          Product[]
+  productSales      ProductSale[]
 }
 
 model Customer {
@@ -34,6 +36,7 @@ model Customer {
   name            String
   phone           String
   nfcCardId       String
+  fingerprintId   String?
   planType        String
   feeAmount       Int
   lastPaymentDate String
@@ -43,8 +46,9 @@ model Customer {
   status          String   @default("active")
   joinedDate      String
 
-  attendance      AttendanceRecord[]
-  transactions    Transaction[]
+  attendance   AttendanceRecord[]
+  transactions Transaction[]
+  productSales ProductSale[]
 }
 
 model AttendanceRecord {
@@ -95,27 +99,76 @@ model WhatsAppSession {
   data  String // JSON stringified auth data
 }
 
+model Product {
+  id        String @id @default(uuid())
+  gymId     String
+  gym       Gym    @relation(fields: [gymId], references: [id])
+  name      String
+  category  String @default("Supplement")
+  price     Int
+  stock     Int    @default(0)
+  unit      String @default("unit")
+  active    Boolean @default(true)
+  createdAt String
+
+  saleItems ProductSaleItem[]
+}
+
+model ProductSale {
+  id            String   @id @default(uuid())
+  gymId         String
+  gym           Gym      @relation(fields: [gymId], references: [id])
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName  String?
+  totalAmount   Int
+  paymentMethod String   @default("CASH")
+  splitDetails  String?
+  date          String
+
+  items ProductSaleItem[]
+}
+
+model ProductSaleItem {
+  id          String      @id @default(uuid())
+  saleId      String
+  sale        ProductSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product     @relation(fields: [productId], references: [id])
+  productName String
+  quantity    Int
+  unitPrice   Int
+  totalPrice  Int
+}
+
 model GymSettings {
   id                    String  @id @default(uuid())
   gymId                 String  @unique
   gym                   Gym     @relation(fields: [gymId], references: [id], onDelete: Cascade)
-  
+
   absentTrackingEnabled Boolean @default(false)
   absentThresholdDays   Int     @default(3)
-  
+
   waAutoMessages        Boolean @default(true)
   waReminderWindowDays  Int     @default(3)
-  
+
   waAttendanceMessages  Boolean @default(true)
   waAutoReply           Boolean @default(true)
   waAutoArchive         Boolean @default(false)
-  
+
   templateWelcome       String?
   templateReceipt       String?
   templateReminder      String?
   templateAbsentee      String?
   templateCheckIn       String?
   templateCheckOut      String?
+
+  // Feature toggles
+  productsEnabled       Boolean @default(false)
+
+  // Attendance hardware mode: MANUAL | NFC | FINGERPRINT | BOTH
+  attendanceMode        String  @default("NFC")
+  fingerprintAgentPort  Int     @default(8765)
 }
 
 model Announcement {

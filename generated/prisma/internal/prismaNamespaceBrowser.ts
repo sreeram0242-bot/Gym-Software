@@ -57,6 +57,9 @@ export const ModelName = {
   Transaction: 'Transaction',
   SubscriptionPlan: 'SubscriptionPlan',
   WhatsAppSession: 'WhatsAppSession',
+  Product: 'Product',
+  ProductSale: 'ProductSale',
+  ProductSaleItem: 'ProductSaleItem',
   GymSettings: 'GymSettings',
   Announcement: 'Announcement'
 } as const
@@ -99,6 +102,7 @@ export const CustomerScalarFieldEnum = {
   name: 'name',
   phone: 'phone',
   nfcCardId: 'nfcCardId',
+  fingerprintId: 'fingerprintId',
   planType: 'planType',
   feeAmount: 'feeAmount',
   lastPaymentDate: 'lastPaymentDate',
@@ -166,6 +170,48 @@ export const WhatsAppSessionScalarFieldEnum = {
 export type WhatsAppSessionScalarFieldEnum = (typeof WhatsAppSessionScalarFieldEnum)[keyof typeof WhatsAppSessionScalarFieldEnum]
 
 
+export const ProductScalarFieldEnum = {
+  id: 'id',
+  gymId: 'gymId',
+  name: 'name',
+  category: 'category',
+  price: 'price',
+  stock: 'stock',
+  unit: 'unit',
+  active: 'active',
+  createdAt: 'createdAt'
+} as const
+
+export type ProductScalarFieldEnum = (typeof ProductScalarFieldEnum)[keyof typeof ProductScalarFieldEnum]
+
+
+export const ProductSaleScalarFieldEnum = {
+  id: 'id',
+  gymId: 'gymId',
+  customerId: 'customerId',
+  customerName: 'customerName',
+  totalAmount: 'totalAmount',
+  paymentMethod: 'paymentMethod',
+  splitDetails: 'splitDetails',
+  date: 'date'
+} as const
+
+export type ProductSaleScalarFieldEnum = (typeof ProductSaleScalarFieldEnum)[keyof typeof ProductSaleScalarFieldEnum]
+
+
+export const ProductSaleItemScalarFieldEnum = {
+  id: 'id',
+  saleId: 'saleId',
+  productId: 'productId',
+  productName: 'productName',
+  quantity: 'quantity',
+  unitPrice: 'unitPrice',
+  totalPrice: 'totalPrice'
+} as const
+
+export type ProductSaleItemScalarFieldEnum = (typeof ProductSaleItemScalarFieldEnum)[keyof typeof ProductSaleItemScalarFieldEnum]
+
+
 export const GymSettingsScalarFieldEnum = {
   id: 'id',
   gymId: 'gymId',
@@ -181,7 +227,10 @@ export const GymSettingsScalarFieldEnum = {
   templateReminder: 'templateReminder',
   templateAbsentee: 'templateAbsentee',
   templateCheckIn: 'templateCheckIn',
-  templateCheckOut: 'templateCheckOut'
+  templateCheckOut: 'templateCheckOut',
+  productsEnabled: 'productsEnabled',
+  attendanceMode: 'attendanceMode',
+  fingerprintAgentPort: 'fingerprintAgentPort'
 } as const
 
 export type GymSettingsScalarFieldEnum = (typeof GymSettingsScalarFieldEnum)[keyof typeof GymSettingsScalarFieldEnum]

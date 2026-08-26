@@ -1,7 +1,6 @@
 'use server';
 
 import prisma from './db';
-import { Prisma } from '../generated/prisma/client';
 
 // Global in-memory fallback store for offline development and testing
 const globalAny: any = global;
@@ -46,6 +45,7 @@ if (!globalAny.mockStore) {
         name: 'Suresh Kumar',
         phone: '919876543210',
         nfcCardId: 'NFC-101',
+        fingerprintId: null,
         planType: 'Standard Plan',
         feeAmount: 2500,
         pendingBalance: 1000,
@@ -61,6 +61,7 @@ if (!globalAny.mockStore) {
         name: 'Priya Sharma',
         phone: '919876543211',
         nfcCardId: 'NFC-102',
+        fingerprintId: null,
         planType: 'VIP Plan',
         feeAmount: 4500,
         pendingBalance: 0,
@@ -76,6 +77,7 @@ if (!globalAny.mockStore) {
         name: 'Rahul Verma',
         phone: '919876543212',
         nfcCardId: 'NFC-103',
+        fingerprintId: null,
         planType: 'Standard Plan',
         feeAmount: 2500,
         pendingBalance: 0,
@@ -146,7 +148,15 @@ if (!globalAny.mockStore) {
         upiId: 'ironpulse@upi',
         waConnected: false,
         waAutoMessages: true,
-        waAutoReply: true
+        waAutoReply: true,
+        waAttendanceMessages: true,
+        waAutoArchive: false,
+        waReminderWindowDays: 3,
+        absentTrackingEnabled: false,
+        absentThresholdDays: 3,
+        productsEnabled: false,
+        attendanceMode: 'NFC',
+        fingerprintAgentPort: 8765
       }
     },
     attendance: [
@@ -171,7 +181,43 @@ if (!globalAny.mockStore) {
         active: true,
         createdAt: today
       }
-    ]
+    ],
+    products: [
+      {
+        id: 'prod_1',
+        gymId: 'gym_1',
+        name: 'Whey Protein (1kg)',
+        category: 'Supplement',
+        price: 1800,
+        stock: 10,
+        unit: 'unit',
+        active: true,
+        createdAt: today
+      },
+      {
+        id: 'prod_2',
+        gymId: 'gym_1',
+        name: 'Creatine Monohydrate (250g)',
+        category: 'Supplement',
+        price: 650,
+        stock: 15,
+        unit: 'unit',
+        active: true,
+        createdAt: today
+      },
+      {
+        id: 'prod_3',
+        gymId: 'gym_1',
+        name: 'Gym Gloves',
+        category: 'Accessories',
+        price: 350,
+        stock: 20,
+        unit: 'unit',
+        active: true,
+        createdAt: today
+      }
+    ],
+    productSales: []
   };
 }
 
@@ -194,7 +240,15 @@ export async function getGymSettings(gymId: string) {
         upiId: 'ironpulse@upi',
         waConnected: false,
         waAutoMessages: true,
-        waAutoReply: true
+        waAutoReply: true,
+        waAttendanceMessages: true,
+        waAutoArchive: false,
+        waReminderWindowDays: 3,
+        absentTrackingEnabled: false,
+        absentThresholdDays: 3,
+        productsEnabled: false,
+        attendanceMode: 'NFC',
+        fingerprintAgentPort: 8765
       };
     }
     return store.settings[gymId];
@@ -274,6 +328,22 @@ export async function toggleGymStatus(gymId: string) {
   }
 }
 
+export async function changeGymPassword(gymId: string, currentPassword: string, newPassword: string) {
+  try {
+    const gym = await prisma.gym.findUnique({ where: { id: gymId } });
+    if (!gym) return { success: false, error: 'Gym not found' };
+    if (gym.passwordHash !== currentPassword) return { success: false, error: 'Current password is incorrect' };
+    await prisma.gym.update({ where: { id: gymId }, data: { passwordHash: newPassword } });
+    return { success: true };
+  } catch (e) {
+    const gym = store.gyms.find((g: any) => g.id === gymId);
+    if (!gym) return { success: false, error: 'Gym not found' };
+    if (gym.passwordHash !== currentPassword) return { success: false, error: 'Current password is incorrect' };
+    gym.passwordHash = newPassword;
+    return { success: true };
+  }
+}
+
 // --- CUSTOMERS ---
 export async function getCustomers(gymId?: string) {
   try {
@@ -302,6 +372,7 @@ export async function addCustomer(data: any) {
         name: data.name,
         phone: data.phone,
         nfcCardId: data.nfcCardId,
+        fingerprintId: data.fingerprintId || null,
         planType: data.planType,
         feeAmount: data.feeAmount,
         pendingBalance: pendingBalance,
@@ -340,6 +411,7 @@ export async function addCustomer(data: any) {
       name: data.name,
       phone: data.phone,
       nfcCardId: data.nfcCardId,
+      fingerprintId: data.fingerprintId || null,
       planType: data.planType,
       feeAmount: data.feeAmount,
       pendingBalance: pendingBalance,
@@ -383,6 +455,11 @@ export async function findCustomerByNFC(gymId: string, nfcId: string) {
   return customers.find((c: any) => c.nfcCardId.toLowerCase() === nfcId.toLowerCase());
 }
 
+export async function findCustomerByFingerprint(gymId: string, fingerprintId: string) {
+  const customers = await getCustomers(gymId);
+  return customers.find((c: any) => c.fingerprintId && c.fingerprintId.toLowerCase() === fingerprintId.toLowerCase());
+}
+
 export async function updateCustomer(id: string, data: any) {
   try {
     return await prisma.customer.update({
@@ -414,8 +491,8 @@ export async function deleteCustomer(id: string) {
 }
 
 export async function renewMemberPayment(
-  customerId: string, 
-  addedMonths: number, 
+  customerId: string,
+  addedMonths: number,
   totalAmount: number,
   paidAmount?: number,
   paymentMethod: string = 'CASH',
@@ -814,8 +891,189 @@ export async function deleteSubscriptionPlan(id: string) {
   }
 }
 
-// --- SUPERADMIN SAAS FEATURES ---
+// --- PRODUCTS / POS ---
+export async function getProducts(gymId: string) {
+  try {
+    return await prisma.product.findMany({
+      where: { gymId },
+      orderBy: { createdAt: 'desc' }
+    });
+  } catch (e) {
+    return store.products.filter((p: any) => p.gymId === gymId);
+  }
+}
 
+export async function addProduct(data: any) {
+  try {
+    return await prisma.product.create({
+      data: {
+        gymId: data.gymId,
+        name: data.name,
+        category: data.category || 'Supplement',
+        price: Number(data.price),
+        stock: Number(data.stock) || 0,
+        unit: data.unit || 'unit',
+        active: true,
+        createdAt: new Date().toISOString().split('T')[0]
+      }
+    });
+  } catch (e) {
+    const newProduct = {
+      id: `prod_${Date.now()}`,
+      gymId: data.gymId,
+      name: data.name,
+      category: data.category || 'Supplement',
+      price: Number(data.price),
+      stock: Number(data.stock) || 0,
+      unit: data.unit || 'unit',
+      active: true,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    store.products.push(newProduct);
+    return newProduct;
+  }
+}
+
+export async function updateProduct(id: string, data: any) {
+  try {
+    return await prisma.product.update({ where: { id }, data });
+  } catch (e) {
+    const p = store.products.find((p: any) => p.id === id);
+    if (p) { Object.assign(p, data); return p; }
+    return null;
+  }
+}
+
+export async function deleteProduct(id: string) {
+  try {
+    await prisma.product.delete({ where: { id } });
+    return true;
+  } catch {
+    const idx = store.products.findIndex((p: any) => p.id === id);
+    if (idx !== -1) { store.products.splice(idx, 1); return true; }
+    return false;
+  }
+}
+
+export async function recordProductSale(data: {
+  gymId: string;
+  items: Array<{ productId: string; productName: string; quantity: number; unitPrice: number; totalPrice: number }>;
+  totalAmount: number;
+  paymentMethod: string;
+  splitDetails?: any;
+  customerId?: string | null;
+  customerName?: string | null;
+}) {
+  const today = new Date().toISOString().split('T')[0];
+  const formattedSplit = data.splitDetails ? (typeof data.splitDetails === 'string' ? data.splitDetails : JSON.stringify(data.splitDetails)) : null;
+
+  const itemNames = data.items.map(i => `${i.productName} x${i.quantity}`).join(', ');
+
+  try {
+    // Create the sale record
+    const sale = await prisma.productSale.create({
+      data: {
+        gymId: data.gymId,
+        customerId: data.customerId || null,
+        customerName: data.customerName || null,
+        totalAmount: data.totalAmount,
+        paymentMethod: data.paymentMethod,
+        splitDetails: formattedSplit,
+        date: today,
+        items: {
+          create: data.items.map(item => ({
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice
+          }))
+        }
+      }
+    });
+
+    // Deduct stock for each product
+    for (const item of data.items) {
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: { stock: { decrement: item.quantity } }
+      });
+    }
+
+    // Auto-create INCOME transaction in revenue ledger
+    await prisma.transaction.create({
+      data: {
+        gymId: data.gymId,
+        type: 'INCOME',
+        amount: data.totalAmount,
+        paidAmount: data.totalAmount,
+        paymentMethod: data.paymentMethod,
+        splitDetails: formattedSplit,
+        category: 'Product Sale',
+        description: `Store Sale: ${itemNames}${data.customerName ? ` — ${data.customerName}` : ''}`,
+        date: today,
+        customerId: data.customerId || null,
+        customerName: data.customerName || null
+      }
+    });
+
+    return sale;
+  } catch (e) {
+    // Fallback in-memory store
+    const saleId = `sale_${Date.now()}`;
+    const newSale = {
+      id: saleId,
+      gymId: data.gymId,
+      customerId: data.customerId || null,
+      customerName: data.customerName || null,
+      totalAmount: data.totalAmount,
+      paymentMethod: data.paymentMethod,
+      splitDetails: formattedSplit,
+      date: today,
+      items: data.items
+    };
+    store.productSales.unshift(newSale);
+
+    // Deduct stock in fallback store
+    for (const item of data.items) {
+      const prod = store.products.find((p: any) => p.id === item.productId);
+      if (prod) prod.stock = Math.max(0, prod.stock - item.quantity);
+    }
+
+    // Auto-create INCOME transaction in fallback store
+    store.transactions.unshift({
+      id: `tx_${Date.now()}`,
+      gymId: data.gymId,
+      type: 'INCOME',
+      amount: data.totalAmount,
+      paidAmount: data.totalAmount,
+      discountAmount: 0,
+      paymentMethod: data.paymentMethod,
+      splitDetails: formattedSplit,
+      category: 'Product Sale',
+      description: `Store Sale: ${itemNames}${data.customerName ? ` — ${data.customerName}` : ''}`,
+      date: today,
+      customerId: data.customerId || null,
+      customerName: data.customerName || null
+    });
+
+    return newSale;
+  }
+}
+
+export async function getProductSales(gymId: string) {
+  try {
+    return await prisma.productSale.findMany({
+      where: { gymId },
+      orderBy: { date: 'desc' },
+      include: { items: true }
+    });
+  } catch (e) {
+    return store.productSales.filter((s: any) => s.gymId === gymId);
+  }
+}
+
+// --- SUPERADMIN ---
 export async function getGlobalStats() {
   try {
     const totalGyms = await prisma.gym.count();
@@ -841,15 +1099,12 @@ export async function updateGymStatus(gymId: string, status: string) {
     });
   } catch (e) {
     const gym = store.gyms.find((g: any) => g.id === gymId);
-    if (gym) {
-      gym.status = status;
-      return gym;
-    }
+    if (gym) { gym.status = status; return gym; }
     return null;
   }
 }
 
-// Announcements
+// --- ANNOUNCEMENTS ---
 export async function getAnnouncements() {
   try {
     return await prisma.announcement.findMany({ orderBy: { createdAt: 'desc' } });
@@ -871,11 +1126,7 @@ export async function getActiveAnnouncement() {
 
 export async function createAnnouncement(data: { title: string, message: string, type: string }) {
   try {
-    await prisma.announcement.updateMany({
-      where: { active: true },
-      data: { active: false }
-    });
-
+    await prisma.announcement.updateMany({ where: { active: true }, data: { active: false } });
     return await prisma.announcement.create({
       data: {
         title: data.title,
@@ -904,10 +1155,7 @@ export async function deleteAnnouncement(id: string) {
     return await prisma.announcement.delete({ where: { id } });
   } catch (e) {
     const idx = store.announcements.findIndex((a: any) => a.id === id);
-    if (idx !== -1) {
-      store.announcements.splice(idx, 1);
-      return true;
-    }
+    if (idx !== -1) { store.announcements.splice(idx, 1); return true; }
     return false;
   }
 }

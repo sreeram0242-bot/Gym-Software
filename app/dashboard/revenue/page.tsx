@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2, Edit2 } from 'lucide-react';
+import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2, Edit2, Download } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, updateTransaction, deleteTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan } from '@/lib/actions';
 import { Transaction, SubscriptionPlan } from '@/lib/types';
@@ -266,6 +266,33 @@ export default function RevenuePage() {
     return t.type === filterType;
   });
 
+  const exportToCSV = () => {
+    const rows = [
+      ['Date', 'Type', 'Category', 'Description', 'Payment Mode', 'Amount (₹)', 'Paid Amount (₹)', 'Discount (₹)', 'Customer'],
+      ...filteredTxs.map(t => [
+        t.date,
+        t.type,
+        t.category,
+        `"${t.description?.replace(/"/g, "'") || ''}"`,
+        t.paymentMethod || 'CASH',
+        t.amount,
+        t.paidAmount ?? t.amount,
+        t.discountAmount ?? 0,
+        t.customerName || ''
+      ])
+    ];
+    const csv = rows.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const dateLabel = globalTimeFilter === 'TODAY' ? new Date().toISOString().split('T')[0] : globalTimeFilter.toLowerCase().replace('_', '-');
+    link.download = `gymflow-transactions-${dateLabel}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -282,6 +309,14 @@ export default function RevenuePage() {
         </div>
 
         <div className="flex items-center space-x-3">
+          <button
+            onClick={exportToCSV}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex items-center space-x-2"
+            title="Export filtered transactions to CSV"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export CSV</span>
+          </button>
           <button
             onClick={() => setShowSettingsModal(true)}
             className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center"

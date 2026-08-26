@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle, Megaphone, Lock, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle, Megaphone, Lock, CheckCircle, Store } from 'lucide-react';
 import { getGyms, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours, getCustomers, getGymSettings, getActiveAnnouncement } from '@/lib/actions';
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
@@ -26,6 +26,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [waStatus, setWaStatus] = useState<string>('connected');
   const [globalAnnouncement, setGlobalAnnouncement] = useState<any | null>(null);
   const [globalToast, setGlobalToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
+  const [productsEnabled, setProductsEnabled] = useState<boolean>(false);
+  const [attendanceMode, setAttendanceMode] = useState<string>('NFC');
   
   // Track if we are in Master Admin impersonation mode
   const isMasterAdmin = typeof window !== 'undefined' ? localStorage.getItem('is_master_admin') === 'true' : false;
@@ -52,6 +54,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
       
       setCurrentGym(matched);
+
+      // Load gym settings for feature toggles
+      try {
+        const { getGymSettings: fetchSettings } = await import('@/lib/actions');
+        const gymSettings = await fetchSettings(matched.id);
+        setProductsEnabled(gymSettings?.productsEnabled ?? false);
+        setAttendanceMode(gymSettings?.attendanceMode ?? 'NFC');
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('products_enabled', String(gymSettings?.productsEnabled ?? false));
+        }
+      } catch (e) {
+        // Use cached localStorage value as fallback
+        const cached = typeof window !== 'undefined' ? localStorage.getItem('products_enabled') === 'true' : false;
+        setProductsEnabled(cached);
+      }
 
       // WhatsApp Status Check
       const checkWaStatus = async (id: string) => {
@@ -258,13 +275,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navItems = [
     { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'NFC Terminal', href: '/dashboard/checkin', icon: Smartphone, badge: 'NFC' },
+    { label: attendanceMode === 'FINGERPRINT' ? 'Fingerprint' : attendanceMode === 'BOTH' ? 'Check-in' : attendanceMode === 'MANUAL' ? 'Check-in' : 'NFC Terminal', href: '/dashboard/checkin', icon: Smartphone, badge: attendanceMode !== 'MANUAL' ? attendanceMode : undefined },
     { label: 'Members', href: '/dashboard/members', icon: Users },
     { label: 'Reminders', href: '/dashboard/reminders', icon: Bell, badge: 'Due' },
     { label: 'Broadcast', href: '/dashboard/broadcast', icon: Megaphone, badge: 'New' },
     { label: 'Revenue', href: '/dashboard/revenue', icon: CreditCard },
+    ...(productsEnabled ? [{ label: 'Store / POS', href: '/dashboard/products', icon: Store, badge: 'New' }] : []),
     { label: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
+
+  // Listen for settings_updated event to refresh productsEnabled
+  useEffect(() => {
+    const handleSettingsUpdate = () => {
+      const enabled = typeof window !== 'undefined' ? localStorage.getItem('products_enabled') === 'true' : false;
+      setProductsEnabled(enabled);
+    };
+    window.addEventListener('settings_updated', handleSettingsUpdate);
+    return () => window.removeEventListener('settings_updated', handleSettingsUpdate);
+  }, []);
 
   if (!currentGym) return null; // Loading or unauthorized
 
