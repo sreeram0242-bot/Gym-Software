@@ -271,19 +271,30 @@ export default function RevenuePage() {
   });
 
   const exportToCSV = () => {
+    let runningBalance = 0;
+    
+    // Export chronologically (oldest first) to make the running balance logical
+    const chronologicalTxs = [...filteredTxs].reverse();
+
     const rows = [
-      ['Date', 'Type', 'Category', 'Description', 'Payment Mode', 'Amount (₹)', 'Paid Amount (₹)', 'Discount (₹)', 'Customer'],
-      ...filteredTxs.map(t => [
-        t.date,
-        t.type,
-        t.category,
-        `"${t.description?.replace(/"/g, "'") || ''}"`,
-        t.paymentMethod || 'CASH',
-        t.amount,
-        t.paidAmount ?? t.amount,
-        t.discountAmount ?? 0,
-        t.customerName || ''
-      ])
+      ['Date', 'Type', 'Category', 'Description', 'Payment Mode', 'Amount (₹)', 'Paid Amount (₹)', 'Discount (₹)', 'Customer', 'Balance (₹)'],
+      ...chronologicalTxs.map(t => {
+        if (t.type === 'INCOME') runningBalance += t.amount;
+        else if (t.type === 'EXPENSE') runningBalance -= t.amount;
+
+        return [
+          t.date,
+          t.type,
+          t.category,
+          `"${t.description?.replace(/"/g, "'") || ''}"`,
+          t.paymentMethod || 'CASH',
+          t.amount,
+          t.paidAmount ?? t.amount,
+          t.discountAmount ?? 0,
+          t.customerName || '',
+          runningBalance
+        ];
+      })
     ];
     const csv = rows.map(row => row.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
