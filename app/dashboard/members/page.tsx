@@ -405,6 +405,27 @@ export default function MemberManagementPage() {
       }
       showToast(`Collected ₹${collectDueAmount} from ${collectDueMember.name}! Remaining balance: ₹${updated.pendingBalance || 0}`, 'success');
       loadData();
+
+      const autoMessagesEnabled = settings?.waAutoMessages ?? true;
+      if (autoMessagesEnabled) {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateString = now.toLocaleDateString();
+
+        const remainingText = (updated.pendingBalance || 0) > 0 
+          ? `\n⏳ *Remaining Balance:* ₹${updated.pendingBalance}` 
+          : `\n✅ *All dues cleared!* Outstanding Balance: ₹0`;
+
+        fetch('/api/whatsapp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gymId,
+            phone: collectDueMember.phone,
+            message: `🧾 *Due Payment Receipt - ${gymName}*\n\nHi ${collectDueMember.name},\n\nWe have received your balance payment of *₹${collectDueAmount}* (${collectDuePaymentMethod}).${remainingText}\n\nThank you!\n\n_Receipt Generated: ${dateString} ${timeString}_`
+          })
+        }).catch(() => {});
+      }
     } catch (err: any) {
       showToast(err.message || 'Failed to record balance payment', 'error');
     }
