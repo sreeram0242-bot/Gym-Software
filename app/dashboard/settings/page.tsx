@@ -12,7 +12,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { getTemplate, TemplateType, DEFAULT_TEMPLATES } from '@/lib/templates';
 import { getGymSettings, updateGymSettings, getGyms, changeGymPassword } from '@/lib/actions';
 
-type TabType = 'general' | 'whatsapp' | 'attendance' | 'store' | 'templates';
+type TabType = 'general' | 'whatsapp' | 'attendance' | 'store' | 'templates' | 'password';
 
 const TABS: { key: TabType; label: string; icon: React.ReactNode }[] = [
   { key: 'general', label: 'General', icon: <Settings className="w-4 h-4" /> },
@@ -20,6 +20,7 @@ const TABS: { key: TabType; label: string; icon: React.ReactNode }[] = [
   { key: 'attendance', label: 'Attendance', icon: <Fingerprint className="w-4 h-4" /> },
   { key: 'store', label: 'Store / POS', icon: <Store className="w-4 h-4" /> },
   { key: 'templates', label: 'Templates', icon: <FileText className="w-4 h-4" /> },
+  { key: 'password', label: 'Password', icon: <Key className="w-4 h-4" /> },
 ];
 
 function Toggle({ enabled, onChange, label, desc }: { enabled: boolean; onChange: (v: boolean) => void; label: string; desc?: string }) {
@@ -331,6 +332,12 @@ export default function SettingsPage() {
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {/* ─── PASSWORD TAB ─── */}
+          {activeTab === 'password' && (
+            <div className="space-y-8">
               {/* Change Password */}
               <div>
                 <h3 className="text-base font-bold text-slate-800 mb-1 flex items-center gap-2">

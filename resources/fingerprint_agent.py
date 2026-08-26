@@ -95,12 +95,34 @@ async def handle_connection(websocket, path):
     except websockets.exceptions.ConnectionClosed:
         print("Dashboard Disconnected.")
 
+async def console_input(server):
+    loop = asyncio.get_event_loop()
+    print("\n[MOCK MODE] Press ENTER in this console to simulate a Fingerprint Check-in tap.")
+    while True:
+        await loop.run_in_executor(None, input, "")
+        print("Simulating check-in scan...")
+        
+        # Broadcast to all connected clients
+        for websocket in server.websockets:
+            try:
+                await websocket.send(json.dumps({
+                    "type": "scan",
+                    "fingerprintId": "FP-MOCK98765432"
+                }))
+                print("Mock scan sent to dashboard.")
+            except:
+                pass
+
 async def main():
     print("Starting GymFlow Fingerprint Bridge Agent...")
     print("Listening on ws://localhost:8765")
     print("Ensure your Mantra MFS100 is plugged in and RD Service is running.")
     
     server = await websockets.serve(handle_connection, "localhost", 8765)
+    
+    # Start the console input task for mock check-ins
+    asyncio.create_task(console_input(server))
+    
     await server.wait_closed()
 
 if __name__ == "__main__":
