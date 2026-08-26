@@ -41,7 +41,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setGlobalAnnouncement(activeAnn);
 
       // Find gym. Master admins can view suspended gyms.
-      const matched = loadedGyms.find((g) => g.id === savedId && (g.status === 'active' || isMasterAdmin));
+      const matched = loadedGyms.find((g: any) => g.id === savedId && (g.status === 'active' || isMasterAdmin));
       
       if (!matched) {
         if (typeof window !== 'undefined') {
@@ -247,7 +247,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [router]);
 
   const handleSwitchGym = (gymId: string) => {
-    const selected = gyms.find((g) => g.id === gymId);
+    const selected = gyms.find((g: any) => g.id === gymId);
     if (selected) {
       setCurrentGym(selected);
       if (typeof window !== 'undefined') {

@@ -32,7 +32,7 @@ export default function DashboardOverview() {
       getTransactions(savedId)
     ]);
 
-    setActiveGym(gyms.find(g => g.id === savedId) || gyms[0]);
+    setActiveGym(gyms.find((g: any) => g.id === savedId) || gyms[0]);
     setCustomers(custs);
     setAttendance(atts);
     setTransactions(txs);

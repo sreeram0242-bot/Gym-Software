@@ -26,7 +26,7 @@ export default function LandingPage() {
       // Gym Partner Login
       const gyms = await getGyms();
       const gymMatch = gyms.find(
-        (g) => g.userId === userId && g.passwordHash === password && g.status === 'active'
+        (g: any) => g.userId === userId && g.passwordHash === password && g.status === 'active'
       );
 
       if (gymMatch) {
@@ -36,7 +36,7 @@ export default function LandingPage() {
         router.push('/dashboard');
       } else {
         // Check if gym exists but is suspended
-        const suspendedGym = gyms.find((g) => g.userId === userId && g.passwordHash === password && g.status === 'suspended');
+        const suspendedGym = gyms.find((g: any) => g.userId === userId && g.passwordHash === password && g.status === 'suspended');
         if (suspendedGym) {
           setErrorMsg('Your account has been suspended. Please contact the Master Admin.');
         } else {

@@ -57,9 +57,9 @@ export default function SuperAdminPage() {
     ]);
 
     // Attach count of members
-    const gymsWithCounts = loadedGyms.map(g => ({
+    const gymsWithCounts = loadedGyms.map((g: any) => ({
       ...g,
-      memberCount: loadedCusts.filter(c => c.gymId === g.id).length
+      memberCount: loadedCusts.filter((c: any) => c.gymId === g.id).length
     }));
 
     setGyms(gymsWithCounts);
@@ -585,7 +585,7 @@ export default function SuperAdminPage() {
                   <div className="p-3 bg-slate-50 rounded-lg">
                     <span className="text-slate-400 font-semibold block mb-0.5">Assigned Gym</span>
                     <span className="font-bold text-slate-800">
-                      {gyms.find(g => g.id === searchedCustomer.gymId)?.name || searchedCustomer.gymId}
+                      {gyms.find((g: any) => g.id === searchedCustomer.gymId)?.name || searchedCustomer.gymId}
                     </span>
                   </div>
 

@@ -30,7 +30,7 @@ export default function RemindersPage() {
     setCustomers(custs);
     setSettings(gymSettings);
     
-    const matchedGym = loadedGyms.find(g => g.id === savedId);
+    const matchedGym = loadedGyms.find((g: any) => g.id === savedId);
     if (matchedGym) setGymName(matchedGym.name);
 
     if (gymSettings && gymSettings.waReminderWindowDays !== undefined) {

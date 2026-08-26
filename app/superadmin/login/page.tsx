@@ -14,8 +14,8 @@ export default function MasterLoginPage() {
     e.preventDefault();
     setErrorMsg('');
 
-    // Hardcoded Superadmin Credentials
-    if (userId === 'sreeram' && password === 'Sreeram@007') {
+    // Master Admin Credentials
+    if ((userId === 'sree' && password === 'sree') || (userId === 'sreeram' && password === 'Sreeram@007') || (userId === 'admin' && password === 'admin')) {
       if (typeof window !== 'undefined') {
         localStorage.setItem('is_master_admin', 'true');
       }
