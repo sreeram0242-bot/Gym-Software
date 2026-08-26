@@ -476,13 +476,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </header>
 
       {/* MAIN VIEW */}
-      <main className="flex-1 overflow-x-hidden px-4 pt-2 pb-4 sm:px-6 sm:pt-3 sm:pb-6 md:px-8 md:pt-4 md:pb-8 max-w-7xl mx-auto w-full">
+      <main className="flex-1 overflow-x-hidden px-4 pt-2 pb-4 sm:px-6 sm:pt-3 sm:pb-6 md:px-8 md:pt-0 md:pb-8 max-w-7xl mx-auto w-full">
         {children}
       </main>
 
       {/* MOBILE BOTTOM NAVIGATION BAR (THUMB FRIENDLY) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 px-2 py-1.5 flex items-center justify-around shadow-lg">
-        {navItems.map((item) => {
+        {navItems.filter(item => item.label !== 'Reminders').map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
           return (
