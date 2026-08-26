@@ -36,6 +36,11 @@ export default function RevenuePage() {
   const [editPaymentMethod, setEditPaymentMethod] = useState('CASH');
   const [deleteTxDialog, setDeleteTxDialog] = useState<{ id: string; desc: string; amount: number } | null>(null);
 
+  // Export Modal
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportDateFrom, setExportDateFrom] = useState('');
+  const [exportDateTo, setExportDateTo] = useState('');
+
   // Settings Modal
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
@@ -270,11 +275,26 @@ export default function RevenuePage() {
     return t.type === filterType;
   });
 
-  const exportToCSV = () => {
+  const executeExport = () => {
+    let exportTxs = transactions;
+
+    if (exportDateFrom && exportDateTo) {
+      const from = new Date(exportDateFrom);
+      const to = new Date(exportDateTo);
+      to.setHours(23, 59, 59, 999);
+      exportTxs = exportTxs.filter(t => {
+        const d = new Date(t.date);
+        return d >= from && d <= to;
+      });
+    } else {
+       // fallback to currently filtered txs if no dates selected
+       exportTxs = filteredTxs;
+    }
+
     let runningBalance = 0;
     
     // Export chronologically (oldest first) to make the running balance logical
-    const chronologicalTxs = [...filteredTxs].reverse();
+    const chronologicalTxs = [...exportTxs].reverse();
 
     const rows = [
       ['Date', 'Type', 'Category', 'Description', 'Payment Mode', 'Amount (₹)', 'Paid Amount (₹)', 'Discount (₹)', 'Customer', 'Balance (₹)'],
@@ -301,10 +321,10 @@ export default function RevenuePage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    const dateLabel = globalTimeFilter === 'TODAY' ? new Date().toISOString().split('T')[0] : globalTimeFilter.toLowerCase().replace('_', '-');
+    const dateLabel = exportDateFrom && exportDateTo ? `${exportDateFrom}-to-${exportDateTo}` : 'export';
     link.download = `gymflow-transactions-${dateLabel}.csv`;
     link.click();
-    URL.revokeObjectURL(url);
+    setShowExportModal(false);
   };
 
 
@@ -325,7 +345,16 @@ export default function RevenuePage() {
 
         <div className="flex items-center space-x-3">
           <button
-            onClick={exportToCSV}
+            onClick={() => {
+              // Pre-fill with current month if empty
+              if (!exportDateFrom || !exportDateTo) {
+                 const today = new Date();
+                 const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                 setExportDateFrom(firstDay.toISOString().split('T')[0]);
+                 setExportDateTo(today.toISOString().split('T')[0]);
+              }
+              setShowExportModal(true);
+            }}
             className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex items-center space-x-2"
             title="Export filtered transactions to CSV"
           >
@@ -923,6 +952,55 @@ export default function RevenuePage() {
                 className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition-colors shadow-sm"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      {/* MODAL: EXPORT CSV */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="text-lg font-black text-slate-900">Custom Export CSV</h2>
+              <button onClick={() => setShowExportModal(false)} className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">From Date</label>
+                <input 
+                  type="date" 
+                  value={exportDateFrom} 
+                  onChange={e => setExportDateFrom(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-600"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">To Date</label>
+                <input 
+                  type="date" 
+                  value={exportDateTo} 
+                  onChange={e => setExportDateTo(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-600"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex space-x-3">
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeExport}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors shadow-sm flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" /> Download
               </button>
             </div>
           </div>
