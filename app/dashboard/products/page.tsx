@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Plus, ShoppingCart, Trash2, Edit2, X, Check, AlertTriangle, TrendingUp, Search, Banknote, Smartphone, CreditCard, ArrowLeftRight, Phone } from 'lucide-react';
 import { getProducts, addProduct, updateProduct, deleteProduct, recordProductSale, getProductSales, getCustomers } from '@/lib/actions';
+import { formatDateDDMMYYYY } from '@/lib/utils';
 
 const CATEGORIES = ['Supplement', 'Accessory', 'Drink', 'Snack', 'Apparel', 'Equipment', 'Other'];
 const UNITS = ['unit', 'kg', 'litre', 'pack', 'bottle', 'scoop'];
@@ -438,7 +439,7 @@ export default function ProductsPage() {
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <p className="text-sm font-bold text-slate-800">{sale.customerName || 'Walk-in Customer'}</p>
-                          <p className="text-xs text-slate-500">{sale.date} · {sale.paymentMethod}</p>
+                          <p className="text-xs text-slate-500 font-mono font-medium">{formatDateDDMMYYYY(sale.date)} · {sale.paymentMethod}</p>
                         </div>
                         <p className="text-lg font-black text-emerald-700">₹{sale.totalAmount.toLocaleString('en-IN')}</p>
                       </div>

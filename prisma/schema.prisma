@@ -36,6 +36,7 @@ model Customer {
   name            String
   phone           String
   nfcCardId       String
+  nfcCardId2      String?
   fingerprintId   String?
   planType        String
   feeAmount       Int
@@ -73,16 +74,19 @@ model AttendanceRecord {
 }
 
 model Transaction {
-  id           String   @id @default(uuid())
-  gymId        String
-  gym          Gym      @relation(fields: [gymId], references: [id])
-  type         String
-  amount       Int
-  category     String
-  description  String
+  id            String    @id @default(uuid())
+  gymId         String
+  gym           Gym       @relation(fields: [gymId], references: [id])
+  type          String
+  amount        Int
+  category      String
+  description   String
   date          String
+  time          String?
   paymentMethod String    @default("CASH") // CASH, UPI, CARD, SPLIT
   splitDetails  String?   // JSON e.g. {"cash": 1000, "upi": 1000}
+  upiId         String?
+  upiSenderName String?
   paidAmount    Int?
   discountAmount Int      @default(0)
   customerId    String?
@@ -181,6 +185,11 @@ model GymSettings {
   templateAbsentee      String?
   templateCheckIn       String?
   templateCheckOut      String?
+
+  // Profile & Payments
+  upiId                 String?
+  upiName               String?
+  address               String?
 
   // Feature toggles
   productsEnabled       Boolean @default(false)

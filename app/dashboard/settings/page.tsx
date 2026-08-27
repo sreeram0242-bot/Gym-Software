@@ -47,6 +47,16 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<any>(null);
   const [saveMsg, setSaveMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // General Profile State
+  const [gymName, setGymName] = useState('');
+  const [ownerName, setOwnerName] = useState('');
+  const [ownerPhone, setOwnerPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [upiName, setUpiName] = useState('');
+  const [address, setAddress] = useState('');
+  const [savingGeneral, setSavingGeneral] = useState(false);
+
   // WhatsApp State
   const [waStatus, setWaStatus] = useState<string>('disconnected');
   const [waError, setWaError] = useState<string | null>(null);
@@ -105,6 +115,13 @@ export default function SettingsPage() {
   const loadSettings = async (id: string) => {
     const data = await getGymSettings(id);
     setSettings(data);
+    setGymName(data.gymName || '');
+    setOwnerName(data.ownerName || '');
+    setOwnerPhone(data.ownerPhone || '');
+    setEmail(data.email || '');
+    setUpiId(data.upiId || '');
+    setUpiName(data.upiName || '');
+    setAddress(data.address || '');
     setAutoMessages(data.waAutoMessages ?? true);
     setAttendanceMessages(data.waAttendanceMessages ?? true);
     setAutoReply(data.waAutoReply ?? true);
@@ -188,6 +205,37 @@ export default function SettingsPage() {
 
   const saveSetting = async (data: any) => {
     if (gymId) { await updateGymSettings(gymId, data); showSuccess('Saved!'); }
+  };
+
+  const handleSaveGeneral = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!gymId) return;
+    if (!gymName.trim()) {
+      showError('Gym Name is required');
+      return;
+    }
+    setSavingGeneral(true);
+    try {
+      const updated = await updateGymSettings(gymId, {
+        gymName: gymName.trim(),
+        ownerName: ownerName.trim(),
+        ownerPhone: ownerPhone.trim(),
+        email: email.trim(),
+        upiId: upiId.trim(),
+        upiName: upiName.trim(),
+        address: address.trim()
+      });
+      setSettings(updated);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('active_gym_name', gymName.trim());
+        window.dispatchEvent(new Event('settings_updated'));
+      }
+      showSuccess('Gym profile & details saved successfully!');
+    } catch {
+      showError('Failed to save gym settings. Please try again.');
+    } finally {
+      setSavingGeneral(false);
+    }
   };
 
   const handleToggle = async (key: string, value: boolean, setter: (v: boolean) => void) => {
@@ -346,33 +394,124 @@ export default function SettingsPage() {
           {/* ─── GENERAL TAB ─── */}
           {activeTab === 'general' && (
             <div className="space-y-8">
-              {/* Gym Info */}
-              <div>
-                <h3 className="text-base font-bold text-slate-800 mb-4">Gym Profile</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    { label: 'Gym Name', key: 'gymName', placeholder: 'Iron Pulse Fitness' },
-                    { label: 'Owner Phone (for WhatsApp)', key: 'ownerPhone', placeholder: '9876543210' },
-                    { label: 'UPI ID', key: 'upiId', placeholder: 'gymname@upi' },
-                  ].map(field => (
-                    <div key={field.key}>
-                      <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">{field.label}</label>
+              {/* Gym Info Form */}
+              <form onSubmit={handleSaveGeneral} className="space-y-6">
+                <div>
+                  <h3 className="text-base font-bold text-slate-800 mb-1">Gym Profile & Business Details</h3>
+                  <p className="text-xs text-slate-500 mb-4">These details are shown on invoices, WhatsApp receipts, and system reports.</p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Gym Name *
+                      </label>
                       <input
                         type="text"
-                        defaultValue={settings?.[field.key] || ''}
-                        onBlur={async (e) => { await saveSetting({ [field.key]: e.target.value }); }}
-                        placeholder={field.placeholder}
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-slate-800 outline-none"
+                        required
+                        value={gymName}
+                        onChange={(e) => setGymName(e.target.value)}
+                        placeholder="e.g. Karur Fitness Gym"
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-900 outline-none"
                       />
                     </div>
-                  ))}
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Owner / Manager Name
+                      </label>
+                      <input
+                        type="text"
+                        value={ownerName}
+                        onChange={(e) => setOwnerName(e.target.value)}
+                        placeholder="e.g. Sreeram"
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-900 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Owner Phone (for WhatsApp Bot & Alerts) *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={ownerPhone}
+                        onChange={(e) => setOwnerPhone(e.target.value)}
+                        placeholder="e.g. 9876543210"
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-900 outline-none font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Gym Email Address
+                      </label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="e.g. contact@gym.com"
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-900 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Default Gym UPI ID (for Member QR / Payment)
+                      </label>
+                      <input
+                        type="text"
+                        value={upiId}
+                        onChange={(e) => setUpiId(e.target.value)}
+                        placeholder="e.g. gymname@okaxis or 9876543210@upi"
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono font-bold text-slate-900 focus:ring-2 focus:ring-blue-900 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        UPI Beneficiary / Merchant Name
+                      </label>
+                      <input
+                        type="text"
+                        value={upiName}
+                        onChange={(e) => setUpiName(e.target.value)}
+                        placeholder="e.g. Karur Fitness Gym"
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-900 outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Gym Address & Location
+                      </label>
+                      <input
+                        type="text"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="e.g. 12/4 North Car Street, Karur, Tamil Nadu"
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-900 outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
+
+                <div className="pt-2 flex justify-start">
+                  <button
+                    type="submit"
+                    disabled={savingGeneral}
+                    className="px-6 py-3 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-sm font-bold transition-all shadow-md flex items-center space-x-2 disabled:opacity-50"
+                  >
+                    {savingGeneral ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <span>{savingGeneral ? 'Saving Details...' : 'Save Gym Profile Details'}</span>
+                  </button>
+                </div>
+              </form>
 
               {/* UI Preferences */}
-              <div>
-                <h3 className="text-base font-bold text-slate-800 mb-4">UI Preferences</h3>
-                <div className="bg-white border border-slate-200 rounded-xl px-4 py-2">
+              <div className="pt-6 border-t border-slate-200">
+                <h3 className="text-base font-bold text-slate-800 mb-3">UI Preferences</h3>
+                <div className="bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm">
                   <Toggle
                     label="Smooth Animations"
                     desc="Enable smooth page transitions and hover effects (disable for max performance)"

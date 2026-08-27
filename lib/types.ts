@@ -17,6 +17,7 @@ export interface Customer {
   name: string;
   phone: string;
   nfcCardId: string;
+  nfcCardId2?: string | null;
   fingerprintId?: string | null;
   planType: string;
   feeAmount: number;
@@ -50,8 +51,11 @@ export interface Transaction {
   category: string;
   description: string;
   date: string; // YYYY-MM-DD
+  time?: string | null; // HH:mm AM/PM
   paymentMethod?: 'CASH' | 'UPI' | 'CARD' | 'SPLIT' | string;
   splitDetails?: string | null;
+  upiId?: string | null;
+  upiSenderName?: string | null;
   paidAmount?: number | null;
   discountAmount?: number;
   customerId?: string;
@@ -108,8 +112,12 @@ export interface ProductSale {
 export interface GymSettings {
   gymId: string;
   gymName?: string;
+  ownerName?: string;
+  email?: string;
   ownerPhone?: string;
-  upiId?: string;
+  upiId?: string | null;
+  upiName?: string | null;
+  address?: string | null;
   waConnected?: boolean;
   waAutoMessages?: boolean;
   waAttendanceMessages?: boolean;

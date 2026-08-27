@@ -328,7 +328,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className={`min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans md:flex-row pb-20 md:pb-0 ${!animationsEnabled ? 'animations-disabled' : ''}`}>
+    <div className={`min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans md:flex-row pb-20 md:pb-0 max-w-full overflow-x-clip ${!animationsEnabled ? 'animations-disabled' : ''}`}>
       
 
 
@@ -467,7 +467,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </header>
 
       {/* MAIN VIEW */}
-      <main key={pathname} className="flex-1 px-4 pt-2 pb-4 sm:px-6 sm:pt-3 sm:pb-6 md:px-8 md:pt-0 md:pb-8 max-w-7xl mx-auto w-full">
+      <main key={pathname} className="flex-1 min-w-0 px-4 pt-2 pb-4 sm:px-6 sm:pt-3 sm:pb-6 md:px-8 md:pt-0 md:pb-8 max-w-7xl mx-auto w-full">
         {children}
       </main>
 

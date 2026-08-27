@@ -226,18 +226,38 @@ const store = globalAny.mockStore;
 // --- SETTINGS ---
 export async function getGymSettings(gymId: string) {
   try {
-    let settings = await prisma.gymSettings.findUnique({ where: { gymId } });
-    if (!settings) {
-      settings = await prisma.gymSettings.create({ data: { gymId } });
+    const [gym, settings] = await Promise.all([
+      prisma.gym.findUnique({ where: { id: gymId } }),
+      prisma.gymSettings.findUnique({ where: { gymId } })
+    ]);
+
+    let resolvedSettings = settings;
+    if (!resolvedSettings) {
+      resolvedSettings = await prisma.gymSettings.create({ data: { gymId } });
     }
-    return settings;
+
+    return {
+      ...resolvedSettings,
+      gymId,
+      gymName: gym?.name || 'Our Gym',
+      ownerName: gym?.ownerName || '',
+      ownerPhone: gym?.phone || '',
+      email: gym?.email || '',
+      upiId: resolvedSettings?.upiId || '',
+      upiName: resolvedSettings?.upiName || '',
+      address: resolvedSettings?.address || ''
+    };
   } catch (e) {
     if (!store.settings[gymId]) {
       store.settings[gymId] = {
         gymId,
         gymName: 'Iron Pulse Fitness',
+        ownerName: 'Admin',
         ownerPhone: '9876543210',
+        email: 'admin@gymflow.io',
         upiId: 'ironpulse@upi',
+        upiName: 'Iron Pulse Fitness',
+        address: 'Main Road, City',
         waConnected: false,
         waAutoMessages: true,
         waAutoReply: true,
@@ -257,11 +277,38 @@ export async function getGymSettings(gymId: string) {
 
 export async function updateGymSettings(gymId: string, data: any) {
   try {
-    return await prisma.gymSettings.upsert({
+    const gymUpdate: any = {};
+    if (data.gymName !== undefined) gymUpdate.name = data.gymName;
+    if (data.ownerName !== undefined) gymUpdate.ownerName = data.ownerName;
+    if (data.ownerPhone !== undefined) gymUpdate.phone = data.ownerPhone;
+    if (data.email !== undefined) gymUpdate.email = data.email;
+
+    if (Object.keys(gymUpdate).length > 0) {
+      await prisma.gym.update({
+        where: { id: gymId },
+        data: gymUpdate
+      });
+    }
+
+    // Filter out gym-only fields before sending to gymSettings
+    const { gymName, ownerName, ownerPhone, email, ...settingsData } = data;
+
+    const updatedSettings = await prisma.gymSettings.upsert({
       where: { gymId },
-      update: data,
-      create: { gymId, ...data }
+      update: settingsData,
+      create: { gymId, ...settingsData }
     });
+
+    const gym = await prisma.gym.findUnique({ where: { id: gymId } });
+
+    return {
+      ...updatedSettings,
+      gymId,
+      gymName: gym?.name || data.gymName,
+      ownerName: gym?.ownerName || data.ownerName,
+      ownerPhone: gym?.phone || data.ownerPhone,
+      email: gym?.email || data.email
+    };
   } catch (e) {
     store.settings[gymId] = { ...(store.settings[gymId] || {}), ...data, gymId };
     return store.settings[gymId];
@@ -365,6 +412,8 @@ export async function addCustomer(data: any) {
   const paymentMethod = data.paymentMethod || 'CASH';
   const splitDetails = data.splitDetails ? (typeof data.splitDetails === 'string' ? data.splitDetails : JSON.stringify(data.splitDetails)) : null;
 
+  const waActive = data.waActive !== undefined ? Boolean(data.waActive) : true;
+
   try {
     const newCust = await prisma.customer.create({
       data: {
@@ -372,6 +421,7 @@ export async function addCustomer(data: any) {
         name: data.name,
         phone: data.phone,
         nfcCardId: data.nfcCardId,
+        nfcCardId2: data.nfcCardId2 || null,
         fingerprintId: data.fingerprintId || null,
         planType: data.planType,
         feeAmount: data.feeAmount,
@@ -380,11 +430,13 @@ export async function addCustomer(data: any) {
         lastPaymentDate: data.lastPaymentDate,
         nextDueDate: data.nextDueDate,
         status: 'active',
+        waActive: waActive,
         joinedDate: new Date().toISOString().split('T')[0]
       }
     });
 
     if (paidAmount > 0) {
+      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
       await prisma.transaction.create({
         data: {
           gymId: newCust.gymId,
@@ -394,9 +446,12 @@ export async function addCustomer(data: any) {
           discountAmount: discountAmount,
           paymentMethod: paymentMethod,
           splitDetails: splitDetails,
+          upiId: data.upiId || null,
+          upiSenderName: data.upiSenderName || null,
           category: 'Membership Fee',
           description: `New Joiner: ${newCust.name} (${newCust.planType})${pendingBalance > 0 ? ` [₹${pendingBalance} Due]` : ''}${discountAmount > 0 ? ` [₹${discountAmount} Disc]` : ''}`,
           date: newCust.joinedDate,
+          time: nowTime,
           customerId: newCust.id,
           customerName: newCust.name
         }
@@ -411,6 +466,7 @@ export async function addCustomer(data: any) {
       name: data.name,
       phone: data.phone,
       nfcCardId: data.nfcCardId,
+      nfcCardId2: data.nfcCardId2 || null,
       fingerprintId: data.fingerprintId || null,
       planType: data.planType,
       feeAmount: data.feeAmount,
@@ -419,6 +475,7 @@ export async function addCustomer(data: any) {
       lastPaymentDate: data.lastPaymentDate,
       nextDueDate: data.nextDueDate,
       status: 'active',
+      waActive: waActive,
       joinedDate: new Date().toISOString().split('T')[0]
     };
     store.customers.unshift(newCust);
@@ -451,8 +508,12 @@ export async function findCustomerByPhone(phone: string, gymId?: string) {
 }
 
 export async function findCustomerByNFC(gymId: string, nfcId: string) {
+  const cleanId = nfcId.trim().toLowerCase();
   const customers = await getCustomers(gymId);
-  return customers.find((c: any) => c.nfcCardId.toLowerCase() === nfcId.toLowerCase());
+  return customers.find((c: any) => 
+    (c.nfcCardId && c.nfcCardId.toLowerCase() === cleanId) ||
+    (c.nfcCardId2 && c.nfcCardId2.toLowerCase() === cleanId)
+  );
 }
 
 export async function findCustomerByFingerprint(gymId: string, fingerprintId: string) {
@@ -508,8 +569,8 @@ export async function deleteCustomer(id: string) {
 
 export async function renewMemberPayment(
   customerId: string,
-  addedMonths: number,
-  totalAmount: number,
+  addedMonths: number = 1,
+  totalAmount: number = 2500,
   paidAmount?: number,
   paymentMethod: string = 'CASH',
   splitDetails?: any,
@@ -517,8 +578,12 @@ export async function renewMemberPayment(
   balanceDueDate?: string | null,
   discountAmount: number = 0
 ) {
-  const customers = await getCustomers();
-  const c = customers.find((cust: any) => cust.id === customerId);
+  let c: any;
+  try {
+    c = await prisma.customer.findUnique({ where: { id: customerId } });
+  } catch (e) {
+    c = store.customers.find((cust: any) => cust.id === customerId);
+  }
   if (!c) return undefined;
 
   const actualPaid = paidAmount !== undefined ? Number(paidAmount) : Number(totalAmount);
@@ -542,6 +607,7 @@ export async function renewMemberPayment(
     });
 
     if (actualPaid > 0) {
+      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
       await prisma.transaction.create({
         data: {
           gymId: updatedCust.gymId,
@@ -551,9 +617,12 @@ export async function renewMemberPayment(
           discountAmount: discountAmount,
           paymentMethod: paymentMethod,
           splitDetails: formattedSplit,
+          upiId: (splitDetails as any)?.upiId || null,
+          upiSenderName: (splitDetails as any)?.upiSenderName || null,
           category: 'Membership Fee Renewal',
           description: `Fee Renewal for ${updatedCust.name} (+${addedMonths} Mo)${pendingBalance > 0 ? ` [₹${pendingBalance} Due]` : ''}${discountAmount > 0 ? ` [₹${discountAmount} Disc]` : ''}`,
           date: today,
+          time: nowTime,
           customerId: updatedCust.id,
           customerName: updatedCust.name
         }
@@ -596,8 +665,12 @@ export async function collectPendingBalance(
   splitDetails?: any,
   discountAmount: number = 0
 ) {
-  const customers = await getCustomers();
-  const c = customers.find((cust: any) => cust.id === customerId);
+  let c: any;
+  try {
+    c = await prisma.customer.findUnique({ where: { id: customerId } });
+  } catch (e) {
+    c = store.customers.find((cust: any) => cust.id === customerId);
+  }
   if (!c) throw new Error('Customer not found');
 
   const newBalance = Math.max(0, (c.pendingBalance || 0) - amountToCollect - discountAmount);
@@ -613,6 +686,7 @@ export async function collectPendingBalance(
       }
     });
 
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
     await prisma.transaction.create({
       data: {
         gymId: updatedCust.gymId,
@@ -622,9 +696,12 @@ export async function collectPendingBalance(
         discountAmount: discountAmount,
         paymentMethod: paymentMethod,
         splitDetails: formattedSplit,
+        upiId: (splitDetails as any)?.upiId || null,
+        upiSenderName: (splitDetails as any)?.upiSenderName || null,
         category: 'Pending Balance Collection',
         description: `Balance Clearance for ${updatedCust.name} (${newBalance === 0 ? 'Fully Cleared' : `₹${newBalance} Still Remaining`})${discountAmount > 0 ? ` [₹${discountAmount} Discounted]` : ''}`,
         date: today,
+        time: nowTime,
         customerId: updatedCust.id,
         customerName: updatedCust.name
       }
@@ -669,8 +746,12 @@ export async function getAttendance(gymId?: string) {
 }
 
 export async function toggleCheckIn(customerId: string) {
-  const customers = await getCustomers();
-  const customer = customers.find((c: any) => c.id === customerId);
+  let customer: any;
+  try {
+    customer = await prisma.customer.findUnique({ where: { id: customerId } });
+  } catch (e) {
+    customer = store.customers.find((c: any) => c.id === customerId);
+  }
   if (!customer) throw new Error('Customer not found');
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -767,6 +848,7 @@ export async function getTransactions(gymId?: string) {
 
 export async function addTransaction(tx: any) {
   const formattedSplit = tx.splitDetails ? (typeof tx.splitDetails === 'string' ? tx.splitDetails : JSON.stringify(tx.splitDetails)) : null;
+  const nowTime = tx.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
   try {
     return await prisma.transaction.create({
       data: {
@@ -777,9 +859,12 @@ export async function addTransaction(tx: any) {
         discountAmount: tx.discountAmount ? Number(tx.discountAmount) : 0,
         paymentMethod: tx.paymentMethod || 'CASH',
         splitDetails: formattedSplit,
+        upiId: tx.upiId || null,
+        upiSenderName: tx.upiSenderName || null,
         category: tx.category,
         description: tx.description,
         date: tx.date,
+        time: nowTime,
         customerId: tx.customerId || null,
         customerName: tx.customerName || null
       }
@@ -794,9 +879,12 @@ export async function addTransaction(tx: any) {
       discountAmount: tx.discountAmount ? Number(tx.discountAmount) : 0,
       paymentMethod: tx.paymentMethod || 'CASH',
       splitDetails: formattedSplit,
+      upiId: tx.upiId || null,
+      upiSenderName: tx.upiSenderName || null,
       category: tx.category,
       description: tx.description,
       date: tx.date,
+      time: nowTime,
       customerId: tx.customerId || null,
       customerName: tx.customerName || null
     };
@@ -813,7 +901,10 @@ export async function updateTransaction(id: string, data: any) {
     if (data.category !== undefined) updateData.category = data.category;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.date !== undefined) updateData.date = data.date;
+    if (data.time !== undefined) updateData.time = data.time;
     if (data.paymentMethod !== undefined) updateData.paymentMethod = data.paymentMethod;
+    if (data.upiId !== undefined) updateData.upiId = data.upiId;
+    if (data.upiSenderName !== undefined) updateData.upiSenderName = data.upiSenderName;
     if (data.splitDetails !== undefined) {
       updateData.splitDetails = typeof data.splitDetails === 'string' ? data.splitDetails : JSON.stringify(data.splitDetails);
     }

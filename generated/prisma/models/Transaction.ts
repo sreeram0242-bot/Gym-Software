@@ -46,8 +46,11 @@ export type TransactionMinAggregateOutputType = {
   category: string | null
   description: string | null
   date: string | null
+  time: string | null
   paymentMethod: string | null
   splitDetails: string | null
+  upiId: string | null
+  upiSenderName: string | null
   paidAmount: number | null
   discountAmount: number | null
   customerId: string | null
@@ -62,8 +65,11 @@ export type TransactionMaxAggregateOutputType = {
   category: string | null
   description: string | null
   date: string | null
+  time: string | null
   paymentMethod: string | null
   splitDetails: string | null
+  upiId: string | null
+  upiSenderName: string | null
   paidAmount: number | null
   discountAmount: number | null
   customerId: string | null
@@ -78,8 +84,11 @@ export type TransactionCountAggregateOutputType = {
   category: number
   description: number
   date: number
+  time: number
   paymentMethod: number
   splitDetails: number
+  upiId: number
+  upiSenderName: number
   paidAmount: number
   discountAmount: number
   customerId: number
@@ -108,8 +117,11 @@ export type TransactionMinAggregateInputType = {
   category?: true
   description?: true
   date?: true
+  time?: true
   paymentMethod?: true
   splitDetails?: true
+  upiId?: true
+  upiSenderName?: true
   paidAmount?: true
   discountAmount?: true
   customerId?: true
@@ -124,8 +136,11 @@ export type TransactionMaxAggregateInputType = {
   category?: true
   description?: true
   date?: true
+  time?: true
   paymentMethod?: true
   splitDetails?: true
+  upiId?: true
+  upiSenderName?: true
   paidAmount?: true
   discountAmount?: true
   customerId?: true
@@ -140,8 +155,11 @@ export type TransactionCountAggregateInputType = {
   category?: true
   description?: true
   date?: true
+  time?: true
   paymentMethod?: true
   splitDetails?: true
+  upiId?: true
+  upiSenderName?: true
   paidAmount?: true
   discountAmount?: true
   customerId?: true
@@ -243,8 +261,11 @@ export type TransactionGroupByOutputType = {
   category: string
   description: string
   date: string
+  time: string | null
   paymentMethod: string
   splitDetails: string | null
+  upiId: string | null
+  upiSenderName: string | null
   paidAmount: number | null
   discountAmount: number
   customerId: string | null
@@ -282,8 +303,11 @@ export type TransactionWhereInput = {
   category?: Prisma.StringFilter<"Transaction"> | string
   description?: Prisma.StringFilter<"Transaction"> | string
   date?: Prisma.StringFilter<"Transaction"> | string
+  time?: Prisma.StringNullableFilter<"Transaction"> | string | null
   paymentMethod?: Prisma.StringFilter<"Transaction"> | string
   splitDetails?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  upiId?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  upiSenderName?: Prisma.StringNullableFilter<"Transaction"> | string | null
   paidAmount?: Prisma.IntNullableFilter<"Transaction"> | number | null
   discountAmount?: Prisma.IntFilter<"Transaction"> | number
   customerId?: Prisma.StringNullableFilter<"Transaction"> | string | null
@@ -300,8 +324,11 @@ export type TransactionOrderByWithRelationInput = {
   category?: Prisma.SortOrder
   description?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  time?: Prisma.SortOrderInput | Prisma.SortOrder
   paymentMethod?: Prisma.SortOrder
   splitDetails?: Prisma.SortOrderInput | Prisma.SortOrder
+  upiId?: Prisma.SortOrderInput | Prisma.SortOrder
+  upiSenderName?: Prisma.SortOrderInput | Prisma.SortOrder
   paidAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   discountAmount?: Prisma.SortOrder
   customerId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -321,8 +348,11 @@ export type TransactionWhereUniqueInput = Prisma.AtLeast<{
   category?: Prisma.StringFilter<"Transaction"> | string
   description?: Prisma.StringFilter<"Transaction"> | string
   date?: Prisma.StringFilter<"Transaction"> | string
+  time?: Prisma.StringNullableFilter<"Transaction"> | string | null
   paymentMethod?: Prisma.StringFilter<"Transaction"> | string
   splitDetails?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  upiId?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  upiSenderName?: Prisma.StringNullableFilter<"Transaction"> | string | null
   paidAmount?: Prisma.IntNullableFilter<"Transaction"> | number | null
   discountAmount?: Prisma.IntFilter<"Transaction"> | number
   customerId?: Prisma.StringNullableFilter<"Transaction"> | string | null
@@ -339,8 +369,11 @@ export type TransactionOrderByWithAggregationInput = {
   category?: Prisma.SortOrder
   description?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  time?: Prisma.SortOrderInput | Prisma.SortOrder
   paymentMethod?: Prisma.SortOrder
   splitDetails?: Prisma.SortOrderInput | Prisma.SortOrder
+  upiId?: Prisma.SortOrderInput | Prisma.SortOrder
+  upiSenderName?: Prisma.SortOrderInput | Prisma.SortOrder
   paidAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   discountAmount?: Prisma.SortOrder
   customerId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -363,8 +396,11 @@ export type TransactionScalarWhereWithAggregatesInput = {
   category?: Prisma.StringWithAggregatesFilter<"Transaction"> | string
   description?: Prisma.StringWithAggregatesFilter<"Transaction"> | string
   date?: Prisma.StringWithAggregatesFilter<"Transaction"> | string
+  time?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
   paymentMethod?: Prisma.StringWithAggregatesFilter<"Transaction"> | string
   splitDetails?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
+  upiId?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
+  upiSenderName?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
   paidAmount?: Prisma.IntNullableWithAggregatesFilter<"Transaction"> | number | null
   discountAmount?: Prisma.IntWithAggregatesFilter<"Transaction"> | number
   customerId?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
@@ -378,8 +414,11 @@ export type TransactionCreateInput = {
   category: string
   description: string
   date: string
+  time?: string | null
   paymentMethod?: string
   splitDetails?: string | null
+  upiId?: string | null
+  upiSenderName?: string | null
   paidAmount?: number | null
   discountAmount?: number
   customerName?: string | null
@@ -395,8 +434,11 @@ export type TransactionUncheckedCreateInput = {
   category: string
   description: string
   date: string
+  time?: string | null
   paymentMethod?: string
   splitDetails?: string | null
+  upiId?: string | null
+  upiSenderName?: string | null
   paidAmount?: number | null
   discountAmount?: number
   customerId?: string | null
@@ -410,8 +452,11 @@ export type TransactionUpdateInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  time?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   splitDetails?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiSenderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paidAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   discountAmount?: Prisma.IntFieldUpdateOperationsInput | number
   customerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -427,8 +472,11 @@ export type TransactionUncheckedUpdateInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  time?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   splitDetails?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiSenderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paidAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   discountAmount?: Prisma.IntFieldUpdateOperationsInput | number
   customerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -443,8 +491,11 @@ export type TransactionCreateManyInput = {
   category: string
   description: string
   date: string
+  time?: string | null
   paymentMethod?: string
   splitDetails?: string | null
+  upiId?: string | null
+  upiSenderName?: string | null
   paidAmount?: number | null
   discountAmount?: number
   customerId?: string | null
@@ -458,8 +509,11 @@ export type TransactionUpdateManyMutationInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  time?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   splitDetails?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiSenderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paidAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   discountAmount?: Prisma.IntFieldUpdateOperationsInput | number
   customerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -473,8 +527,11 @@ export type TransactionUncheckedUpdateManyInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  time?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   splitDetails?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiSenderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paidAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   discountAmount?: Prisma.IntFieldUpdateOperationsInput | number
   customerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -499,8 +556,11 @@ export type TransactionCountOrderByAggregateInput = {
   category?: Prisma.SortOrder
   description?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  time?: Prisma.SortOrder
   paymentMethod?: Prisma.SortOrder
   splitDetails?: Prisma.SortOrder
+  upiId?: Prisma.SortOrder
+  upiSenderName?: Prisma.SortOrder
   paidAmount?: Prisma.SortOrder
   discountAmount?: Prisma.SortOrder
   customerId?: Prisma.SortOrder
@@ -521,8 +581,11 @@ export type TransactionMaxOrderByAggregateInput = {
   category?: Prisma.SortOrder
   description?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  time?: Prisma.SortOrder
   paymentMethod?: Prisma.SortOrder
   splitDetails?: Prisma.SortOrder
+  upiId?: Prisma.SortOrder
+  upiSenderName?: Prisma.SortOrder
   paidAmount?: Prisma.SortOrder
   discountAmount?: Prisma.SortOrder
   customerId?: Prisma.SortOrder
@@ -537,8 +600,11 @@ export type TransactionMinOrderByAggregateInput = {
   category?: Prisma.SortOrder
   description?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  time?: Prisma.SortOrder
   paymentMethod?: Prisma.SortOrder
   splitDetails?: Prisma.SortOrder
+  upiId?: Prisma.SortOrder
+  upiSenderName?: Prisma.SortOrder
   paidAmount?: Prisma.SortOrder
   discountAmount?: Prisma.SortOrder
   customerId?: Prisma.SortOrder
@@ -642,8 +708,11 @@ export type TransactionCreateWithoutGymInput = {
   category: string
   description: string
   date: string
+  time?: string | null
   paymentMethod?: string
   splitDetails?: string | null
+  upiId?: string | null
+  upiSenderName?: string | null
   paidAmount?: number | null
   discountAmount?: number
   customerName?: string | null
@@ -657,8 +726,11 @@ export type TransactionUncheckedCreateWithoutGymInput = {
   category: string
   description: string
   date: string
+  time?: string | null
   paymentMethod?: string
   splitDetails?: string | null
+  upiId?: string | null
+  upiSenderName?: string | null
   paidAmount?: number | null
   discountAmount?: number
   customerId?: string | null
@@ -702,8 +774,11 @@ export type TransactionScalarWhereInput = {
   category?: Prisma.StringFilter<"Transaction"> | string
   description?: Prisma.StringFilter<"Transaction"> | string
   date?: Prisma.StringFilter<"Transaction"> | string
+  time?: Prisma.StringNullableFilter<"Transaction"> | string | null
   paymentMethod?: Prisma.StringFilter<"Transaction"> | string
   splitDetails?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  upiId?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  upiSenderName?: Prisma.StringNullableFilter<"Transaction"> | string | null
   paidAmount?: Prisma.IntNullableFilter<"Transaction"> | number | null
   discountAmount?: Prisma.IntFilter<"Transaction"> | number
   customerId?: Prisma.StringNullableFilter<"Transaction"> | string | null
@@ -717,8 +792,11 @@ export type TransactionCreateWithoutCustomerInput = {
   category: string
   description: string
   date: string
+  time?: string | null
   paymentMethod?: string
   splitDetails?: string | null
+  upiId?: string | null
+  upiSenderName?: string | null
   paidAmount?: number | null
   discountAmount?: number
   customerName?: string | null
@@ -733,8 +811,11 @@ export type TransactionUncheckedCreateWithoutCustomerInput = {
   category: string
   description: string
   date: string
+  time?: string | null
   paymentMethod?: string
   splitDetails?: string | null
+  upiId?: string | null
+  upiSenderName?: string | null
   paidAmount?: number | null
   discountAmount?: number
   customerName?: string | null
@@ -773,8 +854,11 @@ export type TransactionCreateManyGymInput = {
   category: string
   description: string
   date: string
+  time?: string | null
   paymentMethod?: string
   splitDetails?: string | null
+  upiId?: string | null
+  upiSenderName?: string | null
   paidAmount?: number | null
   discountAmount?: number
   customerId?: string | null
@@ -788,8 +872,11 @@ export type TransactionUpdateWithoutGymInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  time?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   splitDetails?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiSenderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paidAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   discountAmount?: Prisma.IntFieldUpdateOperationsInput | number
   customerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -803,8 +890,11 @@ export type TransactionUncheckedUpdateWithoutGymInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  time?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   splitDetails?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiSenderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paidAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   discountAmount?: Prisma.IntFieldUpdateOperationsInput | number
   customerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -818,8 +908,11 @@ export type TransactionUncheckedUpdateManyWithoutGymInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  time?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   splitDetails?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiSenderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paidAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   discountAmount?: Prisma.IntFieldUpdateOperationsInput | number
   customerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -834,8 +927,11 @@ export type TransactionCreateManyCustomerInput = {
   category: string
   description: string
   date: string
+  time?: string | null
   paymentMethod?: string
   splitDetails?: string | null
+  upiId?: string | null
+  upiSenderName?: string | null
   paidAmount?: number | null
   discountAmount?: number
   customerName?: string | null
@@ -848,8 +944,11 @@ export type TransactionUpdateWithoutCustomerInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  time?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   splitDetails?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiSenderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paidAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   discountAmount?: Prisma.IntFieldUpdateOperationsInput | number
   customerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -864,8 +963,11 @@ export type TransactionUncheckedUpdateWithoutCustomerInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  time?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   splitDetails?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiSenderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paidAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   discountAmount?: Prisma.IntFieldUpdateOperationsInput | number
   customerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -879,8 +981,11 @@ export type TransactionUncheckedUpdateManyWithoutCustomerInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  time?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   splitDetails?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  upiSenderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paidAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   discountAmount?: Prisma.IntFieldUpdateOperationsInput | number
   customerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -896,8 +1001,11 @@ export type TransactionSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   category?: boolean
   description?: boolean
   date?: boolean
+  time?: boolean
   paymentMethod?: boolean
   splitDetails?: boolean
+  upiId?: boolean
+  upiSenderName?: boolean
   paidAmount?: boolean
   discountAmount?: boolean
   customerId?: boolean
@@ -914,8 +1022,11 @@ export type TransactionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   category?: boolean
   description?: boolean
   date?: boolean
+  time?: boolean
   paymentMethod?: boolean
   splitDetails?: boolean
+  upiId?: boolean
+  upiSenderName?: boolean
   paidAmount?: boolean
   discountAmount?: boolean
   customerId?: boolean
@@ -932,8 +1043,11 @@ export type TransactionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   category?: boolean
   description?: boolean
   date?: boolean
+  time?: boolean
   paymentMethod?: boolean
   splitDetails?: boolean
+  upiId?: boolean
+  upiSenderName?: boolean
   paidAmount?: boolean
   discountAmount?: boolean
   customerId?: boolean
@@ -950,15 +1064,18 @@ export type TransactionSelectScalar = {
   category?: boolean
   description?: boolean
   date?: boolean
+  time?: boolean
   paymentMethod?: boolean
   splitDetails?: boolean
+  upiId?: boolean
+  upiSenderName?: boolean
   paidAmount?: boolean
   discountAmount?: boolean
   customerId?: boolean
   customerName?: boolean
 }
 
-export type TransactionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "type" | "amount" | "category" | "description" | "date" | "paymentMethod" | "splitDetails" | "paidAmount" | "discountAmount" | "customerId" | "customerName", ExtArgs["result"]["transaction"]>
+export type TransactionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "type" | "amount" | "category" | "description" | "date" | "time" | "paymentMethod" | "splitDetails" | "upiId" | "upiSenderName" | "paidAmount" | "discountAmount" | "customerId" | "customerName", ExtArgs["result"]["transaction"]>
 export type TransactionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
   customer?: boolean | Prisma.Transaction$customerArgs<ExtArgs>
@@ -986,8 +1103,11 @@ export type $TransactionPayload<ExtArgs extends runtime.Types.Extensions.Interna
     category: string
     description: string
     date: string
+    time: string | null
     paymentMethod: string
     splitDetails: string | null
+    upiId: string | null
+    upiSenderName: string | null
     paidAmount: number | null
     discountAmount: number
     customerId: string | null
@@ -1424,8 +1544,11 @@ export interface TransactionFieldRefs {
   readonly category: Prisma.FieldRef<"Transaction", 'String'>
   readonly description: Prisma.FieldRef<"Transaction", 'String'>
   readonly date: Prisma.FieldRef<"Transaction", 'String'>
+  readonly time: Prisma.FieldRef<"Transaction", 'String'>
   readonly paymentMethod: Prisma.FieldRef<"Transaction", 'String'>
   readonly splitDetails: Prisma.FieldRef<"Transaction", 'String'>
+  readonly upiId: Prisma.FieldRef<"Transaction", 'String'>
+  readonly upiSenderName: Prisma.FieldRef<"Transaction", 'String'>
   readonly paidAmount: Prisma.FieldRef<"Transaction", 'Int'>
   readonly discountAmount: Prisma.FieldRef<"Transaction", 'Int'>
   readonly customerId: Prisma.FieldRef<"Transaction", 'String'>

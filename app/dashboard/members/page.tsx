@@ -30,6 +30,8 @@ export default function MemberManagementPage() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [nfcCardId, setNfcCardId] = useState('');
+  const [nfcCardId2, setNfcCardId2] = useState('');
+  const [showSecondaryNfc, setShowSecondaryNfc] = useState(false);
   const [fingerprintId, setFingerprintId] = useState('');
   const [fpScanning, setFpScanning] = useState(false);
   const [planType, setPlanType] = useState<string>('Monthly');
@@ -38,8 +40,11 @@ export default function MemberManagementPage() {
   const [remainingType, setRemainingType] = useState<'BALANCE' | 'DISCOUNT'>('BALANCE');
   const [balanceDueDate, setBalanceDueDate] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
+  const [waActiveToggle, setWaActiveToggle] = useState<boolean>(true);
   const [splitCash, setSplitCash] = useState<number | string>(0);
   const [splitUpi, setSplitUpi] = useState<number | string>(0);
+  const [upiId, setUpiId] = useState('');
+  const [upiSenderName, setUpiSenderName] = useState('');
   const [lastPaymentDate, setLastPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
@@ -54,6 +59,8 @@ export default function MemberManagementPage() {
   const [renewPaymentMethod, setRenewPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
   const [renewSplitCash, setRenewSplitCash] = useState<number | string>(0);
   const [renewSplitUpi, setRenewSplitUpi] = useState<number | string>(0);
+  const [renewUpiId, setRenewUpiId] = useState('');
+  const [renewUpiSenderName, setRenewUpiSenderName] = useState('');
   const [isEditingMember, setIsEditingMember] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
 
@@ -65,6 +72,8 @@ export default function MemberManagementPage() {
   const [collectDuePaymentMethod, setCollectDuePaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
   const [collectDueSplitCash, setCollectDueSplitCash] = useState<number | string>(0);
   const [collectDueSplitUpi, setCollectDueSplitUpi] = useState<number | string>(0);
+  const [collectDueUpiId, setCollectDueUpiId] = useState('');
+  const [collectDueUpiSenderName, setCollectDueUpiSenderName] = useState('');
 
   // Custom UI Overlays
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -79,11 +88,14 @@ export default function MemberManagementPage() {
     setName(cust.name);
     setPhone(cust.phone);
     setNfcCardId(cust.nfcCardId || '');
+    setNfcCardId2(cust.nfcCardId2 || '');
+    setShowSecondaryNfc(!!cust.nfcCardId2);
     setFingerprintId(cust.fingerprintId || '');
     setPlanType(cust.planType);
     setFeeAmount(cust.feeAmount);
     setPaidAmount(cust.feeAmount);
     setLastPaymentDate(cust.lastPaymentDate);
+    setWaActiveToggle(cust.waActive ?? true);
     setIsEditingMember(true);
     setEditingMemberId(cust.id);
     setSelectedMember(null); // Close the details modal so the edit modal is visible
@@ -254,6 +266,7 @@ export default function MemberManagementPage() {
         name,
         phone,
         nfcCardId: newNfc,
+        nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
         fingerprintId: fingerprintId || null,
         planType,
         feeAmount: Number(feeAmount),
@@ -275,6 +288,7 @@ export default function MemberManagementPage() {
         name,
         phone,
         nfcCardId: newNfc,
+        nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
         fingerprintId: fingerprintId || null,
         planType,
         feeAmount: totalPlanPrice,
@@ -284,6 +298,9 @@ export default function MemberManagementPage() {
         discountAmount,
         paymentMethod,
         splitDetails: splitData,
+        upiId: paymentMethod === 'UPI' ? upiId : undefined,
+        upiSenderName: paymentMethod === 'UPI' ? upiSenderName : undefined,
+        waActive: waActiveToggle,
         lastPaymentDate,
         nextDueDate
       });
@@ -297,6 +314,10 @@ export default function MemberManagementPage() {
     setName('');
     setPhone('');
     setNfcCardId('');
+    setNfcCardId2('');
+    setShowSecondaryNfc(false);
+    setUpiId('');
+    setUpiSenderName('');
     setInfoMsg('');
     loadData();
   };
@@ -307,7 +328,11 @@ export default function MemberManagementPage() {
     const diff = Math.max(0, totalPlanPrice - actualPaid);
     const finalPendingBalance = diff > 0 && renewRemainingType === 'BALANCE' ? diff : 0;
     const discountAmount = diff > 0 && renewRemainingType === 'DISCOUNT' ? diff : 0;
-    const splitData = renewPaymentMethod === 'SPLIT' ? { cash: Number(renewSplitCash), upi: Number(renewSplitUpi) } : undefined;
+    const splitData = renewPaymentMethod === 'SPLIT' 
+      ? { cash: Number(renewSplitCash), upi: Number(renewSplitUpi) } 
+      : renewPaymentMethod === 'UPI' 
+      ? { upiId: renewUpiId, upiSenderName: renewUpiSenderName } 
+      : undefined;
 
     const updated = await renewMemberPayment(
       cust.id, 
@@ -323,6 +348,8 @@ export default function MemberManagementPage() {
 
     if (updated) {
       setSelectedMember(updated);
+      setRenewUpiId('');
+      setRenewUpiSenderName('');
       loadData();
       showToast(`Membership successfully renewed for ${updated.name}!`, 'success');
 
@@ -330,7 +357,7 @@ export default function MemberManagementPage() {
       if (autoMessagesEnabled) {
         const now = new Date();
         const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const dateString = now.toLocaleDateString();
+        const dateString = formatDateDDMMYYYY(now.toISOString().split('T')[0]);
 
         const pendingText = finalPendingBalance > 0 
           ? `\n⏳ *Pending Balance:* ₹${finalPendingBalance}${renewBalanceDueDate ? ` (Due by ${renewBalanceDueDate})` : ''}` 
@@ -381,6 +408,8 @@ export default function MemberManagementPage() {
 
       const splitData = collectDuePaymentMethod === 'SPLIT' 
         ? { cash: Number(collectDueSplitCash), upi: Number(collectDueSplitUpi) } 
+        : collectDuePaymentMethod === 'UPI'
+        ? { upiId: collectDueUpiId, upiSenderName: collectDueUpiSenderName }
         : undefined;
 
       const remaining = collectDueMember.pendingBalance - Number(collectDueAmount);
@@ -395,6 +424,8 @@ export default function MemberManagementPage() {
       );
 
       setShowCollectDueModal(false);
+      setCollectDueUpiId('');
+      setCollectDueUpiSenderName('');
       if (selectedMember && selectedMember.id === collectDueMember.id) {
         setSelectedMember(updated);
       }
@@ -405,7 +436,7 @@ export default function MemberManagementPage() {
       if (autoMessagesEnabled) {
         const now = new Date();
         const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const dateString = now.toLocaleDateString();
+        const dateString = formatDateDDMMYYYY(now.toISOString().split('T')[0]);
 
         const remainingText = (updated.pendingBalance || 0) > 0 
           ? `\n⏳ *Remaining Balance:* ₹${updated.pendingBalance}` 
@@ -551,7 +582,8 @@ export default function MemberManagementPage() {
     
     const matchesSearch = searchLower === '' || (
       c.name.toLowerCase().includes(searchLower) ||
-      c.nfcCardId.toLowerCase().includes(searchLower) ||
+      (c.nfcCardId && c.nfcCardId.toLowerCase().includes(searchLower)) ||
+      (c.nfcCardId2 && c.nfcCardId2.toLowerCase().includes(searchLower)) ||
       (phoneQuery !== '' && c.phone.replace(/\D/g, '').includes(phoneQuery))
     );
 
@@ -586,7 +618,7 @@ export default function MemberManagementPage() {
 
     let matchesWa = true;
     if (waFilter === 'activated') {
-      matchesWa = !!c.waActive;
+      matchesWa = Boolean(c.waActive);
     } else if (waFilter === 'not_activated') {
       matchesWa = !c.waActive;
     }
@@ -616,8 +648,12 @@ export default function MemberManagementPage() {
             setName('');
             setPhone('');
             setNfcCardId('');
+            setNfcCardId2('');
+            setShowSecondaryNfc(false);
             setFingerprintId('');
             setFeeAmount(2500);
+            setPaidAmount(2500);
+            setWaActiveToggle(true);
             setInfoMsg('');
             setErrorMsg('');
             setShowAddModal(true);
@@ -655,8 +691,8 @@ export default function MemberManagementPage() {
       )}
 
       {/* Filter & Search Controls Bar */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row gap-3 justify-between items-center">
-        <div className="relative w-full sm:w-80">
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col lg:flex-row gap-3 justify-between items-stretch lg:items-center min-w-0 max-w-full overflow-hidden">
+        <div className="relative w-full lg:w-72 shrink-0">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
           <input
             type="text"
@@ -667,13 +703,13 @@ export default function MemberManagementPage() {
           />
         </div>
 
-        <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto pb-2.5 sm:pb-2">
+        <div className="flex items-center space-x-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 min-w-0 flex-1">
           {(['all', 'new', 'active', 'due_soon', 'overdue', 'has_due', ...(absentTrackingEnabled ? ['absent'] : [])] as Array<'active' | 'due_soon' | 'overdue' | 'all' | 'new' | 'absent' | 'has_due'>).map((st) => (
             <button
               key={st}
               onClick={() => {
                 setStatusFilter(st);
-                if (st === 'all') setWaFilter('all');
+                setWaFilter('all');
               }}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors whitespace-nowrap ${
                 statusFilter === st && waFilter === 'all'
@@ -688,7 +724,14 @@ export default function MemberManagementPage() {
           {/* WhatsApp Activated / Non-Activated Scrolling Filters */}
           <div className="flex items-center space-x-1.5 pl-1 border-l border-slate-200 shrink-0">
             <button
-              onClick={() => setWaFilter(waFilter === 'activated' ? 'all' : 'activated')}
+              onClick={() => {
+                if (waFilter === 'activated') {
+                  setWaFilter('all');
+                } else {
+                  setWaFilter('activated');
+                  setStatusFilter('all');
+                }
+              }}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 waFilter === 'activated'
                   ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600 ring-offset-1'
@@ -697,11 +740,20 @@ export default function MemberManagementPage() {
             >
               <Smartphone className="w-3.5 h-3.5" />
               <span>WhatsApp: Activated</span>
-              {waFilter === 'activated' && <span className="ml-1 text-[10px] bg-white/20 px-1.5 py-0.2 rounded-full">✓</span>}
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${waFilter === 'activated' ? 'bg-white/20 text-white' : 'bg-emerald-200/70 text-emerald-900'}`}>
+                {customers.filter(c => c.waActive).length}
+              </span>
             </button>
 
             <button
-              onClick={() => setWaFilter(waFilter === 'not_activated' ? 'all' : 'not_activated')}
+              onClick={() => {
+                if (waFilter === 'not_activated') {
+                  setWaFilter('all');
+                } else {
+                  setWaFilter('not_activated');
+                  setStatusFilter('all');
+                }
+              }}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 waFilter === 'not_activated'
                   ? 'bg-slate-700 text-white shadow-sm ring-2 ring-slate-700 ring-offset-1'
@@ -710,7 +762,9 @@ export default function MemberManagementPage() {
             >
               <Smartphone className="w-3.5 h-3.5 text-slate-400" />
               <span>WhatsApp: Non-Activated</span>
-              {waFilter === 'not_activated' && <span className="ml-1 text-[10px] bg-white/20 px-1.5 py-0.2 rounded-full">✓</span>}
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${waFilter === 'not_activated' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                {customers.filter(c => !c.waActive).length}
+              </span>
             </button>
           </div>
           
@@ -768,16 +822,24 @@ export default function MemberManagementPage() {
                         <AlertTriangle className="w-2.5 h-2.5" /> ₹{cust.pendingBalance} Due
                       </span>
                     )}
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    <button
+                      type="button"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const newStatus = !cust.waActive;
+                        await toggleCustomerWaStatus(cust.id, newStatus);
+                        setCustomers(customers.map(c => c.id === cust.id ? { ...c, waActive: newStatus } : c));
+                        showToast(`WhatsApp service ${newStatus ? 'Activated' : 'Deactivated'} for ${cust.name}`, 'success');
+                      }}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer hover:scale-105 ${
                         cust.waActive
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-slate-100 text-slate-500 border border-slate-200'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200 shadow-sm'
+                          : 'bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200'
                       }`}
-                      title={cust.waActive ? 'WhatsApp Bot Activated' : 'WhatsApp Not Activated'}
+                      title="Click to toggle WhatsApp service status"
                     >
                       {cust.waActive ? '● WA Active' : '○ No WA'}
-                    </span>
+                    </button>
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                         isAbsent(cust.id) 
@@ -796,8 +858,15 @@ export default function MemberManagementPage() {
 
                 <div className="space-y-2 text-xs text-slate-600">
                   <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg">
-                    <span className="text-slate-400 font-medium">NFC Tag ID:</span>
-                    <span className="font-mono font-bold text-slate-800">{cust.nfcCardId}</span>
+                    <span className="text-slate-400 font-medium">NFC Tag(s):</span>
+                    <span className="font-mono font-bold text-slate-800 flex items-center gap-1.5">
+                      <span>{cust.nfcCardId}</span>
+                      {cust.nfcCardId2 && (
+                        <span className="text-[10px] bg-blue-100 text-blue-900 px-1.5 py-0.5 rounded font-mono font-bold">
+                          2: {cust.nfcCardId2}
+                        </span>
+                      )}
+                    </span>
                   </div>
 
                   <div className="flex justify-between items-center">
@@ -952,22 +1021,94 @@ export default function MemberManagementPage() {
                 </div>
 
                 {(!settings?.attendanceMode || settings.attendanceMode === 'NFC' || settings.attendanceMode === 'BOTH') && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      NFC Tag / Card ID
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Auto-gen or tap"
-                      value={nfcCardId}
-                      onChange={(e) => setNfcCardId(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                        }
-                      }}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none"
-                    />
+                  <div className="space-y-2">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          NFC Tag 1 (Primary)
+                        </label>
+                        {!showSecondaryNfc && (
+                          <button
+                            type="button"
+                            onClick={() => setShowSecondaryNfc(true)}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-900 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200 transition-colors"
+                            title="Add 2nd NFC Tag / Keyfob"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add 2nd NFC</span>
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative flex items-center">
+                        <input
+                          type="text"
+                          placeholder="Tap card or enter ID"
+                          value={nfcCardId}
+                          onChange={(e) => setNfcCardId(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                            }
+                          }}
+                          className="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none"
+                        />
+                        {!showSecondaryNfc && (
+                          <button
+                            type="button"
+                            onClick={() => setShowSecondaryNfc(true)}
+                            className="absolute right-2 p-1 text-slate-400 hover:text-blue-900 bg-slate-100 hover:bg-blue-50 rounded border border-slate-200 transition-colors"
+                            title="Add 2nd NFC Tag"
+                          >
+                            <Plus className="w-3.5 h-3.5 text-blue-900" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {showSecondaryNfc && (
+                      <div className="animate-in fade-in duration-150">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-bold text-blue-950 uppercase tracking-wider">
+                            NFC Tag 2 (Secondary / Band)
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNfcCardId2('');
+                              setShowSecondaryNfc(false);
+                            }}
+                            className="text-[10px] text-rose-600 hover:text-rose-800 font-bold flex items-center gap-0.5"
+                          >
+                            <X className="w-3 h-3" /> Remove
+                          </button>
+                        </div>
+                        <div className="relative flex items-center">
+                          <input
+                            type="text"
+                            placeholder="Tap 2nd card / keyfob"
+                            value={nfcCardId2}
+                            onChange={(e) => setNfcCardId2(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                              }
+                            }}
+                            className="w-full pl-3 pr-8 py-2 bg-blue-50/50 border border-blue-300 rounded-lg text-sm font-mono font-bold text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNfcCardId2('');
+                              setShowSecondaryNfc(false);
+                            }}
+                            className="absolute right-2 p-1 text-slate-400 hover:text-rose-600"
+                            title="Remove 2nd NFC"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1165,6 +1306,31 @@ export default function MemberManagementPage() {
                       ))}
                     </div>
 
+                    {paymentMethod === 'UPI' && (
+                      <div className="mt-2 p-2.5 bg-blue-50/80 border border-blue-200 rounded-lg space-y-2 animate-in fade-in duration-150">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-700 mb-0.5">UPI ID / Transaction UTR / Ref</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 402819827361 or user@upi"
+                            value={upiId}
+                            onChange={(e) => setUpiId(e.target.value)}
+                            className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs font-mono font-bold text-slate-900 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-700 mb-0.5">Sender / Payer Name</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Member Name on UPI app"
+                            value={upiSenderName}
+                            onChange={(e) => setUpiSenderName(e.target.value)}
+                            className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs font-semibold text-slate-900 outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {paymentMethod === 'SPLIT' && (
                       <div className="mt-2 p-2 bg-blue-50/70 border border-blue-200 rounded-lg grid grid-cols-2 gap-2 animate-in fade-in duration-150">
                         <div>
@@ -1192,6 +1358,23 @@ export default function MemberManagementPage() {
                   </div>
                 </div>
               )}
+
+              {/* WhatsApp Activation Toggle */}
+              <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Smartphone className="w-4 h-4 text-emerald-700" />
+                  <div>
+                    <label className="text-xs font-bold text-emerald-950 block">Activate WhatsApp Services</label>
+                    <p className="text-[10px] text-emerald-700/80">Enable instant WhatsApp receipt and automated fee reminders</p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={waActiveToggle}
+                  onChange={(e) => setWaActiveToggle(e.target.checked)}
+                  className="w-4 h-4 rounded text-emerald-700 focus:ring-emerald-600 cursor-pointer accent-emerald-600"
+                />
+              </div>
 
               <div className="pt-3 flex justify-end space-x-3 border-t border-slate-100 shrink-0">
                 <button
@@ -1244,8 +1427,13 @@ export default function MemberManagementPage() {
             <div className="space-y-4 text-xs overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-slate-50 rounded-xl">
-                  <span className="text-slate-400 font-semibold block mb-0.5">NFC Card ID</span>
-                  <span className="font-mono font-bold text-slate-800">{selectedMember.nfcCardId}</span>
+                  <span className="text-slate-400 font-semibold block mb-0.5">NFC Card ID(s)</span>
+                  <div className="font-mono font-bold text-slate-800 space-y-0.5">
+                    <div>1: {selectedMember.nfcCardId}</div>
+                    {selectedMember.nfcCardId2 && (
+                      <div className="text-blue-900 text-[11px]">2: {selectedMember.nfcCardId2}</div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="p-3 bg-slate-50 rounded-xl">
@@ -1419,11 +1607,36 @@ export default function MemberManagementPage() {
                             : 'bg-white text-slate-700 border border-slate-300'
                         }`}
                       >
-                          {mode === 'CASH' ? <Banknote className="w-3.5 h-3.5" /> : mode === 'UPI' ? <Smartphone className="w-3.5 h-3.5" /> : mode === 'CARD' ? <CreditCard className="w-3.5 h-3.5" /> : <ArrowLeftRight className="w-3.5 h-3.5" />}
+                        {mode === 'CASH' ? <Banknote className="w-3.5 h-3.5" /> : mode === 'UPI' ? <Smartphone className="w-3.5 h-3.5" /> : mode === 'CARD' ? <CreditCard className="w-3.5 h-3.5" /> : <ArrowLeftRight className="w-3.5 h-3.5" />}
                         <span className="text-[10px]">{mode === 'UPI' ? 'UPI' : mode}</span>
                       </button>
                     ))}
                   </div>
+
+                  {renewPaymentMethod === 'UPI' && (
+                    <div className="mt-2 p-2.5 bg-blue-50/80 border border-blue-200 rounded-lg space-y-2 animate-in fade-in duration-150">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 mb-0.5">UPI ID / Transaction UTR</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 402819827361 or user@upi"
+                          value={renewUpiId}
+                          onChange={(e) => setRenewUpiId(e.target.value)}
+                          className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs font-mono font-bold text-slate-900 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 mb-0.5">Sender / Payer Name</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Member Name on UPI"
+                          value={renewUpiSenderName}
+                          onChange={(e) => setRenewUpiSenderName(e.target.value)}
+                          className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs font-semibold text-slate-900 outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {renewPaymentMethod === 'SPLIT' && (
                     <div className="mt-2 p-2 bg-white border border-blue-200 rounded-lg grid grid-cols-2 gap-2">
@@ -1470,7 +1683,7 @@ export default function MemberManagementPage() {
                       <div key={tx.id} className="bg-slate-50 p-2.5 rounded-lg flex justify-between items-center border border-slate-100">
                         <div>
                           <div className="font-bold text-slate-800">{tx.description}</div>
-                          <div className="text-slate-500">{formatDateDDMMYYYY(tx.date)}</div>
+                          <div className="text-slate-500 font-mono text-xs">{formatDateDDMMYYYY(tx.date)}</div>
                         </div>
                         <span className="font-black text-emerald-600">₹{tx.amount}</span>
                       </div>
@@ -1490,7 +1703,7 @@ export default function MemberManagementPage() {
                     .map(a => (
                       <div key={a.id} className="bg-slate-50 p-2.5 rounded-lg flex justify-between items-center border border-slate-100">
                         <div>
-                          <div className="font-bold text-slate-800">{formatDateDDMMYYYY(a.dateStr)}</div>
+                          <div className="font-bold text-slate-800 font-mono">{formatDateDDMMYYYY(a.dateStr)}</div>
                           <div className="text-slate-500">In: {new Date(a.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                         </div>
                         {a.checkOutTime ? (
@@ -1594,15 +1807,15 @@ export default function MemberManagementPage() {
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                   Payment Mode
                 </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-1.5">
                   {(['CASH', 'UPI', 'CARD', 'SPLIT'] as const).map((mode) => (
                     <button
                       key={mode}
                       type="button"
                       onClick={() => setCollectDuePaymentMethod(mode)}
-                      className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+                      className={`py-2 px-1 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center space-y-1 ${
                         collectDuePaymentMethod === mode
-                          ? 'bg-blue-900 text-white shadow-sm ring-2 ring-blue-900 ring-offset-1'
+                          ? 'bg-emerald-700 text-white shadow-sm ring-2 ring-emerald-700 ring-offset-1'
                           : 'bg-slate-50 text-slate-700 border border-slate-300 hover:bg-slate-100'
                       }`}
                     >
@@ -1611,6 +1824,35 @@ export default function MemberManagementPage() {
                     </button>
                   ))}
                 </div>
+
+                {collectDuePaymentMethod === 'UPI' && (
+                  <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 animate-in fade-in">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        UPI ID / Transaction UTR / Ref
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 402819827361 or user@upi"
+                        value={collectDueUpiId}
+                        onChange={(e) => setCollectDueUpiId(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Payer / Sender Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Member Name on UPI"
+                        value={collectDueUpiSenderName}
+                        onChange={(e) => setCollectDueUpiSenderName(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {collectDuePaymentMethod === 'SPLIT' && (
                   <div className="mt-3 p-3 bg-blue-50/70 border border-blue-200 rounded-xl grid grid-cols-2 gap-3 animate-in fade-in duration-150">
