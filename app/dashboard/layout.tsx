@@ -214,12 +214,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navItems = [
     { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-    { label: attendanceMode === 'FINGERPRINT' ? 'Fingerprint' : attendanceMode === 'BOTH' ? 'Check-in' : attendanceMode === 'MANUAL' ? 'Check-in' : 'NFC Terminal', href: '/dashboard/checkin', icon: Smartphone, badge: attendanceMode !== 'MANUAL' ? attendanceMode : undefined },
+    { label: attendanceMode === 'FINGERPRINT' ? 'Fingerprint' : attendanceMode === 'BOTH' ? 'Check-in' : attendanceMode === 'MANUAL' ? 'Check-in' : 'NFC Terminal', href: '/dashboard/checkin', icon: Smartphone },
     { label: 'Members', href: '/dashboard/members', icon: Users },
-    { label: 'Reminders', href: '/dashboard/reminders', icon: Bell, badge: 'Due' },
-    { label: 'Broadcast', href: '/dashboard/broadcast', icon: Megaphone, badge: 'New' },
+    { label: 'Reminders', href: '/dashboard/reminders', icon: Bell },
+    { label: 'Broadcast', href: '/dashboard/broadcast', icon: Megaphone },
     { label: 'Revenue', href: '/dashboard/revenue', icon: CreditCard },
-    ...(productsEnabled ? [{ label: 'Store / POS', href: '/dashboard/products', icon: Store, badge: 'New' }] : []),
+    ...(productsEnabled ? [{ label: 'Store / POS', href: '/dashboard/products', icon: Store }] : []),
     { label: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
 
@@ -293,12 +293,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* DESKTOP SIDEBAR */}
       <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky z-30 shadow-sm ${waStatus !== 'connected' ? 'top-8 h-[calc(100vh-2rem)]' : 'top-0 h-screen'}`}>
         {/* Brand */}
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white text-slate-900">
+        <div className="h-14 px-4 border-b border-slate-200 flex items-center justify-between bg-white text-slate-900 shrink-0">
           <div className="flex items-center space-x-3">
-            <img src="/logo.png" alt="Gym Logo" className="w-10 h-10 object-contain rounded-xl shadow-sm border border-slate-200 bg-white p-1" />
-            <div>
-              <span className="font-extrabold text-slate-900 text-base tracking-tight">GymFlow</span>
-              <span className="block text-xs font-semibold text-slate-500">Gym Admin</span>
+            <img src="/logo.png" alt="Gym Logo" className="w-8 h-8 object-contain rounded-xl shadow-sm border border-slate-200 bg-white p-0.5" />
+            <div className="flex flex-col justify-center">
+              <span className="font-extrabold text-slate-900 text-sm tracking-tight leading-tight">GymFlow</span>
+              <span className="block text-[10px] font-semibold text-slate-500 leading-tight">Gym Admin</span>
             </div>
           </div>
         </div>

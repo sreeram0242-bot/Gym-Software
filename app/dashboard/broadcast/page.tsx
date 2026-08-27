@@ -45,8 +45,9 @@ export default function BroadcastPage() {
   };
 
   const getRecipientCount = () => {
-    if (audience === 'all') return customers.length;
-    return customers.filter(c => c.status === audience).length;
+    const activeCustomers = customers.filter(c => c.waActive === true);
+    if (audience === 'all') return activeCustomers.length;
+    return activeCustomers.filter(c => c.status === audience).length;
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

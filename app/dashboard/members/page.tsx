@@ -165,7 +165,13 @@ export default function MemberManagementPage() {
         setName('');
         setPhone('');
         setNfcCardId(nfcId);
-        setFeeAmount(2500);
+        if (plans.length > 0) {
+          setFeeAmount(plans[0].price);
+          setPaidAmount(plans[0].price);
+        } else {
+          setFeeAmount(2500);
+          setPaidAmount(2500);
+        }
         setInfoMsg('');
         setErrorMsg('');
         setShowAddModal(true);
@@ -186,7 +192,13 @@ export default function MemberManagementPage() {
       setPhone('');
       setNfcCardId(newNfc || '');
       setFingerprintId('');
-      setFeeAmount(2500);
+      if (plans.length > 0) {
+        setFeeAmount(plans[0].price);
+        setPaidAmount(plans[0].price);
+      } else {
+        setFeeAmount(2500);
+        setPaidAmount(2500);
+      }
       setInfoMsg('');
       setErrorMsg('');
       setShowAddModal(true);
@@ -226,6 +238,7 @@ export default function MemberManagementPage() {
     if (ps.length > 0) {
       setPlanType(ps[0].name);
       setFeeAmount(ps[0].price);
+      setPaidAmount(ps[0].price);
     }
     
     const matchedGym = loadedGyms.find((g: any) => g.id === savedId);
@@ -1027,8 +1040,14 @@ export default function MemberManagementPage() {
                 setNfcCardId2('');
                 setShowSecondaryNfc(false);
                 setFingerprintId('');
-                setFeeAmount(2500);
-                setPaidAmount(2500);
+                if (plans.length > 0) {
+                  setPlanType(plans[0].name);
+                  setFeeAmount(plans[0].price);
+                  setPaidAmount(plans[0].price);
+                } else {
+                  setFeeAmount(2500);
+                  setPaidAmount(2500);
+                }
                 setInfoMsg('');
                 setErrorMsg('');
                 setShowAddModal(true);

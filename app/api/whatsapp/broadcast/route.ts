@@ -14,9 +14,9 @@ export async function POST(request: Request) {
     // Fetch customers based on audience
     let customers = [];
     if (audience === 'all') {
-      customers = await db.customer.findMany({ where: { gymId } });
+      customers = await db.customer.findMany({ where: { gymId, waActive: true } });
     } else {
-      customers = await db.customer.findMany({ where: { gymId, status: audience } });
+      customers = await db.customer.findMany({ where: { gymId, status: audience, waActive: true } });
     }
 
     let queuedCount = 0;

@@ -18,7 +18,7 @@ export default function RevenuePage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Global Filter State
-  const [globalTimeFilter, setGlobalTimeFilter] = useState<'ALL' | 'TODAY' | 'THIS_MONTH' | 'THIS_YEAR' | 'CUSTOM'>('ALL');
+  const [globalTimeFilter, setGlobalTimeFilter] = useState<'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'THIS_YEAR' | 'CUSTOM'>('ALL');
   const [globalDateFrom, setGlobalDateFrom] = useState('');
   const [globalDateTo, setGlobalDateTo] = useState('');
 
@@ -214,6 +214,14 @@ export default function RevenuePage() {
 
     if (globalTimeFilter === 'TODAY') {
       return d.toDateString() === now.toDateString();
+    }
+    if (globalTimeFilter === 'THIS_WEEK') {
+      const startOfWeek = new Date(now);
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      startOfWeek.setDate(diff);
+      startOfWeek.setHours(0, 0, 0, 0);
+      return d >= startOfWeek;
     }
     if (globalTimeFilter === 'THIS_MONTH') {
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
@@ -503,7 +511,7 @@ export default function RevenuePage() {
       {/* Global Filter Bar */}
       <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
-          {(['ALL', 'TODAY', 'THIS_MONTH', 'THIS_YEAR', 'CUSTOM'] as const).map(f => (
+          {(['ALL', 'TODAY', 'THIS_WEEK', 'THIS_MONTH', 'THIS_YEAR', 'CUSTOM'] as const).map(f => (
             <button
               key={f}
               onClick={() => setGlobalTimeFilter(f)}
@@ -1187,6 +1195,47 @@ export default function RevenuePage() {
               <h2 className="text-lg font-black text-slate-900">Custom Export CSV</h2>
               <button onClick={() => setShowExportModal(false)} className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors">
                 <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex gap-2 mb-4">
+              <button 
+                onClick={() => {
+                  const d = new Date();
+                  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  setExportDateFrom(today);
+                  setExportDateTo(today);
+                }}
+                className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
+              >
+                Today
+              </button>
+              <button 
+                onClick={() => {
+                  const d = new Date();
+                  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  const startD = new Date();
+                  const day = startD.getDay();
+                  const diff = startD.getDate() - day + (day === 0 ? -6 : 1);
+                  const startOfWeek = new Date(startD.setDate(diff));
+                  const startWeekStr = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, '0')}-${String(startOfWeek.getDate()).padStart(2, '0')}`;
+                  setExportDateFrom(startWeekStr);
+                  setExportDateTo(today);
+                }}
+                className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
+              >
+                This Week
+              </button>
+              <button 
+                onClick={() => {
+                  const d = new Date();
+                  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  const startMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+                  setExportDateFrom(startMonthStr);
+                  setExportDateTo(today);
+                }}
+                className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
+              >
+                This Month
               </button>
             </div>
             

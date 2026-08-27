@@ -20,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en-GB">
       <body className="bg-slate-50 text-slate-900 antialiased min-h-screen">
         <script
           dangerouslySetInnerHTML={{
