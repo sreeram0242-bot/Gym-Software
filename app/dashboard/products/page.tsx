@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Plus, ShoppingCart, Trash2, Edit2, X, Check, AlertTriangle, TrendingUp, Search, Banknote, Smartphone, CreditCard, ArrowLeftRight, Phone } from 'lucide-react';
 import { getProducts, addProduct, updateProduct, deleteProduct, recordProductSale, getProductSales, getCustomers, getGymSettings } from '@/lib/actions';
-import { formatDateDDMMYYYY } from '@/lib/utils';
+import { formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 
 const CATEGORIES = ['Supplement', 'Accessory', 'Drink', 'Snack', 'Apparel', 'Equipment', 'Other'];
@@ -226,7 +226,7 @@ export default function ProductsPage() {
     return matchSearch && matchCat;
   });
 
-  const todaySales = productSales.filter(s => s.date === new Date().toISOString().split('T')[0]);
+  const todaySales = productSales.filter(s => s.date === getLocalTodayDateString());
   const todayRevenue = todaySales.reduce((s: number, sale: any) => s + sale.totalAmount, 0);
 
   return (

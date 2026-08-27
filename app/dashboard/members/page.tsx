@@ -44,7 +44,7 @@ export default function MemberManagementPage() {
   const [splitUpi, setSplitUpi] = useState<number | string>(0);
   const [upiId, setUpiId] = useState('');
   const [upiSenderName, setUpiSenderName] = useState('');
-  const [lastPaymentDate, setLastPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [lastPaymentDate, setLastPaymentDate] = useState(getLocalTodayDateString());
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
 

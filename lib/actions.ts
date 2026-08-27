@@ -606,9 +606,10 @@ export async function renewMemberPayment(
   const formattedSplit = splitDetails ? (typeof splitDetails === 'string' ? splitDetails : JSON.stringify(splitDetails)) : null;
 
   const today = getLocalTodayDateString();
-  const currentDue = new Date(c.nextDueDate > today ? c.nextDueDate : today);
-  currentDue.setMonth(currentDue.getMonth() + addedMonths);
-  const newDueDate = currentDue.toISOString().split('T')[0];
+  const baseDateStr = c.nextDueDate > today ? c.nextDueDate : today;
+  const [y, m, d] = baseDateStr.split('-').map(Number);
+  const targetDate = new Date(y, (m - 1) + addedMonths, d);
+  const newDueDate = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
 
   try {
     const updatedCust = await prisma.customer.update({
@@ -774,40 +775,45 @@ export async function toggleCheckIn(customerId: string) {
   const nowIso = new Date().toISOString();
 
   try {
+    // Find latest active session without checkout time
     const activeSession = await prisma.attendanceRecord.findFirst({
       where: {
         customerId: customer.id,
-        checkOutTime: null,
-        dateStr: todayStr
-      }
+        checkOutTime: null
+      },
+      orderBy: { checkInTime: 'desc' }
     });
 
     if (activeSession) {
       const checkInTime = new Date(activeSession.checkInTime);
       const checkOutTime = new Date(nowIso);
-      const diffMinutes = Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60));
+      const diffHours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
 
-      const updated = await prisma.attendanceRecord.update({
-        where: { id: activeSession.id },
-        data: {
-          checkOutTime: nowIso,
-          durationMinutes: diffMinutes > 0 ? diffMinutes : 1
-        }
-      });
-      return { record: updated, action: 'checkout' as const };
-    } else {
-      const newRecord = await prisma.attendanceRecord.create({
-        data: {
-          gymId: customer.gymId,
-          customerId: customer.id,
-          customerName: customer.name,
-          customerPhone: customer.phone,
-          checkInTime: nowIso,
-          dateStr: todayStr
-        }
-      });
-      return { record: newRecord, action: 'checkin' as const };
+      // If active session is within 20 hours, treat as checkout
+      if (diffHours < 20) {
+        const diffMinutes = Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60));
+        const updated = await prisma.attendanceRecord.update({
+          where: { id: activeSession.id },
+          data: {
+            checkOutTime: nowIso,
+            durationMinutes: diffMinutes > 0 ? diffMinutes : 1
+          }
+        });
+        return { record: updated, action: 'checkout' as const };
+      }
     }
+
+    const newRecord = await prisma.attendanceRecord.create({
+      data: {
+        gymId: customer.gymId,
+        customerId: customer.id,
+        customerName: customer.name,
+        customerPhone: customer.phone,
+        checkInTime: nowIso,
+        dateStr: todayStr
+      }
+    });
+    return { record: newRecord, action: 'checkin' as const };
   } catch (e) {
     const active = store.attendance.find((a: any) => a.customerId === customer.id && !a.checkOutTime && a.dateStr === todayStr);
     if (active) {
@@ -1427,9 +1433,42 @@ export async function getStaffs(gymId: string) {
 
 export async function addStaff(data: any) {
   try {
-    return await prisma.staff.create({ data });
+    const today = getLocalTodayDateString();
+    const cleanData = {
+      gymId: data.gymId,
+      name: String(data.name || '').trim(),
+      phone: String(data.phone || '').trim(),
+      role: String(data.role || 'Trainer').trim(),
+      nfcCardId: data.nfcCardId && String(data.nfcCardId).trim() ? String(data.nfcCardId).trim() : null,
+      fingerprintId: data.fingerprintId && String(data.fingerprintId).trim() ? String(data.fingerprintId).trim() : null,
+      status: data.status || 'active',
+      joinedDate: data.joinedDate || today
+    };
+    return await prisma.staff.create({ data: cleanData });
   } catch (e) {
+    console.error('Failed to add staff:', e);
     throw new Error('Failed to add staff');
+  }
+}
+
+export async function updateStaff(id: string, data: any) {
+  try {
+    const cleanData: any = {};
+    if (data.name !== undefined) cleanData.name = String(data.name).trim();
+    if (data.phone !== undefined) cleanData.phone = String(data.phone).trim();
+    if (data.role !== undefined) cleanData.role = String(data.role).trim();
+    if (data.nfcCardId !== undefined) cleanData.nfcCardId = data.nfcCardId && String(data.nfcCardId).trim() ? String(data.nfcCardId).trim() : null;
+    if (data.fingerprintId !== undefined) cleanData.fingerprintId = data.fingerprintId && String(data.fingerprintId).trim() ? String(data.fingerprintId).trim() : null;
+    if (data.status !== undefined) cleanData.status = data.status;
+    if (data.joinedDate !== undefined) cleanData.joinedDate = data.joinedDate;
+
+    return await prisma.staff.update({
+      where: { id },
+      data: cleanData
+    });
+  } catch (e) {
+    console.error('Failed to update staff:', e);
+    throw new Error('Failed to update staff');
   }
 }
 
@@ -1464,7 +1503,6 @@ export async function toggleStaffCheckIn(staffId: string) {
     const activeRecord = await prisma.staffAttendanceRecord.findFirst({
       where: {
         staffId: staffId,
-        dateStr: todayStr,
         checkOutTime: null
       },
       orderBy: { checkInTime: 'desc' }
@@ -1473,32 +1511,37 @@ export async function toggleStaffCheckIn(staffId: string) {
     if (activeRecord) {
       const checkInDate = new Date(activeRecord.checkInTime);
       const now = new Date(nowIso);
-      let diffMins = Math.floor((now.getTime() - checkInDate.getTime()) / 60000);
-      if (diffMins < 0) diffMins = 0;
+      const diffHours = (now.getTime() - checkInDate.getTime()) / (1000 * 60 * 60);
 
-      const updated = await prisma.staffAttendanceRecord.update({
-        where: { id: activeRecord.id },
-        data: {
-          checkOutTime: nowIso,
-          durationMinutes: diffMins
-        }
-      });
-      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
-      return { record: updated, action: 'checkout' };
-    } else {
-      const newRec = await prisma.staffAttendanceRecord.create({
-        data: {
-          gymId: staff.gymId,
-          staffId: staff.id,
-          staffName: staff.name,
-          staffPhone: staff.phone,
-          dateStr: todayStr,
-          checkInTime: nowIso
-        }
-      });
-      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
-      return { record: newRec, action: 'checkin' };
+      // If active shift was started within the last 20 hours, treat as checkout
+      if (diffHours < 20) {
+        let diffMins = Math.floor((now.getTime() - checkInDate.getTime()) / 60000);
+        if (diffMins < 0) diffMins = 0;
+
+        const updated = await prisma.staffAttendanceRecord.update({
+          where: { id: activeRecord.id },
+          data: {
+            checkOutTime: nowIso,
+            durationMinutes: diffMins
+          }
+        });
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
+        return { record: updated, action: 'checkout' };
+      }
     }
+
+    const newRec = await prisma.staffAttendanceRecord.create({
+      data: {
+        gymId: staff.gymId,
+        staffId: staff.id,
+        staffName: staff.name,
+        staffPhone: staff.phone,
+        dateStr: todayStr,
+        checkInTime: nowIso
+      }
+    });
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
+    return { record: newRec, action: 'checkin' };
   } catch (e) {
     console.error(e);
     return null;

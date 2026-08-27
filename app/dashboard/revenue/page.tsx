@@ -6,8 +6,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, updateTransaction, deleteTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan, getGyms, getGymSettings } from '@/lib/actions';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Transaction, SubscriptionPlan } from '@/lib/types';
-import { formatDateDDMMYYYY } from '@/lib/utils';
+import { formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
 
 export default function RevenuePage() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -28,7 +27,7 @@ export default function RevenuePage() {
   const [expenseCategory, setExpenseCategory] = useState('Rent');
   const [expenseAmount, setExpenseAmount] = useState<number | string>(5000);
   const [expenseDesc, setExpenseDesc] = useState('');
-  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [expenseDate, setExpenseDate] = useState(getLocalTodayDateString());
   const [expensePaymentMethod, setExpensePaymentMethod] = useState<'CASH' | 'UPI' | 'CARD'>('CASH');
   const [expenseUpiId, setExpenseUpiId] = useState('');
   const [expenseUpiPayee, setExpenseUpiPayee] = useState('');
@@ -260,7 +259,7 @@ export default function RevenuePage() {
     upiTotal,
     cardTotal
   } = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalTodayDateString();
     const filteredTxs = effectiveTransactions.filter(t => isDateInGlobalFilter(t.date));
 
     const inc = filteredTxs.filter((t) => t.type === 'INCOME').reduce((acc, cur) => acc + cur.amount, 0);

@@ -5,6 +5,7 @@ import { Radio, Clock, UserCheck, Fingerprint, Search, Wifi, WifiOff } from 'luc
 import { getCustomers, getAttendance, findCustomerByNFC, findCustomerByFingerprint, toggleCheckIn, getMemberMonthlyAvgHours, getGymSettings, findStaffByNFC, findStaffByFingerprint, toggleStaffCheckIn } from '@/lib/actions';
 import { Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
+import { getLocalTodayDateString } from '@/lib/utils';
 
 export default function NFCCheckInTerminal() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -221,7 +222,7 @@ export default function NFCCheckInTerminal() {
 
   const getAvg = (custId: string) => avgDurationMap.get(custId) || 1.2;
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalTodayDateString();
   const todayRecords = attendance.filter((a) => a.dateStr === todayStr);
   const activeSessions = todayRecords.filter(a => !a.checkOutTime);
 

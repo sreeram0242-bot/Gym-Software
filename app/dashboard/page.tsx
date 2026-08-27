@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Users, Smartphone, Bell, CreditCard, Plus, ArrowUpRight, CheckCircle2, Clock, Dumbbell, AlertTriangle, TrendingUp, ChevronRight, Zap } from 'lucide-react';
 import { getGyms, getCustomers, getAttendance, getTransactions } from '@/lib/actions';
-import { Customer, AttendanceRecord, Transaction, Gym } from '@/lib/types';
-import { formatDateDDMMYYYY } from '@/lib/utils';
+import { formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
 
 export default function DashboardOverview() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -64,7 +63,7 @@ export default function DashboardOverview() {
   };
 
   // Calculations
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalTodayDateString();
   const todayAttendance = attendance.filter(a => a.dateStr === todayStr);
   const currentlyInGym = todayAttendance.filter(a => !a.checkOutTime);
 

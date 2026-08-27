@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle, Megaphone, Lock, CheckCircle, Store, Briefcase } from 'lucide-react';
-import { getGyms, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours, getCustomers, getGymSettings, getActiveAnnouncement } from '@/lib/actions';
+import { getGyms, findCustomerByNFC, findStaffByNFC, toggleCheckIn, toggleStaffCheckIn, getMemberMonthlyAvgHours, getCustomers, getGymSettings, getActiveAnnouncement } from '@/lib/actions';
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 
@@ -161,12 +161,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }
 
           } else {
-            // New NFC Card scanned!
-            if (typeof window !== 'undefined') {
-              if (window.location.pathname === '/dashboard/members') {
-                window.dispatchEvent(new CustomEvent('open_add_member', { detail: { nfcId: buffer } }));
-              } else {
-                router.push(`/dashboard/members?new_nfc=${buffer}`);
+            // Check if it's a Staff Member
+            const matchedStaff = await findStaffByNFC(matched.id, buffer);
+            if (matchedStaff) {
+              const staffRes = await toggleStaffCheckIn(matchedStaff.id);
+              const isPunchIn = staffRes?.action === 'checkin';
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('global-toast', { 
+                  detail: { 
+                    message: `Staff ${isPunchIn ? 'Punch IN' : 'Punch OUT'}: ${matchedStaff.name} (${matchedStaff.role})`, 
+                    type: 'success' 
+                  } 
+                }));
+              }
+            } else {
+              // New unregistered NFC Card scanned!
+              if (typeof window !== 'undefined') {
+                if (window.location.pathname === '/dashboard/members') {
+                  window.dispatchEvent(new CustomEvent('open_add_member', { detail: { nfcId: buffer } }));
+                } else {
+                  router.push(`/dashboard/members?new_nfc=${buffer}`);
+                }
               }
             }
           }
