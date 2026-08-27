@@ -1,12 +1,13 @@
 'use server';
 
 import prisma from './db';
+import { getLocalTodayDateString } from './utils';
 
 // Global in-memory fallback store for offline development and testing
 const globalAny: any = global;
 
 if (!globalAny.mockStore) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalTodayDateString();
   const nextMonth = new Date();
   nextMonth.setMonth(nextMonth.getMonth() + 1);
   const nextMonthStr = nextMonth.toISOString().split('T')[0];
@@ -335,7 +336,7 @@ export async function addGym(gym: any) {
         userId: gym.userId,
         passwordHash: gym.passwordHash,
         status: 'active',
-        createdAt: new Date().toISOString().split('T')[0],
+        createdAt: getLocalTodayDateString(),
         memberCount: 0
       }
     });
@@ -349,7 +350,7 @@ export async function addGym(gym: any) {
       userId: gym.userId,
       passwordHash: gym.passwordHash,
       status: 'active',
-      createdAt: new Date().toISOString().split('T')[0],
+      createdAt: getLocalTodayDateString(),
       memberCount: 0
     };
     store.gyms.unshift(newGym);
@@ -431,7 +432,7 @@ export async function addCustomer(data: any) {
         nextDueDate: data.nextDueDate,
         status: 'active',
         waActive: false,
-        joinedDate: new Date().toISOString().split('T')[0]
+        joinedDate: getLocalTodayDateString()
       }
     });
 
@@ -476,7 +477,7 @@ export async function addCustomer(data: any) {
       nextDueDate: data.nextDueDate,
       status: 'active',
       waActive: false,
-      joinedDate: new Date().toISOString().split('T')[0]
+      joinedDate: getLocalTodayDateString()
     };
     store.customers.unshift(newCust);
 
@@ -589,7 +590,7 @@ export async function renewMemberPayment(
   const actualPaid = paidAmount !== undefined ? Number(paidAmount) : Number(totalAmount);
   const formattedSplit = splitDetails ? (typeof splitDetails === 'string' ? splitDetails : JSON.stringify(splitDetails)) : null;
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalTodayDateString();
   const currentDue = new Date(c.nextDueDate > today ? c.nextDueDate : today);
   currentDue.setMonth(currentDue.getMonth() + addedMonths);
   const newDueDate = currentDue.toISOString().split('T')[0];
@@ -674,7 +675,7 @@ export async function collectPendingBalance(
   if (!c) throw new Error('Customer not found');
 
   const newBalance = Math.max(0, (c.pendingBalance || 0) - amountToCollect - discountAmount);
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalTodayDateString();
   const formattedSplit = splitDetails ? (typeof splitDetails === 'string' ? splitDetails : JSON.stringify(splitDetails)) : null;
 
   try {
@@ -754,7 +755,7 @@ export async function toggleCheckIn(customerId: string) {
   }
   if (!customer) throw new Error('Customer not found');
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalTodayDateString();
   const nowIso = new Date().toISOString();
 
   try {
@@ -1005,11 +1006,11 @@ export async function deleteSubscriptionPlan(id: string) {
 export async function getProducts(gymId: string) {
   try {
     return await prisma.product.findMany({
-      where: { gymId },
+      where: { gymId, active: true },
       orderBy: { createdAt: 'desc' }
     });
   } catch (e) {
-    return store.products.filter((p: any) => p.gymId === gymId);
+    return store.products.filter((p: any) => p.gymId === gymId && p.active !== false);
   }
 }
 
@@ -1024,7 +1025,7 @@ export async function addProduct(data: any) {
         stock: Number(data.stock) || 0,
         unit: data.unit || 'unit',
         active: true,
-        createdAt: new Date().toISOString().split('T')[0]
+        createdAt: getLocalTodayDateString()
       }
     });
   } catch (e) {
@@ -1037,7 +1038,7 @@ export async function addProduct(data: any) {
       stock: Number(data.stock) || 0,
       unit: data.unit || 'unit',
       active: true,
-      createdAt: new Date().toISOString().split('T')[0]
+      createdAt: getLocalTodayDateString()
     };
     store.products.push(newProduct);
     return newProduct;
@@ -1056,11 +1057,11 @@ export async function updateProduct(id: string, data: any) {
 
 export async function deleteProduct(id: string) {
   try {
-    await prisma.product.delete({ where: { id } });
+    await prisma.product.update({ where: { id }, data: { active: false } });
     return true;
   } catch {
     const idx = store.products.findIndex((p: any) => p.id === id);
-    if (idx !== -1) { store.products.splice(idx, 1); return true; }
+    if (idx !== -1) { store.products[idx].active = false; return true; }
     return false;
   }
 }
@@ -1074,7 +1075,7 @@ export async function recordProductSale(data: {
   customerId?: string | null;
   customerName?: string | null;
 }) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalTodayDateString();
   const formattedSplit = data.splitDetails ? (typeof data.splitDetails === 'string' ? data.splitDetails : JSON.stringify(data.splitDetails)) : null;
 
   const itemNames = data.items.map(i => `${i.productName} x${i.quantity}`).join(', ');
