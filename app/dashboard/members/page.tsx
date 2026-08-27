@@ -40,7 +40,6 @@ export default function MemberManagementPage() {
   const [remainingType, setRemainingType] = useState<'BALANCE' | 'DISCOUNT'>('BALANCE');
   const [balanceDueDate, setBalanceDueDate] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
-  const [waActiveToggle, setWaActiveToggle] = useState<boolean>(true);
   const [splitCash, setSplitCash] = useState<number | string>(0);
   const [splitUpi, setSplitUpi] = useState<number | string>(0);
   const [upiId, setUpiId] = useState('');
@@ -95,7 +94,6 @@ export default function MemberManagementPage() {
     setFeeAmount(cust.feeAmount);
     setPaidAmount(cust.feeAmount);
     setLastPaymentDate(cust.lastPaymentDate);
-    setWaActiveToggle(cust.waActive ?? true);
     setIsEditingMember(true);
     setEditingMemberId(cust.id);
     setSelectedMember(null); // Close the details modal so the edit modal is visible
@@ -300,7 +298,6 @@ export default function MemberManagementPage() {
         splitDetails: splitData,
         upiId: paymentMethod === 'UPI' ? upiId : undefined,
         upiSenderName: paymentMethod === 'UPI' ? upiSenderName : undefined,
-        waActive: waActiveToggle,
         lastPaymentDate,
         nextDueDate
       });
@@ -653,7 +650,6 @@ export default function MemberManagementPage() {
             setFingerprintId('');
             setFeeAmount(2500);
             setPaidAmount(2500);
-            setWaActiveToggle(true);
             setInfoMsg('');
             setErrorMsg('');
             setShowAddModal(true);
@@ -822,24 +818,16 @@ export default function MemberManagementPage() {
                         <AlertTriangle className="w-2.5 h-2.5" /> ₹{cust.pendingBalance} Due
                       </span>
                     )}
-                    <button
-                      type="button"
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        const newStatus = !cust.waActive;
-                        await toggleCustomerWaStatus(cust.id, newStatus);
-                        setCustomers(customers.map(c => c.id === cust.id ? { ...c, waActive: newStatus } : c));
-                        showToast(`WhatsApp service ${newStatus ? 'Activated' : 'Deactivated'} for ${cust.name}`, 'success');
-                      }}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer hover:scale-105 ${
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                         cust.waActive
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200 shadow-sm'
-                          : 'bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-slate-100 text-slate-500 border border-slate-200'
                       }`}
-                      title="Click to toggle WhatsApp service status"
+                      title={cust.waActive ? "WhatsApp Bot Activated (Messaged 'start')" : "WhatsApp Not Activated (Waiting for member to text 'start')"}
                     >
                       {cust.waActive ? '● WA Active' : '○ No WA'}
-                    </button>
+                    </span>
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                         isAbsent(cust.id) 
@@ -1023,22 +1011,9 @@ export default function MemberManagementPage() {
                 {(!settings?.attendanceMode || settings.attendanceMode === 'NFC' || settings.attendanceMode === 'BOTH') && (
                   <div className="space-y-2">
                     <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                          NFC Tag 1 (Primary)
-                        </label>
-                        {!showSecondaryNfc && (
-                          <button
-                            type="button"
-                            onClick={() => setShowSecondaryNfc(true)}
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-900 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200 transition-colors"
-                            title="Add 2nd NFC Tag / Keyfob"
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>Add 2nd NFC</span>
-                          </button>
-                        )}
-                      </div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        NFC Tag ID {showSecondaryNfc ? '(Card 1)' : ''}
+                      </label>
                       <div className="relative flex items-center">
                         <input
                           type="text"
@@ -1056,10 +1031,10 @@ export default function MemberManagementPage() {
                           <button
                             type="button"
                             onClick={() => setShowSecondaryNfc(true)}
-                            className="absolute right-2 p-1 text-slate-400 hover:text-blue-900 bg-slate-100 hover:bg-blue-50 rounded border border-slate-200 transition-colors"
-                            title="Add 2nd NFC Tag"
+                            className="absolute right-1.5 p-1 text-blue-900 hover:text-blue-950 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors flex items-center justify-center"
+                            title="Add 2nd NFC Tag / Keyfob"
                           >
-                            <Plus className="w-3.5 h-3.5 text-blue-900" />
+                            <Plus className="w-3.5 h-3.5" />
                           </button>
                         )}
                       </div>
@@ -1359,23 +1334,6 @@ export default function MemberManagementPage() {
                 </div>
               )}
 
-              {/* WhatsApp Activation Toggle */}
-              <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Smartphone className="w-4 h-4 text-emerald-700" />
-                  <div>
-                    <label className="text-xs font-bold text-emerald-950 block">Activate WhatsApp Services</label>
-                    <p className="text-[10px] text-emerald-700/80">Enable instant WhatsApp receipt and automated fee reminders</p>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={waActiveToggle}
-                  onChange={(e) => setWaActiveToggle(e.target.checked)}
-                  className="w-4 h-4 rounded text-emerald-700 focus:ring-emerald-600 cursor-pointer accent-emerald-600"
-                />
-              </div>
-
               <div className="pt-3 flex justify-end space-x-3 border-t border-slate-100 shrink-0">
                 <button
                   type="button"
@@ -1455,29 +1413,19 @@ export default function MemberManagementPage() {
 
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl col-span-2 flex items-center justify-between">
                   <div>
-                    <span className="text-slate-500 font-bold text-xs block mb-0.5">WhatsApp Automation Status</span>
+                    <span className="text-slate-500 font-bold text-xs block mb-0.5">WhatsApp Bot Status</span>
                     <span className={`font-bold text-xs flex items-center gap-1.5 ${selectedMember.waActive ? 'text-emerald-700' : 'text-slate-500'}`}>
                       <MessageCircle className="w-3.5 h-3.5" />
-                      {selectedMember.waActive ? 'Activated (Receiving alerts & bot active)' : 'Not Activated (No bot interaction yet)'}
+                      {selectedMember.waActive ? "Activated (Member messaged 'start')" : "Not Activated (Waiting for member to text 'start')"}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const newStatus = !selectedMember.waActive;
-                      await toggleCustomerWaStatus(selectedMember.id, newStatus);
-                      setSelectedMember({ ...selectedMember, waActive: newStatus });
-                      setCustomers(customers.map(c => c.id === selectedMember.id ? { ...c, waActive: newStatus } : c));
-                      showToast(newStatus ? 'WhatsApp service marked as Activated' : 'WhatsApp service marked as Inactive', 'success');
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                      selectedMember.waActive
-                        ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
-                    }`}
-                  >
-                    {selectedMember.waActive ? 'Deactivate WA' : 'Activate WA'}
-                  </button>
+                  <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold ${
+                    selectedMember.waActive
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      : 'bg-slate-100 text-slate-600 border border-slate-200'
+                  }`}>
+                    {selectedMember.waActive ? 'Active' : 'Pending Start'}
+                  </span>
                 </div>
 
                 {(selectedMember.pendingBalance || 0) > 0 && (

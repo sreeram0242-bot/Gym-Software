@@ -412,7 +412,7 @@ export async function addCustomer(data: any) {
   const paymentMethod = data.paymentMethod || 'CASH';
   const splitDetails = data.splitDetails ? (typeof data.splitDetails === 'string' ? data.splitDetails : JSON.stringify(data.splitDetails)) : null;
 
-  const waActive = data.waActive !== undefined ? Boolean(data.waActive) : true;
+  const waActive = false; // Only activates when member sends 'start' to WhatsApp bot
 
   try {
     const newCust = await prisma.customer.create({
@@ -430,7 +430,7 @@ export async function addCustomer(data: any) {
         lastPaymentDate: data.lastPaymentDate,
         nextDueDate: data.nextDueDate,
         status: 'active',
-        waActive: waActive,
+        waActive: false,
         joinedDate: new Date().toISOString().split('T')[0]
       }
     });
@@ -475,7 +475,7 @@ export async function addCustomer(data: any) {
       lastPaymentDate: data.lastPaymentDate,
       nextDueDate: data.nextDueDate,
       status: 'active',
-      waActive: waActive,
+      waActive: false,
       joinedDate: new Date().toISOString().split('T')[0]
     };
     store.customers.unshift(newCust);
