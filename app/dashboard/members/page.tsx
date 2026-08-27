@@ -609,12 +609,29 @@ export default function MemberManagementPage() {
       );
 
       let matchesStatus = true;
-      if (statusFilter !== 'all' && statusFilter !== 'new' && statusFilter !== 'absent' && statusFilter !== 'has_due') {
-        matchesStatus = c.status === statusFilter;
+      if (statusFilter === 'new') {
+        const joinDate = new Date(c.joinedDate);
+        const today = new Date();
+        const diffDays = (today.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24);
+        matchesStatus = diffDays <= 7 && diffDays >= 0;
       } else if (statusFilter === 'absent') {
         matchesStatus = isAbsent(c.id);
       } else if (statusFilter === 'has_due') {
         matchesStatus = (c.pendingBalance || 0) > 0;
+      } else if (statusFilter !== 'all') {
+        const dueDate = new Date(c.nextDueDate);
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        dueDate.setHours(0,0,0,0);
+        const diffDays = (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+
+        if (statusFilter === 'active') {
+           matchesStatus = c.status === 'active' && diffDays >= 0;
+        } else if (statusFilter === 'due_soon') {
+           matchesStatus = c.status === 'active' && diffDays >= 0 && diffDays <= 3;
+        } else if (statusFilter === 'overdue') {
+           matchesStatus = c.status === 'active' && diffDays < 0;
+        }
       }
 
       let matchesTime = true;
