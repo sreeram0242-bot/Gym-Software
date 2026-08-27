@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useDeferredValue, useMemo } from 'react';
 import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell, Banknote, Smartphone, ArrowLeftRight, Tag, ChevronRight, Fingerprint } from 'lucide-react';
 import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, collectPendingBalance, getGyms, getGymSettings, toggleCustomerWaStatus } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
@@ -144,6 +144,18 @@ export default function MemberManagementPage() {
   useEffect(() => {
     loadData();
 
+    // Background live auto-refresh polling every 3 seconds
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      loadData();
+    }, 3000);
+
+    const handleFocus = () => {
+      loadData();
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
     // Listen to custom open_add_member event
     const handleOpenAddMember = (e: any) => {
       const nfcId = e.detail?.nfcId;
@@ -184,6 +196,9 @@ export default function MemberManagementPage() {
     }
 
     return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
       window.removeEventListener('open_add_member', handleOpenAddMember);
     };
   }, []);
@@ -572,56 +587,61 @@ export default function MemberManagementPage() {
     }
   };
 
-  // Filtered members list
-  const filteredCustomers = customers.filter((c) => {
-    const searchLower = searchQuery.toLowerCase().trim();
-    const phoneQuery = searchQuery.replace(/\D/g, '');
-    
-    const matchesSearch = searchLower === '' || (
-      c.name.toLowerCase().includes(searchLower) ||
-      (c.nfcCardId && c.nfcCardId.toLowerCase().includes(searchLower)) ||
-      (c.nfcCardId2 && c.nfcCardId2.toLowerCase().includes(searchLower)) ||
-      (phoneQuery !== '' && c.phone.replace(/\D/g, '').includes(phoneQuery))
-    );
+  // Filtered members list with React 18 Performance Optimizations
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
-    let matchesStatus = true;
-    if (statusFilter !== 'all' && statusFilter !== 'new' && statusFilter !== 'absent' && statusFilter !== 'has_due') {
-      matchesStatus = c.status === statusFilter;
-    } else if (statusFilter === 'absent') {
-      matchesStatus = isAbsent(c.id);
-    } else if (statusFilter === 'has_due') {
-      matchesStatus = (c.pendingBalance || 0) > 0;
-    }
+  const filteredCustomers = useMemo(() => {
+    return customers.filter((c) => {
+      const searchLower = deferredSearchQuery.toLowerCase().trim();
+      const phoneQuery = deferredSearchQuery.replace(/\D/g, '');
+      
+      const matchesSearch = searchLower === '' || (
+        c.name.toLowerCase().includes(searchLower) ||
+        (c.nfcCardId && c.nfcCardId.toLowerCase().includes(searchLower)) ||
+        (c.nfcCardId2 && c.nfcCardId2.toLowerCase().includes(searchLower)) ||
+        (phoneQuery !== '' && c.phone.replace(/\D/g, '').includes(phoneQuery))
+      );
 
-    let matchesTime = true;
-    if (timeFilter !== 'all_time') {
-      const joinDate = new Date(c.joinedDate);
-      const today = new Date();
-      if (timeFilter === 'today') {
-        matchesTime = joinDate.toDateString() === today.toDateString();
-      } else if (timeFilter === 'this_week') {
-        const d = new Date();
-        const firstDayOfWeek = new Date(d.setDate(d.getDate() - d.getDay()));
-        matchesTime = joinDate >= firstDayOfWeek;
-      } else if (timeFilter === 'this_month') {
-        matchesTime = joinDate.getMonth() === today.getMonth() && joinDate.getFullYear() === today.getFullYear();
+      let matchesStatus = true;
+      if (statusFilter !== 'all' && statusFilter !== 'new' && statusFilter !== 'absent' && statusFilter !== 'has_due') {
+        matchesStatus = c.status === statusFilter;
+      } else if (statusFilter === 'absent') {
+        matchesStatus = isAbsent(c.id);
+      } else if (statusFilter === 'has_due') {
+        matchesStatus = (c.pendingBalance || 0) > 0;
       }
-    }
 
-    let matchesPlan = true;
-    if (planFilter !== 'all') {
-      matchesPlan = c.planType === planFilter;
-    }
+      let matchesTime = true;
+      if (timeFilter !== 'all_time') {
+        const joinDate = new Date(c.joinedDate);
+        const today = new Date();
+        if (timeFilter === 'today') {
+          matchesTime = joinDate.toDateString() === today.toDateString();
+        } else if (timeFilter === 'this_week') {
+          const d = new Date();
+          const firstDayOfWeek = new Date(d.setDate(d.getDate() - d.getDay()));
+          matchesTime = joinDate >= firstDayOfWeek;
+        } else if (timeFilter === 'this_month') {
+          matchesTime = joinDate.getMonth() === today.getMonth() && joinDate.getFullYear() === today.getFullYear();
+        }
+      }
 
-    let matchesWa = true;
-    if (waFilter === 'activated') {
-      matchesWa = Boolean(c.waActive);
-    } else if (waFilter === 'not_activated') {
-      matchesWa = !c.waActive;
-    }
+      let matchesPlan = true;
+      if (planFilter !== 'all') {
+        matchesPlan = c.planType === planFilter;
+      }
 
-    return matchesSearch && matchesStatus && matchesTime && matchesPlan && matchesWa;
-  });
+      let matchesWa = true;
+      if (waFilter === 'activated') {
+        matchesWa = Boolean(c.waActive);
+      } else if (waFilter === 'not_activated') {
+        matchesWa = !c.waActive;
+      }
+
+      return matchesSearch && matchesStatus && matchesTime && matchesPlan && matchesWa;
+    });
+  }, [customers, deferredSearchQuery, statusFilter, timeFilter, planFilter, waFilter, absentTrackingEnabled, absentThresholdDays, attendance]);
+
 
   return (
     <div className="space-y-6">
@@ -947,6 +967,79 @@ export default function MemberManagementPage() {
           );
         })}
       </div>
+
+      {/* Empty State Component */}
+      {filteredCustomers.length === 0 && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
+          <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-900 mx-auto flex items-center justify-center mb-4">
+            {waFilter === 'activated' ? (
+              <Smartphone className="w-8 h-8 text-emerald-600" />
+            ) : statusFilter === 'has_due' ? (
+              <AlertTriangle className="w-8 h-8 text-amber-600" />
+            ) : (
+              <Users className="w-8 h-8 text-blue-900" />
+            )}
+          </div>
+          <h3 className="text-base font-bold text-slate-900 mb-1">
+            {searchQuery
+              ? `No members found matching "${searchQuery}"`
+              : waFilter === 'activated'
+              ? 'No WhatsApp Activated Members Yet'
+              : waFilter === 'not_activated'
+              ? 'All Members Have WhatsApp Activated!'
+              : statusFilter === 'has_due'
+              ? 'No Members with Pending Balance Dues'
+              : statusFilter === 'overdue'
+              ? 'No Overdue Members Found'
+              : statusFilter === 'due_soon'
+              ? 'No Members Due for Renewal Soon'
+              : 'No Members in this Category'}
+          </h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto mb-5">
+            {waFilter === 'activated'
+              ? "Members automatically appear here once they send 'start' or a message from their registered WhatsApp to your gym number."
+              : searchQuery
+              ? 'Try searching with a different name, phone number, or NFC card ID.'
+              : 'Switch filters or register a new member to get started.'}
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            {(statusFilter !== 'all' || waFilter !== 'all' || searchQuery !== '') && (
+              <button
+                onClick={() => {
+                  setStatusFilter('all');
+                  setWaFilter('all');
+                  setSearchQuery('');
+                  setPlanFilter('all');
+                  setTimeFilter('all_time');
+                }}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors"
+              >
+                Reset All Filters
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setIsEditingMember(false);
+                setEditingMemberId(null);
+                setName('');
+                setPhone('');
+                setNfcCardId('');
+                setNfcCardId2('');
+                setShowSecondaryNfc(false);
+                setFingerprintId('');
+                setFeeAmount(2500);
+                setPaidAmount(2500);
+                setInfoMsg('');
+                setErrorMsg('');
+                setShowAddModal(true);
+              }}
+              className="px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+            >
+              + Add New Member
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* MODAL: ADD NEW MEMBER */}
       {showAddModal && (

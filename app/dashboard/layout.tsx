@@ -178,70 +178,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       window.addEventListener('keydown', handleKeyDown);
 
-      // Smart Sync: Background WhatsApp Reminders
-      if (matched) {
-        const settings = await getGymSettings(matched.id);
-        const autoMessagesEnabled = settings?.waAutoMessages ?? true;
-        const reminderWindow = settings?.waReminderWindowDays ?? 3;
-        
-        const todayStr = new Date().toISOString().split('T')[0];
-        const lastSync = localStorage.getItem(`wa_sync_${matched.id}`);
-        
-        if (autoMessagesEnabled && lastSync !== todayStr) {
-          const customers = await getCustomers(matched.id);
-          const targetThresholdDate = new Date();
-          targetThresholdDate.setDate(new Date().getDate() + reminderWindow);
-
-          const dueCustomers = customers.filter((cust: any) => {
-            const dueDate = new Date(cust.nextDueDate);
-            return dueDate <= targetThresholdDate || cust.status === 'due_soon' || cust.status === 'overdue';
-          });
-
-          const sendWithDelay = async () => {
-            for (let i = 0; i < dueCustomers.length; i++) {
-              const cust = dueCustomers[i];
-              const isOverdue = new Date(cust.nextDueDate) < new Date();
-              
-              // Add date and time to make every single message 100% unique (Anti-Ban trick)
-              const now = new Date();
-              const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-              const dateString = now.toLocaleDateString();
-
-              const waText = compileTemplate(getTemplate(settings, 'reminder'), {
-                name: cust.name,
-                gymName: matched.name,
-                phone: cust.phone,
-                plan: cust.planType,
-                amount: cust.feeAmount,
-                dueDate: cust.nextDueDate
-              }) + `\n\n_Generated: ${dateString} ${timeString}_`;
-              
-              try {
-                await fetch('/api/whatsapp/send', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    gymId: matched.id,
-                    phone: cust.phone,
-                    message: waText
-                  })
-                });
-              } catch (e) {}
-
-              // Random delay between 4 to 8 seconds to mimic human typing
-              if (i < dueCustomers.length - 1) {
-                const delay = Math.floor(Math.random() * 4000) + 4000;
-                await new Promise(resolve => setTimeout(resolve, delay));
-              }
-            }
-          };
-
-          sendWithDelay();
-
-          localStorage.setItem(`wa_sync_${matched.id}`, todayStr);
-        }
-      }
-
       const handleGlobalToast = (e: any) => {
         setGlobalToast(e.detail);
         setTimeout(() => setGlobalToast(null), 3500);
@@ -436,40 +372,93 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* MOBILE TOP BAR */}
-      <header className="md:hidden bg-white border-b border-slate-200 sticky top-0 z-40 px-4 h-14 flex items-center justify-between shadow-sm">
-        <div className="flex items-center space-x-2.5">
-          <img src="/logo.png" alt="Gym Logo" className="w-8 h-8 object-contain rounded-lg" />
-          <div>
-            <h1 className="font-bold text-slate-900 text-sm leading-tight">{currentGym?.name || 'Gym Portal'}</h1>
-            <p className="text-xs text-blue-900 font-semibold">{currentGym?.ownerName}</p>
+      {/* DESKTOP TOP BAR */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="hidden md:flex bg-white border-b border-slate-200 sticky top-0 z-20 px-8 h-14 items-center justify-between shadow-xs">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-black text-slate-800 tracking-tight">{currentGym?.name}</span>
+              <span className="text-slate-300">|</span>
+              <span className="text-xs text-slate-500 font-medium">{currentGym?.ownerName}</span>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center space-x-2">
-          <button 
-            onClick={() => {
-              let dest = '/';
-              if (typeof window !== 'undefined') {
-                localStorage.removeItem('active_gym_id');
-                if (localStorage.getItem('is_master_admin') === 'true') {
-                  dest = '/superadmin';
+          <div className="flex items-center space-x-3">
+            {/* Live WhatsApp Status Pill */}
+            <Link
+              href="/dashboard/settings?tab=whatsapp"
+              className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-colors ${
+                waStatus === 'connected'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                  : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
+              }`}
+              title="Click to manage WhatsApp bot connection"
+            >
+              <span className={`w-2 h-2 rounded-full ${waStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>{waStatus === 'connected' ? 'WhatsApp Connected' : 'WhatsApp Offline'}</span>
+            </Link>
+
+            {/* Live NFC Terminal Badge */}
+            <Link
+              href="/dashboard/checkin"
+              className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-900 border border-blue-200 text-xs font-bold hover:bg-blue-100 transition-colors"
+            >
+              <Dumbbell className="w-3.5 h-3.5" />
+              <span>Terminal Ready</span>
+            </Link>
+
+            <span className="text-xs font-bold text-slate-500 font-mono bg-slate-100 px-2.5 py-1 rounded-lg">
+              {new Date().toLocaleDateString('en-GB')}
+            </span>
+          </div>
+        </header>
+
+        {/* MOBILE TOP BAR */}
+        <header className="md:hidden bg-white border-b border-slate-200 sticky top-0 z-40 px-4 h-14 flex items-center justify-between shadow-sm">
+          <div className="flex items-center space-x-2.5">
+            <img src="/logo.png" alt="Gym Logo" className="w-8 h-8 object-contain rounded-lg" />
+            <div>
+              <h1 className="font-bold text-slate-900 text-sm leading-tight">{currentGym?.name || 'Gym Portal'}</h1>
+              <p className="text-xs text-blue-900 font-semibold">{currentGym?.ownerName}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Link
+              href="/dashboard/settings?tab=whatsapp"
+              className={`p-1.5 rounded-lg flex items-center gap-1 text-[11px] font-bold ${
+                waStatus === 'connected' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${waStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              <span>{waStatus === 'connected' ? 'WA' : 'Off'}</span>
+            </Link>
+
+            <button 
+              onClick={() => {
+                let dest = '/';
+                if (typeof window !== 'undefined') {
+                  localStorage.removeItem('active_gym_id');
+                  if (localStorage.getItem('is_master_admin') === 'true') {
+                    dest = '/superadmin';
+                  }
                 }
-              }
-              router.push(dest);
-            }}
-            className="p-1.5 text-rose-600 hover:text-rose-700 flex items-center space-x-1.5 bg-rose-50 rounded-lg px-2 py-1 text-xs font-bold transition-all"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </header>
+                router.push(dest);
+              }}
+              className="p-1.5 text-rose-600 hover:text-rose-700 flex items-center space-x-1 bg-rose-50 rounded-lg px-2 py-1 text-xs font-bold transition-all"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </header>
 
-      {/* MAIN VIEW */}
-      <main key={pathname} className="flex-1 min-w-0 px-4 pt-2 pb-4 sm:px-6 sm:pt-3 sm:pb-6 md:px-8 md:pt-0 md:pb-8 max-w-7xl mx-auto w-full">
-        {children}
-      </main>
+        {/* MAIN VIEW */}
+        <main key={pathname} className="flex-1 min-w-0 px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-6 md:px-8 md:pt-6 md:pb-8 max-w-7xl mx-auto w-full">
+          {children}
+        </main>
+      </div>
 
       {/* MOBILE BOTTOM NAVIGATION BAR (THUMB FRIENDLY) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 px-2 py-1.5 flex items-center justify-around shadow-lg">

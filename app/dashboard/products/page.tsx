@@ -56,6 +56,25 @@ export default function ProductsPage() {
     const id = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(id);
     loadAll(id);
+
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      const currentId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
+      loadAll(currentId);
+    }, 3000);
+
+    const handleFocus = () => {
+      const currentId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
+      loadAll(currentId);
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
   }, []);
 
   const loadAll = async (id: string) => {
@@ -277,15 +296,27 @@ export default function ProductsPage() {
                   {products.filter(p => p.active && p.stock > 0).map(p => {
                     const inCart = cart.find(c => c.productId === p.id)?.quantity || 0;
                     const availableStock = p.stock - inCart;
+                    const isLowStock = availableStock > 0 && availableStock <= 5;
                     return (
                     <button key={p.id} onClick={() => addToCart(p)} disabled={availableStock <= 0}
-                      className={`border bg-white rounded-xl p-3 text-left transition-all group ${availableStock <= 0 ? 'border-slate-100 opacity-50 cursor-not-allowed' : 'border-slate-200 hover:border-slate-900 hover:shadow-sm'}`}
+                      className={`border bg-white rounded-xl p-3 text-left transition-all group relative overflow-hidden ${
+                        availableStock <= 0 ? 'border-slate-100 opacity-50 cursor-not-allowed' : 'border-slate-200 hover:border-blue-900 hover:shadow-md'
+                      }`}
                     >
-                      <p className="text-sm font-bold text-slate-900 group-hover:text-slate-700">{p.name}</p>
+                      {isLowStock && (
+                        <span className="absolute top-2 right-2 text-[9px] font-black bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300">
+                          Low Stock
+                        </span>
+                      )}
+                      <p className="text-sm font-bold text-slate-900 group-hover:text-blue-900">{p.name}</p>
                       <p className="text-xs text-slate-500 mt-0.5">{p.category}</p>
                       <div className="flex items-center justify-between mt-2">
-                        <p className="text-base font-black text-emerald-700">₹{p.price.toLocaleString('en-IN')}</p>
-                        <span className={`text-xs ${availableStock <= 0 ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>{availableStock <= 0 ? 'Out' : `${availableStock} left`}</span>
+                        <p className="text-base font-black text-blue-950">₹{p.price.toLocaleString('en-IN')}</p>
+                        <span className={`text-xs font-bold ${
+                          availableStock <= 0 ? 'text-rose-500' : isLowStock ? 'text-amber-700' : 'text-slate-500'
+                        }`}>
+                          {availableStock <= 0 ? 'Out of Stock' : `${availableStock} left`}
+                        </span>
                       </div>
                     </button>
                   )})}

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2, Edit2, Download, Banknote, Smartphone, ArrowLeftRight } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2, Edit2, Download, Banknote, Smartphone, ArrowLeftRight, Copy, Check } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, updateTransaction, deleteTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan, getGyms } from '@/lib/actions';
 import jsPDF from 'jspdf';
@@ -15,6 +15,7 @@ export default function RevenuePage() {
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE' | 'NEW_MEMBERS'>('ALL');
   const [paymentModeFilter, setPaymentModeFilter] = useState<'ALL' | 'CASH' | 'UPI' | 'CARD'>('ALL');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Global Filter State
   const [globalTimeFilter, setGlobalTimeFilter] = useState<'ALL' | 'TODAY' | 'THIS_MONTH' | 'THIS_YEAR' | 'CUSTOM'>('ALL');
@@ -59,6 +60,21 @@ export default function RevenuePage() {
 
   useEffect(() => {
     loadData();
+
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      loadData();
+    }, 3000);
+
+    const handleFocus = () => loadData();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
   }, []);
 
   const loadData = async () => {
@@ -215,27 +231,27 @@ export default function RevenuePage() {
     return true;
   };
 
-  const filteredGlobalTxs = transactions.filter(t => isDateInGlobalFilter(t.date));
+  const {
+    filteredGlobalTxs,
+    totalIncome,
+    todayIncome,
+    totalExpenses,
+    netProfit,
+    newMembersCount,
+    cashTotal,
+    upiTotal,
+    cardTotal
+  } = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const filteredTxs = transactions.filter(t => isDateInGlobalFilter(t.date));
 
-  const totalIncome = filteredGlobalTxs
-    .filter((t) => t.type === 'INCOME')
-    .reduce((acc, cur) => acc + cur.amount, 0);
+    const inc = filteredTxs.filter((t) => t.type === 'INCOME').reduce((acc, cur) => acc + cur.amount, 0);
+    const todayInc = transactions.filter((t) => t.type === 'INCOME' && t.date === todayStr).reduce((acc, cur) => acc + cur.amount, 0);
+    const exp = filteredTxs.filter((t) => t.type === 'EXPENSE').reduce((acc, cur) => acc + cur.amount, 0);
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayIncome = transactions
-    .filter((t) => t.type === 'INCOME' && t.date === todayStr)
-    .reduce((acc, cur) => acc + cur.amount, 0);
+    const membersCount = allCustomers.filter(c => c.gymId === gymId && isDateInGlobalFilter(c.joinedDate)).length;
 
-  const totalExpenses = filteredGlobalTxs
-    .filter((t) => t.type === 'EXPENSE')
-    .reduce((acc, cur) => acc + cur.amount, 0);
-
-  const netProfit = totalIncome - totalExpenses;
-  const newMembersCount = allCustomers.filter(c => c.gymId === gymId && isDateInGlobalFilter(c.joinedDate)).length;
-
-  const cashTotal = filteredGlobalTxs
-    .filter(t => t.type === 'INCOME')
-    .reduce((acc, cur) => {
+    const cash = filteredTxs.filter(t => t.type === 'INCOME').reduce((acc, cur) => {
       if (cur.paymentMethod === 'CASH') return acc + cur.amount;
       if (cur.paymentMethod === 'SPLIT' && cur.splitDetails) {
         try {
@@ -246,9 +262,7 @@ export default function RevenuePage() {
       return acc;
     }, 0);
 
-  const upiTotal = filteredGlobalTxs
-    .filter(t => t.type === 'INCOME')
-    .reduce((acc, cur) => {
+    const upi = filteredTxs.filter(t => t.type === 'INCOME').reduce((acc, cur) => {
       if (cur.paymentMethod === 'UPI') return acc + cur.amount;
       if (cur.paymentMethod === 'SPLIT' && cur.splitDetails) {
         try {
@@ -259,9 +273,20 @@ export default function RevenuePage() {
       return acc;
     }, 0);
 
-  const cardTotal = filteredGlobalTxs
-    .filter(t => t.type === 'INCOME' && t.paymentMethod === 'CARD')
-    .reduce((acc, cur) => acc + cur.amount, 0);
+    const card = filteredTxs.filter(t => t.type === 'INCOME' && t.paymentMethod === 'CARD').reduce((acc, cur) => acc + cur.amount, 0);
+
+    return {
+      filteredGlobalTxs: filteredTxs,
+      totalIncome: inc,
+      todayIncome: todayInc,
+      totalExpenses: exp,
+      netProfit: inc - exp,
+      newMembersCount: membersCount,
+      cashTotal: cash,
+      upiTotal: upi,
+      cardTotal: card
+    };
+  }, [transactions, allCustomers, gymId, globalTimeFilter, globalDateFrom, globalDateTo]);
 
   const chartData = [
     { name: 'May', Income: 14000, Expense: 8000, Net: 6000 },
@@ -693,9 +718,41 @@ export default function RevenuePage() {
                       {tx.paymentMethod === 'UPI' ? <><Smartphone className="w-2.5 h-2.5 text-blue-600" /> UPI</> : tx.paymentMethod === 'CARD' ? <><CreditCard className="w-2.5 h-2.5 text-purple-600" /> Card</> : tx.paymentMethod === 'SPLIT' ? <><ArrowLeftRight className="w-2.5 h-2.5 text-amber-600" /> Split</> : <><Banknote className="w-2.5 h-2.5 text-emerald-600" /> Cash</>}
                     </span>
                     {(tx.upiId || tx.upiSenderName) && (
-                      <div className="text-[10px] text-slate-500 mt-1 font-mono leading-tight">
-                        {tx.upiId && <div><span className="font-semibold text-slate-600">ID:</span> {tx.upiId}</div>}
-                        {tx.upiSenderName && <div><span className="font-semibold text-slate-600">By:</span> {tx.upiSenderName}</div>}
+                      <div className="text-[10px] text-slate-500 mt-1 font-mono leading-tight space-y-0.5">
+                        {tx.upiId && (
+                          <div className="flex items-center gap-1 group">
+                            <span className="font-semibold text-slate-600">ID:</span> 
+                            <span>{tx.upiId}</span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(tx.upiId);
+                                setCopiedId(`id_${tx.id}`);
+                                setTimeout(() => setCopiedId(null), 2000);
+                              }}
+                              className="text-slate-400 hover:text-blue-900 transition-colors p-0.5"
+                              title="Copy UPI ID"
+                            >
+                              {copiedId === `id_${tx.id}` ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                          </div>
+                        )}
+                        {tx.upiSenderName && (
+                          <div className="flex items-center gap-1 group">
+                            <span className="font-semibold text-slate-600">By:</span> 
+                            <span>{tx.upiSenderName}</span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(tx.upiSenderName);
+                                setCopiedId(`name_${tx.id}`);
+                                setTimeout(() => setCopiedId(null), 2000);
+                              }}
+                              className="text-slate-400 hover:text-blue-900 transition-colors p-0.5"
+                              title="Copy Sender Name"
+                            >
+                              {copiedId === `name_${tx.id}` ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </td>

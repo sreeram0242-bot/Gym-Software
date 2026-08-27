@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
 import { Radio, Clock, UserCheck, Fingerprint, Search, Wifi, WifiOff } from 'lucide-react';
 import { getCustomers, getAttendance, findCustomerByNFC, findCustomerByFingerprint, toggleCheckIn, getMemberMonthlyAvgHours, getGymSettings } from '@/lib/actions';
 import { Customer, AttendanceRecord } from '@/lib/types';
@@ -23,12 +23,23 @@ export default function NFCCheckInTerminal() {
   const [fpConnected, setFpConnected] = useState<boolean>(false);
   const [fpStatus, setFpStatus] = useState<string>('Connecting to fingerprint agent...');
   const fpWsRef = useRef<WebSocket | null>(null);
+  const fpRetryCountRef = useRef<number>(0);
 
   // Manual search state
   const [manualSearch, setManualSearch] = useState('');
+  const deferredSearchQuery = useDeferredValue(manualSearch);
 
   useEffect(() => {
     loadData();
+
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      loadData();
+    }, 3000);
+
+    const handleFocus = () => loadData();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
 
     if (typeof window !== 'undefined' && 'NDEFReader' in window) {
       setNfcSupported(true);
@@ -36,7 +47,12 @@ export default function NFCCheckInTerminal() {
     
     const handleUpdate = () => loadData();
     window.addEventListener('attendance_updated', handleUpdate);
-    return () => window.removeEventListener('attendance_updated', handleUpdate);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('attendance_updated', handleUpdate);
+    };
   }, []);
 
   const loadData = async () => {
@@ -69,6 +85,7 @@ export default function NFCCheckInTerminal() {
       fpWsRef.current = ws;
 
       ws.onopen = () => {
+        fpRetryCountRef.current = 0;
         setFpConnected(true);
         setFpStatus('Fingerprint scanner ready — place finger on sensor');
       };
@@ -94,19 +111,23 @@ export default function NFCCheckInTerminal() {
 
       ws.onerror = () => {
         setFpConnected(false);
-        setFpStatus('Cannot connect to fingerprint bridge agent. Is it running on this PC?');
+        setFpStatus('Cannot connect to fingerprint bridge. Is Python agent running?');
       };
 
       ws.onclose = () => {
         setFpConnected(false);
         fpWsRef.current = null;
-        setFpStatus('Fingerprint agent disconnected. Reconnecting...');
-        // Auto-retry after 5 seconds
-        setTimeout(() => connectFingerprintBridge(currentGymId, port), 5000);
+        if (fpRetryCountRef.current < 3) {
+          fpRetryCountRef.current += 1;
+          setFpStatus(`Fingerprint agent offline. Retrying (${fpRetryCountRef.current}/3)...`);
+          setTimeout(() => connectFingerprintBridge(currentGymId, port), 5000);
+        } else {
+          setFpStatus('Fingerprint bridge offline. Click Reconnect when ready.');
+        }
       };
     } catch (e) {
       setFpConnected(false);
-      setFpStatus('WebSocket not supported or bridge unreachable.');
+      setFpStatus('WebSocket unreachable.');
     }
   };
 
@@ -162,13 +183,28 @@ export default function NFCCheckInTerminal() {
   };
 
   
-  const getAvg = (custId: string) => {
-    const atts = attendance.filter(a => a.customerId === custId && a.durationMinutes);
-    if (atts.length === 0) return 1.2;
-    const totalMins = atts.reduce((sum, a) => sum + (a.durationMinutes || 0), 0);
-    const avg = (totalMins / 60) / Math.max(1, atts.length);
-    return parseFloat(avg.toFixed(1));
-  };
+  const avgDurationMap = useMemo(() => {
+    const totalMinsMap = new Map<string, number>();
+    const countsMap = new Map<string, number>();
+    
+    attendance.forEach(a => {
+      if (a.durationMinutes) {
+        totalMinsMap.set(a.customerId, (totalMinsMap.get(a.customerId) || 0) + a.durationMinutes);
+        countsMap.set(a.customerId, (countsMap.get(a.customerId) || 0) + 1);
+      }
+    });
+
+    const resultMap = new Map<string, number>();
+    totalMinsMap.forEach((totalMins, custId) => {
+      const count = countsMap.get(custId) || 1;
+      const avg = (totalMins / 60) / count;
+      resultMap.set(custId, parseFloat(avg.toFixed(1)));
+    });
+    
+    return resultMap;
+  }, [attendance]);
+
+  const getAvg = (custId: string) => avgDurationMap.get(custId) || 1.2;
 
   const todayStr = new Date().toISOString().split('T')[0];
   const todayRecords = attendance.filter((a) => a.dateStr === todayStr);
@@ -225,13 +261,26 @@ export default function NFCCheckInTerminal() {
 
           {/* Fingerprint Status Badge — shown in FINGERPRINT and BOTH modes */}
           {(attendanceMode === 'FINGERPRINT' || attendanceMode === 'BOTH') && (
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border ${
+            <div className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold border ${
               fpConnected ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'
             }`}>
-              {fpConnected ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
-              <div>
-                <p className="font-bold">{fpConnected ? 'Scanner Connected' : 'Scanner Offline'}</p>
-                <p className="text-xs opacity-80 max-w-48 truncate">{fpStatus}</p>
+              {fpConnected ? <Wifi className="w-4 h-4 shrink-0" /> : <WifiOff className="w-4 h-4 shrink-0" />}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-bold">{fpConnected ? 'Scanner Connected' : 'Scanner Offline'}</p>
+                  {!fpConnected && (
+                    <button
+                      onClick={() => {
+                        fpRetryCountRef.current = 0;
+                        connectFingerprintBridge(gymId, fpPort);
+                      }}
+                      className="px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10px] font-bold transition-colors shadow-xs"
+                    >
+                      Reconnect
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] opacity-80 truncate max-w-56">{fpStatus}</p>
               </div>
             </div>
           )}
@@ -250,24 +299,31 @@ export default function NFCCheckInTerminal() {
           />
           {manualSearch.trim() && (
             <div className="space-y-2 max-h-56 overflow-auto">
-              {customers.filter((c: any) => c.name.toLowerCase().includes(manualSearch.toLowerCase())).map((c: any) => (
-                <button key={c.id} onClick={() => handleManualCheckIn(c)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl transition-colors text-left">
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">{c.name}</p>
-                    <p className="text-xs text-slate-500">{c.planType}</p>
-                  </div>
-                  <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2.5 py-1 rounded-full">Check-in / Out</span>
-                </button>
-              ))}
-              {customers.filter((c: any) => c.name.toLowerCase().includes(manualSearch.toLowerCase())).length === 0 && (
-                <p className="text-sm text-slate-400 text-center py-4">No member found</p>
-              )}
+              {(() => {
+                const deferredSearch = deferredSearchQuery || manualSearch; // Fallback since we didn't add useDeferredValue up top for manualSearch
+                const filtered = customers.filter((c: any) => c.name.toLowerCase().includes(deferredSearch.toLowerCase()));
+                return (
+                  <>
+                    {filtered.map((c: any) => (
+                      <button key={c.id} onClick={() => handleManualCheckIn(c)}
+                        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl transition-colors text-left">
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">{c.name}</p>
+                          <p className="text-xs text-slate-500">{c.planType}</p>
+                        </div>
+                        <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2.5 py-1 rounded-full">Check-in / Out</span>
+                      </button>
+                    ))}
+                    {filtered.length === 0 && (
+                      <p className="text-sm text-slate-400 text-center py-4">No member found</p>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>
       )}
-
 
       {/* SECTION: Member Attendance Cards */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
@@ -289,64 +345,67 @@ export default function NFCCheckInTerminal() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {uniqueTodayRecords.map(session => {
               const customer = customers.find(c => c.id === session.customerId);
-                const avgHours = getAvg(session.customerId);
-                const isActive = !session.checkOutTime;
+              const avgHours = getAvg(session.customerId);
+              const isActive = !session.checkOutTime;
+              const checkInDate = new Date(session.checkInTime);
+              const elapsedMinutes = Math.floor((Date.now() - checkInDate.getTime()) / 60000);
                 
-                return (
-                  <div key={session.id} className={`p-4 rounded-xl border relative overflow-hidden transition-all hover:shadow-md ${
+              return (
+                <div key={session.id} className={`p-4 rounded-xl border relative overflow-hidden transition-all hover:shadow-md ${
+                  isActive 
+                    ? 'border-blue-300 bg-gradient-to-br from-blue-50/70 via-white to-emerald-50/30 shadow-sm' 
+                    : 'border-slate-200 bg-slate-50/40 opacity-75'
+                }`}>
+                  <div className={`absolute top-0 right-0 text-[10px] font-black px-2.5 py-1 rounded-bl-lg shadow-xs flex items-center gap-1 ${
                     isActive 
-                      ? 'border-blue-200 bg-gradient-to-br from-blue-50/50 to-white' 
-                      : 'border-slate-200 bg-slate-50/40 opacity-75'
+                      ? 'bg-emerald-600 text-white animate-pulse' 
+                      : 'bg-slate-400 text-white'
                   }`}>
-                    <div className={`absolute top-0 right-0 text-[10px] font-bold px-2 py-1 rounded-bl-lg shadow-sm ${
+                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
+                    <span>{isActive ? `IN GYM (${elapsedMinutes}m)` : 'COMPLETED'}</span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm border ${
                       isActive 
-                        ? 'bg-blue-900 text-white' 
-                        : 'bg-slate-400 text-white'
+                        ? 'bg-blue-900 text-white border-blue-900 shadow-sm' 
+                        : 'bg-slate-200 text-slate-600 border-slate-300'
                     }`}>
-                      {isActive ? 'ACTIVE' : 'LEAVED'}
+                      {session.customerName.charAt(0)}
                     </div>
-                    
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm border ${
-                        isActive 
-                          ? 'bg-blue-100 text-blue-950 border-blue-200' 
-                          : 'bg-slate-200 text-slate-600 border-slate-300'
-                      }`}>
-                        {session.customerName.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="font-bold text-slate-900 text-sm leading-tight">{session.customerName}</div>
-                        <div className="text-[10px] font-mono text-slate-500">{session.customerPhone}</div>
-                      </div>
-                    </div>
-                    
-                    <div className={`space-y-1.5 text-xs text-slate-600 mt-4 border-t pt-3 ${
-                      isActive ? 'border-blue-100' : 'border-slate-200'
-                    }`}>
-                      <div className="flex justify-between">
-                        <span className="font-semibold text-slate-400">Check-In:</span>
-                        <span className="font-bold text-slate-800">{new Date(session.checkInTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                      </div>
-                      {!isActive && (
-                        <div className="flex justify-between">
-                          <span className="font-semibold text-slate-400">Check-Out:</span>
-                          <span className="font-bold text-slate-800">{new Date(session.checkOutTime!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                        </div>
-                      )}
-                      {customer && (
-                        <div className="flex justify-between">
-                          <span className="font-semibold text-slate-400">NFC Card:</span>
-                          <span className="font-mono font-bold text-slate-800">{customer.nfcCardId}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between items-center pt-1 mt-1 border-t border-slate-100 border-dashed">
-                        <span className="font-semibold text-slate-400">Monthly Avg:</span>
-                        <span className="font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">{avgHours} hrs/day</span>
-                      </div>
+                    <div>
+                      <div className="font-bold text-slate-900 text-sm leading-tight">{session.customerName}</div>
+                      <div className="text-[10px] font-mono text-slate-500">{session.customerPhone}</div>
                     </div>
                   </div>
-                );
-              })}
+                  
+                  <div className={`space-y-1.5 text-xs text-slate-600 mt-4 border-t pt-3 ${
+                    isActive ? 'border-blue-100' : 'border-slate-200'
+                  }`}>
+                    <div className="flex justify-between">
+                      <span className="font-semibold text-slate-400">Check-In:</span>
+                      <span className="font-bold text-slate-800">{checkInDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true})}</span>
+                    </div>
+                    {!isActive && (
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-slate-400">Check-Out:</span>
+                        <span className="font-bold text-slate-800">{new Date(session.checkOutTime!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true})}</span>
+                      </div>
+                    )}
+                    {customer && (
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-slate-400">NFC Card:</span>
+                        <span className="font-mono font-bold text-slate-800">{customer.nfcCardId || 'N/A'}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center pt-1 mt-1 border-t border-slate-100 border-dashed">
+                      <span className="font-semibold text-slate-400">Monthly Avg:</span>
+                      <span className="font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">{avgHours} hrs/day</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

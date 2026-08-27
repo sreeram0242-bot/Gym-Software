@@ -8,14 +8,16 @@ export async function register() {
       const { default: db } = await import('./lib/db');
       const { WhatsAppManager } = await import('./lib/whatsapp');
 
-      // Find all Gyms that have an active WhatsApp session in the database
+      // Find all distinct Gyms that have an active WhatsApp session in the database
       const activeSessions = await db.whatsAppSession.findMany({
+        where: { id: { endsWith: '-creds' } },
+        distinct: ['gymId'],
         select: { gymId: true }
       });
 
-      console.log(`[Instrumentation] Found ${activeSessions.length} active WhatsApp sessions to wake up.`);
+      console.log(`[Instrumentation] Found ${activeSessions.length} unique gym WhatsApp session(s) to wake up.`);
 
-      // Wake them all up
+      // Wake each unique gym session once
       for (const session of activeSessions) {
         console.log(`[Instrumentation] Waking up WhatsApp for Gym: ${session.gymId}`);
         WhatsAppManager.initSession(session.gymId);

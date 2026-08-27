@@ -195,8 +195,10 @@ export default function SettingsPage() {
         setWaLoading(false);
       }
     };
-    fetchStatus();
-    const interval = setInterval(() => { if (waStatus !== 'connected') fetchStatus(); }, 3000);
+    const interval = setInterval(() => { 
+      if (document.hidden) return;
+      if (waStatus !== 'connected') fetchStatus(); 
+    }, 3000);
     return () => clearInterval(interval);
   }, [gymId, waStatus]);
 

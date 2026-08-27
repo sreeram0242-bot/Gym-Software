@@ -20,6 +20,21 @@ export default function BroadcastPage() {
 
   useEffect(() => {
     loadData();
+
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      loadData();
+    }, 3000);
+
+    const handleFocus = () => loadData();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
   }, []);
 
   const loadData = async () => {

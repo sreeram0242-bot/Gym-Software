@@ -17,9 +17,25 @@ export default function DashboardOverview() {
 
   useEffect(() => {
     loadData();
+
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      loadData();
+    }, 3000);
+
+    const handleFocus = () => loadData();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
     const handleUpdate = () => loadData();
     window.addEventListener('attendance_updated', handleUpdate);
-    return () => window.removeEventListener('attendance_updated', handleUpdate);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('attendance_updated', handleUpdate);
+    };
   }, []);
 
   const loadData = async () => {
@@ -170,28 +186,36 @@ export default function DashboardOverview() {
       </div>
 
       {/* Quick Actions Panel */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
         <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Actions</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <Link
-            href="/dashboard/checkin"
-            className="p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl text-blue-900 font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 transition-all"
-          >
-            <Smartphone className="w-4 h-4 text-blue-900" />
-            <span>NFC Card Tap</span>
-          </Link>
-
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Link
             href="/dashboard/members?open_add=true"
-            className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-800 font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 transition-all"
+            className="p-3.5 bg-blue-900 hover:bg-blue-950 text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 transition-all shadow-sm"
           >
-            <Plus className="w-4 h-4 text-slate-600" />
+            <Plus className="w-4 h-4" />
             <span>Add Member</span>
           </Link>
 
           <Link
+            href="/dashboard/checkin"
+            className="p-3.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl text-blue-900 font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 transition-all"
+          >
+            <Smartphone className="w-4 h-4 text-blue-900" />
+            <span>NFC Check-in</span>
+          </Link>
+
+          <Link
+            href="/dashboard/reminders"
+            className="p-3.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl text-amber-900 font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 transition-all"
+          >
+            <Bell className="w-4 h-4 text-amber-700" />
+            <span>Send Dues Alert</span>
+          </Link>
+
+          <Link
             href="/dashboard/revenue"
-            className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-800 font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 transition-all col-span-2 sm:col-span-1"
+            className="p-3.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-800 font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 transition-all"
           >
             <CreditCard className="w-4 h-4 text-slate-600" />
             <span>Record Expense</span>
@@ -202,24 +226,28 @@ export default function DashboardOverview() {
       {/* Today's Live Attendance Feed & Overdue Alerts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Column 1 & 2: Live Today's Attendance Log */}
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
           <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
             <div>
               <h3 className="font-bold text-slate-900 text-base flex items-center space-x-2">
                 <Clock className="w-4 h-4 text-blue-900" />
-                <span>Today's Check-In Activity</span>
+                <span>Today's Check-In Activity ({todayAttendance.length})</span>
               </h3>
-              <p className="text-xs text-slate-500">Live check-in feed via NFC tag or phone lookup</p>
+              <p className="text-xs text-slate-500">Live attendance stream via NFC tap and biometric scans</p>
             </div>
-            <Link href="/dashboard/checkin" className="text-xs font-bold text-blue-900 hover:text-blue-950">
-              Launch Scanner <ChevronRight className="w-3.5 h-3.5 inline" />
+            <Link href="/dashboard/checkin" className="text-xs font-bold text-blue-900 hover:text-blue-950 flex items-center">
+              <span>Launch Terminal</span>
+              <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
             </Link>
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 max-h-[380px] overflow-y-auto">
             {todayAttendance.length > 0 ? (
               todayAttendance.map((rec) => {
                 const isCurrentlyInside = !rec.checkOutTime;
+                const checkInDate = new Date(rec.checkInTime);
+                const elapsedMinutes = Math.floor((Date.now() - checkInDate.getTime()) / 60000);
+
                 return (
                   <div key={rec.id} className="p-4 flex items-center justify-between hover:bg-slate-50/70 transition-colors">
                     <div className="flex items-center space-x-3">
@@ -234,22 +262,25 @@ export default function DashboardOverview() {
                       </div>
                       <div>
                         <h4 className="font-bold text-slate-900 text-sm">{rec.customerName}</h4>
-                        <div className="text-xs text-slate-500 font-mono">Phone: {rec.customerPhone}</div>
+                        <div className="text-xs text-slate-500 font-mono flex items-center gap-1.5">
+                          <span>Phone: {rec.customerPhone}</span>
+                        </div>
                       </div>
                     </div>
 
                     <div className="text-right">
                       <div className="text-xs font-bold text-slate-800">
-                        In: {new Date(rec.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        In: {checkInDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
                       </div>
                       {isCurrentlyInside ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          ● Workout Active
+                        <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-1 animate-pulse">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          <span>Inside ({elapsedMinutes}m)</span>
                         </span>
                       ) : (
-                        <span className="text-[10px] font-semibold text-slate-500">
-                          Out: {new Date(rec.checkOutTime!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({rec.durationMinutes} mins)
-                        </span>
+                        <div className="text-[11px] text-slate-500 font-medium mt-0.5">
+                          Out: {new Date(rec.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })} ({rec.durationMinutes || 0}m)
+                        </div>
                       )}
                     </div>
                   </div>
@@ -257,9 +288,9 @@ export default function DashboardOverview() {
               })
             ) : (
               <div className="p-8 text-center text-slate-400">
-                <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm font-semibold text-slate-600">No member check-ins recorded yet today.</p>
-                <p className="text-xs text-slate-400 mt-1">Tap NFC card or type member phone number to log visits.</p>
+                <Clock className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                <p className="text-xs font-semibold">No check-ins recorded yet today.</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Members checking in with NFC or biometrics will appear here live.</p>
               </div>
             )}
           </div>
