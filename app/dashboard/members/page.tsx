@@ -234,13 +234,6 @@ export default function MemberManagementPage() {
     setAttendance(atts);
     setSettings(gymSettings);
     
-    // Set default plan to the first available plan if none selected or if plans exist
-    if (ps.length > 0) {
-      setPlanType(ps[0].name);
-      setFeeAmount(ps[0].price);
-      setPaidAmount(ps[0].price);
-    }
-    
     const matchedGym = loadedGyms.find((g: any) => g.id === savedId);
     if (matchedGym) {
       setGymName(matchedGym.name);

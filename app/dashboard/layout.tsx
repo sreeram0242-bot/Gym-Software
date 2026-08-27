@@ -337,15 +337,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                   <span>{item.label}</span>
                 </div>
-                {item.badge && (
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                      isActive ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-950 border border-blue-200'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
               </Link>
             );
           })}
@@ -473,14 +464,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 isActive ? 'text-blue-900 font-bold' : 'text-slate-500 hover:text-slate-800 font-medium'
               }`}
             >
-              <div className="relative">
-                <Icon className={`w-5 h-5 mb-0.5 ${isActive ? 'text-blue-900 scale-110' : 'text-slate-400'}`} />
-                {item.badge && (
-                  <span className="absolute -top-1 -right-2 bg-blue-900 text-white text-[9px] font-bold px-1 rounded-full">
-                    {item.badge}
-                  </span>
-                )}
-              </div>
+              <Icon className={`w-5 h-5 mb-0.5 ${isActive ? 'text-blue-900 scale-110' : 'text-slate-400'}`} />
               <span className="text-[10px] leading-none">{item.label}</span>
             </Link>
           );
