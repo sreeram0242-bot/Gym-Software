@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Package, Plus, ShoppingCart, Trash2, Edit2, X, Check, AlertTriangle, TrendingUp, Search, Banknote, Smartphone, CreditCard, ArrowLeftRight, Phone } from 'lucide-react';
-import { getProducts, addProduct, updateProduct, deleteProduct, recordProductSale, getProductSales, getCustomers } from '@/lib/actions';
+import { getProducts, addProduct, updateProduct, deleteProduct, recordProductSale, getProductSales, getCustomers, getGymSettings } from '@/lib/actions';
 import { formatDateDDMMYYYY } from '@/lib/utils';
+import { getTemplate, compileTemplate } from '@/lib/templates';
 
 const CATEGORIES = ['Supplement', 'Accessory', 'Drink', 'Snack', 'Apparel', 'Equipment', 'Other'];
 const UNITS = ['unit', 'kg', 'litre', 'pack', 'bottle', 'scoop'];
@@ -23,6 +24,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [productSales, setProductSales] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [gymSettings, setGymSettings] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
 
@@ -78,14 +80,16 @@ export default function ProductsPage() {
   }, []);
 
   const loadAll = async (id: string) => {
-    const [prods, sales, custs] = await Promise.all([
+    const [prods, sales, custs, settings] = await Promise.all([
       getProducts(id),
       getProductSales(id),
-      getCustomers(id)
+      getCustomers(id),
+      getGymSettings(id)
     ]);
     setProducts(prods);
     setProductSales(sales);
     setCustomers(custs);
+    setGymSettings(settings);
   };
 
   const openAddModal = () => {
@@ -171,7 +175,42 @@ export default function ProductsPage() {
         customerId: selectedCust?.id || null,
         customerName: selectedCust?.name || posCustomerName || null
       });
-      setLastSaleMsg(`Sale of ₹${cartTotal.toLocaleString('en-IN')} recorded! Revenue ledger updated.`);
+
+      // Send WhatsApp receipt if customer has active WhatsApp services
+      let waReceiptSent = false;
+      if (selectedCust && selectedCust.phone && (selectedCust.waActive || gymSettings?.waAutoMessages !== false)) {
+        try {
+          const rawTemplate = getTemplate(gymSettings, 'storeReceipt');
+          const itemsList = cart.map(i => `• ${i.productName} (x${i.quantity}) - ₹${i.totalPrice}`).join('\n');
+          const paymentModeText = posPaymentMethod === 'SPLIT' 
+            ? `Split (Cash: ₹${posCashSplit || 0}, UPI: ₹${posUpiSplit || 0})`
+            : posPaymentMethod;
+          
+          const message = compileTemplate(rawTemplate, {
+            name: selectedCust.name,
+            gymName: gymSettings?.gymName || 'Our Gym',
+            itemsList,
+            totalAmount: cartTotal.toString(),
+            paymentMode: paymentModeText,
+            date: formatDateDDMMYYYY(new Date())
+          });
+
+          fetch('/api/whatsapp/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              gymId,
+              phone: selectedCust.phone,
+              message
+            })
+          }).catch(err => console.error('Failed to send store WhatsApp receipt:', err));
+          waReceiptSent = true;
+        } catch (e) {
+          console.error('Error preparing store WhatsApp receipt:', e);
+        }
+      }
+
+      setLastSaleMsg(`Sale of ₹${cartTotal.toLocaleString('en-IN')} recorded! ${waReceiptSent ? `🧾 WhatsApp receipt sent to ${selectedCust?.name}.` : ''}`);
       setCart([]);
       setPosCustomer(null);
       setPosCustomerName('');
@@ -400,9 +439,16 @@ export default function ProductsPage() {
                                 setPosCustomerName(c.name);
                                 setPosCustomerSearch(`${c.name} (${c.phone})`);
                                 setShowPosCustomerDropdown(false);
-                              }} className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 border-b border-slate-50 last:border-0">
-                                <div className="font-bold text-slate-800">{c.name}</div>
-                                <div className="text-[10px] text-slate-500 flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> {c.phone} {c.nfcCardId && <><CreditCard className="w-2.5 h-2.5" /> {c.nfcCardId}</>}</div>
+                              }} className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 border-b border-slate-50 last:border-0 flex items-center justify-between">
+                                <div>
+                                  <div className="font-bold text-slate-800">{c.name}</div>
+                                  <div className="text-[10px] text-slate-500 flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> {c.phone} {c.nfcCardId && <><CreditCard className="w-2.5 h-2.5" /> {c.nfcCardId}</>}</div>
+                                </div>
+                                {c.waActive && (
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    WA Active
+                                  </span>
+                                )}
                               </button>
                             ))}
                             {customers.filter(c => 

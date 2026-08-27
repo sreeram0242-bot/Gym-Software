@@ -61,7 +61,9 @@ export const ModelName = {
   ProductSale: 'ProductSale',
   ProductSaleItem: 'ProductSaleItem',
   GymSettings: 'GymSettings',
-  Announcement: 'Announcement'
+  Announcement: 'Announcement',
+  Staff: 'Staff',
+  StaffAttendanceRecord: 'StaffAttendanceRecord'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -98,6 +100,7 @@ export type GymScalarFieldEnum = (typeof GymScalarFieldEnum)[keyof typeof GymSca
 
 export const CustomerScalarFieldEnum = {
   id: 'id',
+  memberId: 'memberId',
   gymId: 'gymId',
   name: 'name',
   phone: 'phone',
@@ -229,6 +232,7 @@ export const GymSettingsScalarFieldEnum = {
   waAutoArchive: 'waAutoArchive',
   templateWelcome: 'templateWelcome',
   templateReceipt: 'templateReceipt',
+  templateStoreReceipt: 'templateStoreReceipt',
   templateReminder: 'templateReminder',
   templateAbsentee: 'templateAbsentee',
   templateCheckIn: 'templateCheckIn',
@@ -237,6 +241,7 @@ export const GymSettingsScalarFieldEnum = {
   upiName: 'upiName',
   address: 'address',
   productsEnabled: 'productsEnabled',
+  showStoreInRevenue: 'showStoreInRevenue',
   attendanceMode: 'attendanceMode',
   fingerprintAgentPort: 'fingerprintAgentPort'
 } as const
@@ -254,6 +259,36 @@ export const AnnouncementScalarFieldEnum = {
 } as const
 
 export type AnnouncementScalarFieldEnum = (typeof AnnouncementScalarFieldEnum)[keyof typeof AnnouncementScalarFieldEnum]
+
+
+export const StaffScalarFieldEnum = {
+  id: 'id',
+  gymId: 'gymId',
+  name: 'name',
+  phone: 'phone',
+  role: 'role',
+  nfcCardId: 'nfcCardId',
+  fingerprintId: 'fingerprintId',
+  status: 'status',
+  joinedDate: 'joinedDate'
+} as const
+
+export type StaffScalarFieldEnum = (typeof StaffScalarFieldEnum)[keyof typeof StaffScalarFieldEnum]
+
+
+export const StaffAttendanceRecordScalarFieldEnum = {
+  id: 'id',
+  gymId: 'gymId',
+  staffId: 'staffId',
+  staffName: 'staffName',
+  staffPhone: 'staffPhone',
+  checkInTime: 'checkInTime',
+  checkOutTime: 'checkOutTime',
+  durationMinutes: 'durationMinutes',
+  dateStr: 'dateStr'
+} as const
+
+export type StaffAttendanceRecordScalarFieldEnum = (typeof StaffAttendanceRecordScalarFieldEnum)[keyof typeof StaffAttendanceRecordScalarFieldEnum]
 
 
 export const SortOrder = {

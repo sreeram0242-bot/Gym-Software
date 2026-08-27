@@ -27,10 +27,13 @@ model Gym {
   gymSettings       GymSettings?
   products          Product[]
   productSales      ProductSale[]
+  staff             Staff[]
+  staffAttendance   StaffAttendanceRecord[]
 }
 
 model Customer {
   id              String   @id @default(uuid())
+  memberId        String?  @unique // Random unique ID (e.g. M-1234)
   gymId           String
   gym             Gym      @relation(fields: [gymId], references: [id])
   name            String
@@ -181,6 +184,7 @@ model GymSettings {
 
   templateWelcome       String?
   templateReceipt       String?
+  templateStoreReceipt  String?
   templateReminder      String?
   templateAbsentee      String?
   templateCheckIn       String?
@@ -193,6 +197,7 @@ model GymSettings {
 
   // Feature toggles
   productsEnabled       Boolean @default(false)
+  showStoreInRevenue    Boolean @default(true)
 
   // Attendance hardware mode: MANUAL | NFC | FINGERPRINT | BOTH
   attendanceMode        String  @default("NFC")
@@ -206,4 +211,39 @@ model Announcement {
   type      String @default("info")
   createdAt String
   active    Boolean @default(true)
+}
+
+model Staff {
+  id              String   @id @default(uuid())
+  gymId           String
+  gym             Gym      @relation(fields: [gymId], references: [id])
+  name            String
+  phone           String
+  role            String   @default("Trainer")
+  nfcCardId       String?
+  fingerprintId   String?
+  status          String   @default("active")
+  joinedDate      String
+
+  attendance      StaffAttendanceRecord[]
+
+  @@index([gymId])
+}
+
+model StaffAttendanceRecord {
+  id            String   @id @default(uuid())
+  gymId         String
+  gym           Gym      @relation(fields: [gymId], references: [id])
+  staffId       String
+  staff         Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  staffName     String
+  staffPhone    String
+  checkInTime   String
+  checkOutTime  String?
+  durationMinutes Int?
+  dateStr       String
+
+  @@index([gymId])
+  @@index([staffId])
+  @@index([dateStr])
 }

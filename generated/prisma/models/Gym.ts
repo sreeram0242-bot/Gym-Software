@@ -264,6 +264,8 @@ export type GymWhereInput = {
   gymSettings?: Prisma.XOR<Prisma.GymSettingsNullableScalarRelationFilter, Prisma.GymSettingsWhereInput> | null
   products?: Prisma.ProductListRelationFilter
   productSales?: Prisma.ProductSaleListRelationFilter
+  staff?: Prisma.StaffListRelationFilter
+  staffAttendance?: Prisma.StaffAttendanceRecordListRelationFilter
 }
 
 export type GymOrderByWithRelationInput = {
@@ -285,6 +287,8 @@ export type GymOrderByWithRelationInput = {
   gymSettings?: Prisma.GymSettingsOrderByWithRelationInput
   products?: Prisma.ProductOrderByRelationAggregateInput
   productSales?: Prisma.ProductSaleOrderByRelationAggregateInput
+  staff?: Prisma.StaffOrderByRelationAggregateInput
+  staffAttendance?: Prisma.StaffAttendanceRecordOrderByRelationAggregateInput
 }
 
 export type GymWhereUniqueInput = Prisma.AtLeast<{
@@ -309,6 +313,8 @@ export type GymWhereUniqueInput = Prisma.AtLeast<{
   gymSettings?: Prisma.XOR<Prisma.GymSettingsNullableScalarRelationFilter, Prisma.GymSettingsWhereInput> | null
   products?: Prisma.ProductListRelationFilter
   productSales?: Prisma.ProductSaleListRelationFilter
+  staff?: Prisma.StaffListRelationFilter
+  staffAttendance?: Prisma.StaffAttendanceRecordListRelationFilter
 }, "id" | "userId">
 
 export type GymOrderByWithAggregationInput = {
@@ -364,6 +370,8 @@ export type GymCreateInput = {
   gymSettings?: Prisma.GymSettingsCreateNestedOneWithoutGymInput
   products?: Prisma.ProductCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateInput = {
@@ -385,6 +393,8 @@ export type GymUncheckedCreateInput = {
   gymSettings?: Prisma.GymSettingsUncheckedCreateNestedOneWithoutGymInput
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymUpdateInput = {
@@ -406,6 +416,8 @@ export type GymUpdateInput = {
   gymSettings?: Prisma.GymSettingsUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateInput = {
@@ -427,6 +439,8 @@ export type GymUncheckedUpdateInput = {
   gymSettings?: Prisma.GymSettingsUncheckedUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateManyInput = {
@@ -644,6 +658,34 @@ export type GymUpdateOneRequiredWithoutGymSettingsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.GymUpdateToOneWithWhereWithoutGymSettingsInput, Prisma.GymUpdateWithoutGymSettingsInput>, Prisma.GymUncheckedUpdateWithoutGymSettingsInput>
 }
 
+export type GymCreateNestedOneWithoutStaffInput = {
+  create?: Prisma.XOR<Prisma.GymCreateWithoutStaffInput, Prisma.GymUncheckedCreateWithoutStaffInput>
+  connectOrCreate?: Prisma.GymCreateOrConnectWithoutStaffInput
+  connect?: Prisma.GymWhereUniqueInput
+}
+
+export type GymUpdateOneRequiredWithoutStaffNestedInput = {
+  create?: Prisma.XOR<Prisma.GymCreateWithoutStaffInput, Prisma.GymUncheckedCreateWithoutStaffInput>
+  connectOrCreate?: Prisma.GymCreateOrConnectWithoutStaffInput
+  upsert?: Prisma.GymUpsertWithoutStaffInput
+  connect?: Prisma.GymWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.GymUpdateToOneWithWhereWithoutStaffInput, Prisma.GymUpdateWithoutStaffInput>, Prisma.GymUncheckedUpdateWithoutStaffInput>
+}
+
+export type GymCreateNestedOneWithoutStaffAttendanceInput = {
+  create?: Prisma.XOR<Prisma.GymCreateWithoutStaffAttendanceInput, Prisma.GymUncheckedCreateWithoutStaffAttendanceInput>
+  connectOrCreate?: Prisma.GymCreateOrConnectWithoutStaffAttendanceInput
+  connect?: Prisma.GymWhereUniqueInput
+}
+
+export type GymUpdateOneRequiredWithoutStaffAttendanceNestedInput = {
+  create?: Prisma.XOR<Prisma.GymCreateWithoutStaffAttendanceInput, Prisma.GymUncheckedCreateWithoutStaffAttendanceInput>
+  connectOrCreate?: Prisma.GymCreateOrConnectWithoutStaffAttendanceInput
+  upsert?: Prisma.GymUpsertWithoutStaffAttendanceInput
+  connect?: Prisma.GymWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.GymUpdateToOneWithWhereWithoutStaffAttendanceInput, Prisma.GymUpdateWithoutStaffAttendanceInput>, Prisma.GymUncheckedUpdateWithoutStaffAttendanceInput>
+}
+
 export type GymCreateWithoutCustomersInput = {
   id?: string
   name: string
@@ -662,6 +704,8 @@ export type GymCreateWithoutCustomersInput = {
   gymSettings?: Prisma.GymSettingsCreateNestedOneWithoutGymInput
   products?: Prisma.ProductCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutCustomersInput = {
@@ -682,6 +726,8 @@ export type GymUncheckedCreateWithoutCustomersInput = {
   gymSettings?: Prisma.GymSettingsUncheckedCreateNestedOneWithoutGymInput
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutCustomersInput = {
@@ -718,6 +764,8 @@ export type GymUpdateWithoutCustomersInput = {
   gymSettings?: Prisma.GymSettingsUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutCustomersInput = {
@@ -738,6 +786,8 @@ export type GymUncheckedUpdateWithoutCustomersInput = {
   gymSettings?: Prisma.GymSettingsUncheckedUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutAttendanceInput = {
@@ -758,6 +808,8 @@ export type GymCreateWithoutAttendanceInput = {
   gymSettings?: Prisma.GymSettingsCreateNestedOneWithoutGymInput
   products?: Prisma.ProductCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutAttendanceInput = {
@@ -778,6 +830,8 @@ export type GymUncheckedCreateWithoutAttendanceInput = {
   gymSettings?: Prisma.GymSettingsUncheckedCreateNestedOneWithoutGymInput
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutAttendanceInput = {
@@ -814,6 +868,8 @@ export type GymUpdateWithoutAttendanceInput = {
   gymSettings?: Prisma.GymSettingsUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutAttendanceInput = {
@@ -834,6 +890,8 @@ export type GymUncheckedUpdateWithoutAttendanceInput = {
   gymSettings?: Prisma.GymSettingsUncheckedUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutTransactionsInput = {
@@ -854,6 +912,8 @@ export type GymCreateWithoutTransactionsInput = {
   gymSettings?: Prisma.GymSettingsCreateNestedOneWithoutGymInput
   products?: Prisma.ProductCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutTransactionsInput = {
@@ -874,6 +934,8 @@ export type GymUncheckedCreateWithoutTransactionsInput = {
   gymSettings?: Prisma.GymSettingsUncheckedCreateNestedOneWithoutGymInput
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutTransactionsInput = {
@@ -910,6 +972,8 @@ export type GymUpdateWithoutTransactionsInput = {
   gymSettings?: Prisma.GymSettingsUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutTransactionsInput = {
@@ -930,6 +994,8 @@ export type GymUncheckedUpdateWithoutTransactionsInput = {
   gymSettings?: Prisma.GymSettingsUncheckedUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutSubscriptionPlansInput = {
@@ -950,6 +1016,8 @@ export type GymCreateWithoutSubscriptionPlansInput = {
   gymSettings?: Prisma.GymSettingsCreateNestedOneWithoutGymInput
   products?: Prisma.ProductCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutSubscriptionPlansInput = {
@@ -970,6 +1038,8 @@ export type GymUncheckedCreateWithoutSubscriptionPlansInput = {
   gymSettings?: Prisma.GymSettingsUncheckedCreateNestedOneWithoutGymInput
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutSubscriptionPlansInput = {
@@ -1006,6 +1076,8 @@ export type GymUpdateWithoutSubscriptionPlansInput = {
   gymSettings?: Prisma.GymSettingsUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutSubscriptionPlansInput = {
@@ -1026,6 +1098,8 @@ export type GymUncheckedUpdateWithoutSubscriptionPlansInput = {
   gymSettings?: Prisma.GymSettingsUncheckedUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutWhatsappSessionsInput = {
@@ -1046,6 +1120,8 @@ export type GymCreateWithoutWhatsappSessionsInput = {
   gymSettings?: Prisma.GymSettingsCreateNestedOneWithoutGymInput
   products?: Prisma.ProductCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutWhatsappSessionsInput = {
@@ -1066,6 +1142,8 @@ export type GymUncheckedCreateWithoutWhatsappSessionsInput = {
   gymSettings?: Prisma.GymSettingsUncheckedCreateNestedOneWithoutGymInput
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutWhatsappSessionsInput = {
@@ -1102,6 +1180,8 @@ export type GymUpdateWithoutWhatsappSessionsInput = {
   gymSettings?: Prisma.GymSettingsUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutWhatsappSessionsInput = {
@@ -1122,6 +1202,8 @@ export type GymUncheckedUpdateWithoutWhatsappSessionsInput = {
   gymSettings?: Prisma.GymSettingsUncheckedUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutProductsInput = {
@@ -1142,6 +1224,8 @@ export type GymCreateWithoutProductsInput = {
   whatsappSessions?: Prisma.WhatsAppSessionCreateNestedManyWithoutGymInput
   gymSettings?: Prisma.GymSettingsCreateNestedOneWithoutGymInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutProductsInput = {
@@ -1162,6 +1246,8 @@ export type GymUncheckedCreateWithoutProductsInput = {
   whatsappSessions?: Prisma.WhatsAppSessionUncheckedCreateNestedManyWithoutGymInput
   gymSettings?: Prisma.GymSettingsUncheckedCreateNestedOneWithoutGymInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutProductsInput = {
@@ -1198,6 +1284,8 @@ export type GymUpdateWithoutProductsInput = {
   whatsappSessions?: Prisma.WhatsAppSessionUpdateManyWithoutGymNestedInput
   gymSettings?: Prisma.GymSettingsUpdateOneWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutProductsInput = {
@@ -1218,6 +1306,8 @@ export type GymUncheckedUpdateWithoutProductsInput = {
   whatsappSessions?: Prisma.WhatsAppSessionUncheckedUpdateManyWithoutGymNestedInput
   gymSettings?: Prisma.GymSettingsUncheckedUpdateOneWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutProductSalesInput = {
@@ -1238,6 +1328,8 @@ export type GymCreateWithoutProductSalesInput = {
   whatsappSessions?: Prisma.WhatsAppSessionCreateNestedManyWithoutGymInput
   gymSettings?: Prisma.GymSettingsCreateNestedOneWithoutGymInput
   products?: Prisma.ProductCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutProductSalesInput = {
@@ -1258,6 +1350,8 @@ export type GymUncheckedCreateWithoutProductSalesInput = {
   whatsappSessions?: Prisma.WhatsAppSessionUncheckedCreateNestedManyWithoutGymInput
   gymSettings?: Prisma.GymSettingsUncheckedCreateNestedOneWithoutGymInput
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutProductSalesInput = {
@@ -1294,6 +1388,8 @@ export type GymUpdateWithoutProductSalesInput = {
   whatsappSessions?: Prisma.WhatsAppSessionUpdateManyWithoutGymNestedInput
   gymSettings?: Prisma.GymSettingsUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutProductSalesInput = {
@@ -1314,6 +1410,8 @@ export type GymUncheckedUpdateWithoutProductSalesInput = {
   whatsappSessions?: Prisma.WhatsAppSessionUncheckedUpdateManyWithoutGymNestedInput
   gymSettings?: Prisma.GymSettingsUncheckedUpdateOneWithoutGymNestedInput
   products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutGymSettingsInput = {
@@ -1334,6 +1432,8 @@ export type GymCreateWithoutGymSettingsInput = {
   whatsappSessions?: Prisma.WhatsAppSessionCreateNestedManyWithoutGymInput
   products?: Prisma.ProductCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutGymSettingsInput = {
@@ -1354,6 +1454,8 @@ export type GymUncheckedCreateWithoutGymSettingsInput = {
   whatsappSessions?: Prisma.WhatsAppSessionUncheckedCreateNestedManyWithoutGymInput
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutGymSettingsInput = {
@@ -1390,6 +1492,8 @@ export type GymUpdateWithoutGymSettingsInput = {
   whatsappSessions?: Prisma.WhatsAppSessionUpdateManyWithoutGymNestedInput
   products?: Prisma.ProductUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutGymSettingsInput = {
@@ -1410,6 +1514,216 @@ export type GymUncheckedUpdateWithoutGymSettingsInput = {
   whatsappSessions?: Prisma.WhatsAppSessionUncheckedUpdateManyWithoutGymNestedInput
   products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+}
+
+export type GymCreateWithoutStaffInput = {
+  id?: string
+  name: string
+  ownerName: string
+  email: string
+  phone: string
+  userId: string
+  passwordHash: string
+  status?: string
+  createdAt: string
+  memberCount?: number
+  customers?: Prisma.CustomerCreateNestedManyWithoutGymInput
+  attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutGymInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutGymInput
+  subscriptionPlans?: Prisma.SubscriptionPlanCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionCreateNestedManyWithoutGymInput
+  gymSettings?: Prisma.GymSettingsCreateNestedOneWithoutGymInput
+  products?: Prisma.ProductCreateNestedManyWithoutGymInput
+  productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
+}
+
+export type GymUncheckedCreateWithoutStaffInput = {
+  id?: string
+  name: string
+  ownerName: string
+  email: string
+  phone: string
+  userId: string
+  passwordHash: string
+  status?: string
+  createdAt: string
+  memberCount?: number
+  customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutGymInput
+  attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutGymInput
+  subscriptionPlans?: Prisma.SubscriptionPlanUncheckedCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedCreateNestedManyWithoutGymInput
+  gymSettings?: Prisma.GymSettingsUncheckedCreateNestedOneWithoutGymInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
+  productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+}
+
+export type GymCreateOrConnectWithoutStaffInput = {
+  where: Prisma.GymWhereUniqueInput
+  create: Prisma.XOR<Prisma.GymCreateWithoutStaffInput, Prisma.GymUncheckedCreateWithoutStaffInput>
+}
+
+export type GymUpsertWithoutStaffInput = {
+  update: Prisma.XOR<Prisma.GymUpdateWithoutStaffInput, Prisma.GymUncheckedUpdateWithoutStaffInput>
+  create: Prisma.XOR<Prisma.GymCreateWithoutStaffInput, Prisma.GymUncheckedCreateWithoutStaffInput>
+  where?: Prisma.GymWhereInput
+}
+
+export type GymUpdateToOneWithWhereWithoutStaffInput = {
+  where?: Prisma.GymWhereInput
+  data: Prisma.XOR<Prisma.GymUpdateWithoutStaffInput, Prisma.GymUncheckedUpdateWithoutStaffInput>
+}
+
+export type GymUpdateWithoutStaffInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
+  memberCount?: Prisma.IntFieldUpdateOperationsInput | number
+  customers?: Prisma.CustomerUpdateManyWithoutGymNestedInput
+  attendance?: Prisma.AttendanceRecordUpdateManyWithoutGymNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutGymNestedInput
+  subscriptionPlans?: Prisma.SubscriptionPlanUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUpdateManyWithoutGymNestedInput
+  gymSettings?: Prisma.GymSettingsUpdateOneWithoutGymNestedInput
+  products?: Prisma.ProductUpdateManyWithoutGymNestedInput
+  productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
+}
+
+export type GymUncheckedUpdateWithoutStaffInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
+  memberCount?: Prisma.IntFieldUpdateOperationsInput | number
+  customers?: Prisma.CustomerUncheckedUpdateManyWithoutGymNestedInput
+  attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutGymNestedInput
+  subscriptionPlans?: Prisma.SubscriptionPlanUncheckedUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedUpdateManyWithoutGymNestedInput
+  gymSettings?: Prisma.GymSettingsUncheckedUpdateOneWithoutGymNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
+  productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+}
+
+export type GymCreateWithoutStaffAttendanceInput = {
+  id?: string
+  name: string
+  ownerName: string
+  email: string
+  phone: string
+  userId: string
+  passwordHash: string
+  status?: string
+  createdAt: string
+  memberCount?: number
+  customers?: Prisma.CustomerCreateNestedManyWithoutGymInput
+  attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutGymInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutGymInput
+  subscriptionPlans?: Prisma.SubscriptionPlanCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionCreateNestedManyWithoutGymInput
+  gymSettings?: Prisma.GymSettingsCreateNestedOneWithoutGymInput
+  products?: Prisma.ProductCreateNestedManyWithoutGymInput
+  productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffCreateNestedManyWithoutGymInput
+}
+
+export type GymUncheckedCreateWithoutStaffAttendanceInput = {
+  id?: string
+  name: string
+  ownerName: string
+  email: string
+  phone: string
+  userId: string
+  passwordHash: string
+  status?: string
+  createdAt: string
+  memberCount?: number
+  customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutGymInput
+  attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutGymInput
+  subscriptionPlans?: Prisma.SubscriptionPlanUncheckedCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedCreateNestedManyWithoutGymInput
+  gymSettings?: Prisma.GymSettingsUncheckedCreateNestedOneWithoutGymInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
+  productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
+}
+
+export type GymCreateOrConnectWithoutStaffAttendanceInput = {
+  where: Prisma.GymWhereUniqueInput
+  create: Prisma.XOR<Prisma.GymCreateWithoutStaffAttendanceInput, Prisma.GymUncheckedCreateWithoutStaffAttendanceInput>
+}
+
+export type GymUpsertWithoutStaffAttendanceInput = {
+  update: Prisma.XOR<Prisma.GymUpdateWithoutStaffAttendanceInput, Prisma.GymUncheckedUpdateWithoutStaffAttendanceInput>
+  create: Prisma.XOR<Prisma.GymCreateWithoutStaffAttendanceInput, Prisma.GymUncheckedCreateWithoutStaffAttendanceInput>
+  where?: Prisma.GymWhereInput
+}
+
+export type GymUpdateToOneWithWhereWithoutStaffAttendanceInput = {
+  where?: Prisma.GymWhereInput
+  data: Prisma.XOR<Prisma.GymUpdateWithoutStaffAttendanceInput, Prisma.GymUncheckedUpdateWithoutStaffAttendanceInput>
+}
+
+export type GymUpdateWithoutStaffAttendanceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
+  memberCount?: Prisma.IntFieldUpdateOperationsInput | number
+  customers?: Prisma.CustomerUpdateManyWithoutGymNestedInput
+  attendance?: Prisma.AttendanceRecordUpdateManyWithoutGymNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutGymNestedInput
+  subscriptionPlans?: Prisma.SubscriptionPlanUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUpdateManyWithoutGymNestedInput
+  gymSettings?: Prisma.GymSettingsUpdateOneWithoutGymNestedInput
+  products?: Prisma.ProductUpdateManyWithoutGymNestedInput
+  productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
+}
+
+export type GymUncheckedUpdateWithoutStaffAttendanceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
+  memberCount?: Prisma.IntFieldUpdateOperationsInput | number
+  customers?: Prisma.CustomerUncheckedUpdateManyWithoutGymNestedInput
+  attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutGymNestedInput
+  subscriptionPlans?: Prisma.SubscriptionPlanUncheckedUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedUpdateManyWithoutGymNestedInput
+  gymSettings?: Prisma.GymSettingsUncheckedUpdateOneWithoutGymNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
+  productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
 }
 
 
@@ -1425,6 +1739,8 @@ export type GymCountOutputType = {
   whatsappSessions: number
   products: number
   productSales: number
+  staff: number
+  staffAttendance: number
 }
 
 export type GymCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1435,6 +1751,8 @@ export type GymCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.In
   whatsappSessions?: boolean | GymCountOutputTypeCountWhatsappSessionsArgs
   products?: boolean | GymCountOutputTypeCountProductsArgs
   productSales?: boolean | GymCountOutputTypeCountProductSalesArgs
+  staff?: boolean | GymCountOutputTypeCountStaffArgs
+  staffAttendance?: boolean | GymCountOutputTypeCountStaffAttendanceArgs
 }
 
 /**
@@ -1496,6 +1814,20 @@ export type GymCountOutputTypeCountProductSalesArgs<ExtArgs extends runtime.Type
   where?: Prisma.ProductSaleWhereInput
 }
 
+/**
+ * GymCountOutputType without action
+ */
+export type GymCountOutputTypeCountStaffArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.StaffWhereInput
+}
+
+/**
+ * GymCountOutputType without action
+ */
+export type GymCountOutputTypeCountStaffAttendanceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.StaffAttendanceRecordWhereInput
+}
+
 
 export type GymSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1516,6 +1848,8 @@ export type GymSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   gymSettings?: boolean | Prisma.Gym$gymSettingsArgs<ExtArgs>
   products?: boolean | Prisma.Gym$productsArgs<ExtArgs>
   productSales?: boolean | Prisma.Gym$productSalesArgs<ExtArgs>
+  staff?: boolean | Prisma.Gym$staffArgs<ExtArgs>
+  staffAttendance?: boolean | Prisma.Gym$staffAttendanceArgs<ExtArgs>
   _count?: boolean | Prisma.GymCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["gym"]>
 
@@ -1568,6 +1902,8 @@ export type GymInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   gymSettings?: boolean | Prisma.Gym$gymSettingsArgs<ExtArgs>
   products?: boolean | Prisma.Gym$productsArgs<ExtArgs>
   productSales?: boolean | Prisma.Gym$productSalesArgs<ExtArgs>
+  staff?: boolean | Prisma.Gym$staffArgs<ExtArgs>
+  staffAttendance?: boolean | Prisma.Gym$staffAttendanceArgs<ExtArgs>
   _count?: boolean | Prisma.GymCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type GymIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1584,6 +1920,8 @@ export type $GymPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     gymSettings: Prisma.$GymSettingsPayload<ExtArgs> | null
     products: Prisma.$ProductPayload<ExtArgs>[]
     productSales: Prisma.$ProductSalePayload<ExtArgs>[]
+    staff: Prisma.$StaffPayload<ExtArgs>[]
+    staffAttendance: Prisma.$StaffAttendanceRecordPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1998,6 +2336,8 @@ export interface Prisma__GymClient<T, Null = never, ExtArgs extends runtime.Type
   gymSettings<T extends Prisma.Gym$gymSettingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Gym$gymSettingsArgs<ExtArgs>>): Prisma.Prisma__GymSettingsClient<runtime.Types.Result.GetResult<Prisma.$GymSettingsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   products<T extends Prisma.Gym$productsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Gym$productsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   productSales<T extends Prisma.Gym$productSalesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Gym$productSalesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductSalePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  staff<T extends Prisma.Gym$staffArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Gym$staffArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StaffPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  staffAttendance<T extends Prisma.Gym$staffAttendanceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Gym$staffAttendanceArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StaffAttendanceRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2614,6 +2954,54 @@ export type Gym$productSalesArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.ProductSaleScalarFieldEnum | Prisma.ProductSaleScalarFieldEnum[]
+}
+
+/**
+ * Gym.staff
+ */
+export type Gym$staffArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Staff
+   */
+  select?: Prisma.StaffSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Staff
+   */
+  omit?: Prisma.StaffOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.StaffInclude<ExtArgs> | null
+  where?: Prisma.StaffWhereInput
+  orderBy?: Prisma.StaffOrderByWithRelationInput | Prisma.StaffOrderByWithRelationInput[]
+  cursor?: Prisma.StaffWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.StaffScalarFieldEnum | Prisma.StaffScalarFieldEnum[]
+}
+
+/**
+ * Gym.staffAttendance
+ */
+export type Gym$staffAttendanceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the StaffAttendanceRecord
+   */
+  select?: Prisma.StaffAttendanceRecordSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the StaffAttendanceRecord
+   */
+  omit?: Prisma.StaffAttendanceRecordOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.StaffAttendanceRecordInclude<ExtArgs> | null
+  where?: Prisma.StaffAttendanceRecordWhereInput
+  orderBy?: Prisma.StaffAttendanceRecordOrderByWithRelationInput | Prisma.StaffAttendanceRecordOrderByWithRelationInput[]
+  cursor?: Prisma.StaffAttendanceRecordWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.StaffAttendanceRecordScalarFieldEnum | Prisma.StaffAttendanceRecordScalarFieldEnum[]
 }
 
 /**

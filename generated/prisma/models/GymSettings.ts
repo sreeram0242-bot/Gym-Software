@@ -50,6 +50,7 @@ export type GymSettingsMinAggregateOutputType = {
   waAutoArchive: boolean | null
   templateWelcome: string | null
   templateReceipt: string | null
+  templateStoreReceipt: string | null
   templateReminder: string | null
   templateAbsentee: string | null
   templateCheckIn: string | null
@@ -58,6 +59,7 @@ export type GymSettingsMinAggregateOutputType = {
   upiName: string | null
   address: string | null
   productsEnabled: boolean | null
+  showStoreInRevenue: boolean | null
   attendanceMode: string | null
   fingerprintAgentPort: number | null
 }
@@ -74,6 +76,7 @@ export type GymSettingsMaxAggregateOutputType = {
   waAutoArchive: boolean | null
   templateWelcome: string | null
   templateReceipt: string | null
+  templateStoreReceipt: string | null
   templateReminder: string | null
   templateAbsentee: string | null
   templateCheckIn: string | null
@@ -82,6 +85,7 @@ export type GymSettingsMaxAggregateOutputType = {
   upiName: string | null
   address: string | null
   productsEnabled: boolean | null
+  showStoreInRevenue: boolean | null
   attendanceMode: string | null
   fingerprintAgentPort: number | null
 }
@@ -98,6 +102,7 @@ export type GymSettingsCountAggregateOutputType = {
   waAutoArchive: number
   templateWelcome: number
   templateReceipt: number
+  templateStoreReceipt: number
   templateReminder: number
   templateAbsentee: number
   templateCheckIn: number
@@ -106,6 +111,7 @@ export type GymSettingsCountAggregateOutputType = {
   upiName: number
   address: number
   productsEnabled: number
+  showStoreInRevenue: number
   attendanceMode: number
   fingerprintAgentPort: number
   _all: number
@@ -136,6 +142,7 @@ export type GymSettingsMinAggregateInputType = {
   waAutoArchive?: true
   templateWelcome?: true
   templateReceipt?: true
+  templateStoreReceipt?: true
   templateReminder?: true
   templateAbsentee?: true
   templateCheckIn?: true
@@ -144,6 +151,7 @@ export type GymSettingsMinAggregateInputType = {
   upiName?: true
   address?: true
   productsEnabled?: true
+  showStoreInRevenue?: true
   attendanceMode?: true
   fingerprintAgentPort?: true
 }
@@ -160,6 +168,7 @@ export type GymSettingsMaxAggregateInputType = {
   waAutoArchive?: true
   templateWelcome?: true
   templateReceipt?: true
+  templateStoreReceipt?: true
   templateReminder?: true
   templateAbsentee?: true
   templateCheckIn?: true
@@ -168,6 +177,7 @@ export type GymSettingsMaxAggregateInputType = {
   upiName?: true
   address?: true
   productsEnabled?: true
+  showStoreInRevenue?: true
   attendanceMode?: true
   fingerprintAgentPort?: true
 }
@@ -184,6 +194,7 @@ export type GymSettingsCountAggregateInputType = {
   waAutoArchive?: true
   templateWelcome?: true
   templateReceipt?: true
+  templateStoreReceipt?: true
   templateReminder?: true
   templateAbsentee?: true
   templateCheckIn?: true
@@ -192,6 +203,7 @@ export type GymSettingsCountAggregateInputType = {
   upiName?: true
   address?: true
   productsEnabled?: true
+  showStoreInRevenue?: true
   attendanceMode?: true
   fingerprintAgentPort?: true
   _all?: true
@@ -295,6 +307,7 @@ export type GymSettingsGroupByOutputType = {
   waAutoArchive: boolean
   templateWelcome: string | null
   templateReceipt: string | null
+  templateStoreReceipt: string | null
   templateReminder: string | null
   templateAbsentee: string | null
   templateCheckIn: string | null
@@ -303,6 +316,7 @@ export type GymSettingsGroupByOutputType = {
   upiName: string | null
   address: string | null
   productsEnabled: boolean
+  showStoreInRevenue: boolean
   attendanceMode: string
   fingerprintAgentPort: number
   _count: GymSettingsCountAggregateOutputType | null
@@ -342,6 +356,7 @@ export type GymSettingsWhereInput = {
   waAutoArchive?: Prisma.BoolFilter<"GymSettings"> | boolean
   templateWelcome?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateReceipt?: Prisma.StringNullableFilter<"GymSettings"> | string | null
+  templateStoreReceipt?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateReminder?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateAbsentee?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateCheckIn?: Prisma.StringNullableFilter<"GymSettings"> | string | null
@@ -350,6 +365,7 @@ export type GymSettingsWhereInput = {
   upiName?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   address?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   productsEnabled?: Prisma.BoolFilter<"GymSettings"> | boolean
+  showStoreInRevenue?: Prisma.BoolFilter<"GymSettings"> | boolean
   attendanceMode?: Prisma.StringFilter<"GymSettings"> | string
   fingerprintAgentPort?: Prisma.IntFilter<"GymSettings"> | number
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
@@ -367,6 +383,7 @@ export type GymSettingsOrderByWithRelationInput = {
   waAutoArchive?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrderInput | Prisma.SortOrder
   templateReceipt?: Prisma.SortOrderInput | Prisma.SortOrder
+  templateStoreReceipt?: Prisma.SortOrderInput | Prisma.SortOrder
   templateReminder?: Prisma.SortOrderInput | Prisma.SortOrder
   templateAbsentee?: Prisma.SortOrderInput | Prisma.SortOrder
   templateCheckIn?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -375,6 +392,7 @@ export type GymSettingsOrderByWithRelationInput = {
   upiName?: Prisma.SortOrderInput | Prisma.SortOrder
   address?: Prisma.SortOrderInput | Prisma.SortOrder
   productsEnabled?: Prisma.SortOrder
+  showStoreInRevenue?: Prisma.SortOrder
   attendanceMode?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
   gym?: Prisma.GymOrderByWithRelationInput
@@ -395,6 +413,7 @@ export type GymSettingsWhereUniqueInput = Prisma.AtLeast<{
   waAutoArchive?: Prisma.BoolFilter<"GymSettings"> | boolean
   templateWelcome?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateReceipt?: Prisma.StringNullableFilter<"GymSettings"> | string | null
+  templateStoreReceipt?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateReminder?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateAbsentee?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateCheckIn?: Prisma.StringNullableFilter<"GymSettings"> | string | null
@@ -403,6 +422,7 @@ export type GymSettingsWhereUniqueInput = Prisma.AtLeast<{
   upiName?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   address?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   productsEnabled?: Prisma.BoolFilter<"GymSettings"> | boolean
+  showStoreInRevenue?: Prisma.BoolFilter<"GymSettings"> | boolean
   attendanceMode?: Prisma.StringFilter<"GymSettings"> | string
   fingerprintAgentPort?: Prisma.IntFilter<"GymSettings"> | number
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
@@ -420,6 +440,7 @@ export type GymSettingsOrderByWithAggregationInput = {
   waAutoArchive?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrderInput | Prisma.SortOrder
   templateReceipt?: Prisma.SortOrderInput | Prisma.SortOrder
+  templateStoreReceipt?: Prisma.SortOrderInput | Prisma.SortOrder
   templateReminder?: Prisma.SortOrderInput | Prisma.SortOrder
   templateAbsentee?: Prisma.SortOrderInput | Prisma.SortOrder
   templateCheckIn?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -428,6 +449,7 @@ export type GymSettingsOrderByWithAggregationInput = {
   upiName?: Prisma.SortOrderInput | Prisma.SortOrder
   address?: Prisma.SortOrderInput | Prisma.SortOrder
   productsEnabled?: Prisma.SortOrder
+  showStoreInRevenue?: Prisma.SortOrder
   attendanceMode?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
   _count?: Prisma.GymSettingsCountOrderByAggregateInput
@@ -452,6 +474,7 @@ export type GymSettingsScalarWhereWithAggregatesInput = {
   waAutoArchive?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
   templateWelcome?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   templateReceipt?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
+  templateStoreReceipt?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   templateReminder?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   templateAbsentee?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   templateCheckIn?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
@@ -460,6 +483,7 @@ export type GymSettingsScalarWhereWithAggregatesInput = {
   upiName?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   address?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   productsEnabled?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
+  showStoreInRevenue?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
   attendanceMode?: Prisma.StringWithAggregatesFilter<"GymSettings"> | string
   fingerprintAgentPort?: Prisma.IntWithAggregatesFilter<"GymSettings"> | number
 }
@@ -475,6 +499,7 @@ export type GymSettingsCreateInput = {
   waAutoArchive?: boolean
   templateWelcome?: string | null
   templateReceipt?: string | null
+  templateStoreReceipt?: string | null
   templateReminder?: string | null
   templateAbsentee?: string | null
   templateCheckIn?: string | null
@@ -483,6 +508,7 @@ export type GymSettingsCreateInput = {
   upiName?: string | null
   address?: string | null
   productsEnabled?: boolean
+  showStoreInRevenue?: boolean
   attendanceMode?: string
   fingerprintAgentPort?: number
   gym: Prisma.GymCreateNestedOneWithoutGymSettingsInput
@@ -500,6 +526,7 @@ export type GymSettingsUncheckedCreateInput = {
   waAutoArchive?: boolean
   templateWelcome?: string | null
   templateReceipt?: string | null
+  templateStoreReceipt?: string | null
   templateReminder?: string | null
   templateAbsentee?: string | null
   templateCheckIn?: string | null
@@ -508,6 +535,7 @@ export type GymSettingsUncheckedCreateInput = {
   upiName?: string | null
   address?: string | null
   productsEnabled?: boolean
+  showStoreInRevenue?: boolean
   attendanceMode?: string
   fingerprintAgentPort?: number
 }
@@ -523,6 +551,7 @@ export type GymSettingsUpdateInput = {
   waAutoArchive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateStoreReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReminder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -531,6 +560,7 @@ export type GymSettingsUpdateInput = {
   upiName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
   gym?: Prisma.GymUpdateOneRequiredWithoutGymSettingsNestedInput
@@ -548,6 +578,7 @@ export type GymSettingsUncheckedUpdateInput = {
   waAutoArchive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateStoreReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReminder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -556,6 +587,7 @@ export type GymSettingsUncheckedUpdateInput = {
   upiName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
 }
@@ -572,6 +604,7 @@ export type GymSettingsCreateManyInput = {
   waAutoArchive?: boolean
   templateWelcome?: string | null
   templateReceipt?: string | null
+  templateStoreReceipt?: string | null
   templateReminder?: string | null
   templateAbsentee?: string | null
   templateCheckIn?: string | null
@@ -580,6 +613,7 @@ export type GymSettingsCreateManyInput = {
   upiName?: string | null
   address?: string | null
   productsEnabled?: boolean
+  showStoreInRevenue?: boolean
   attendanceMode?: string
   fingerprintAgentPort?: number
 }
@@ -595,6 +629,7 @@ export type GymSettingsUpdateManyMutationInput = {
   waAutoArchive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateStoreReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReminder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -603,6 +638,7 @@ export type GymSettingsUpdateManyMutationInput = {
   upiName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
 }
@@ -619,6 +655,7 @@ export type GymSettingsUncheckedUpdateManyInput = {
   waAutoArchive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateStoreReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReminder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -627,6 +664,7 @@ export type GymSettingsUncheckedUpdateManyInput = {
   upiName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
 }
@@ -648,6 +686,7 @@ export type GymSettingsCountOrderByAggregateInput = {
   waAutoArchive?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrder
   templateReceipt?: Prisma.SortOrder
+  templateStoreReceipt?: Prisma.SortOrder
   templateReminder?: Prisma.SortOrder
   templateAbsentee?: Prisma.SortOrder
   templateCheckIn?: Prisma.SortOrder
@@ -656,6 +695,7 @@ export type GymSettingsCountOrderByAggregateInput = {
   upiName?: Prisma.SortOrder
   address?: Prisma.SortOrder
   productsEnabled?: Prisma.SortOrder
+  showStoreInRevenue?: Prisma.SortOrder
   attendanceMode?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
 }
@@ -678,6 +718,7 @@ export type GymSettingsMaxOrderByAggregateInput = {
   waAutoArchive?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrder
   templateReceipt?: Prisma.SortOrder
+  templateStoreReceipt?: Prisma.SortOrder
   templateReminder?: Prisma.SortOrder
   templateAbsentee?: Prisma.SortOrder
   templateCheckIn?: Prisma.SortOrder
@@ -686,6 +727,7 @@ export type GymSettingsMaxOrderByAggregateInput = {
   upiName?: Prisma.SortOrder
   address?: Prisma.SortOrder
   productsEnabled?: Prisma.SortOrder
+  showStoreInRevenue?: Prisma.SortOrder
   attendanceMode?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
 }
@@ -702,6 +744,7 @@ export type GymSettingsMinOrderByAggregateInput = {
   waAutoArchive?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrder
   templateReceipt?: Prisma.SortOrder
+  templateStoreReceipt?: Prisma.SortOrder
   templateReminder?: Prisma.SortOrder
   templateAbsentee?: Prisma.SortOrder
   templateCheckIn?: Prisma.SortOrder
@@ -710,6 +753,7 @@ export type GymSettingsMinOrderByAggregateInput = {
   upiName?: Prisma.SortOrder
   address?: Prisma.SortOrder
   productsEnabled?: Prisma.SortOrder
+  showStoreInRevenue?: Prisma.SortOrder
   attendanceMode?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
 }
@@ -763,6 +807,7 @@ export type GymSettingsCreateWithoutGymInput = {
   waAutoArchive?: boolean
   templateWelcome?: string | null
   templateReceipt?: string | null
+  templateStoreReceipt?: string | null
   templateReminder?: string | null
   templateAbsentee?: string | null
   templateCheckIn?: string | null
@@ -771,6 +816,7 @@ export type GymSettingsCreateWithoutGymInput = {
   upiName?: string | null
   address?: string | null
   productsEnabled?: boolean
+  showStoreInRevenue?: boolean
   attendanceMode?: string
   fingerprintAgentPort?: number
 }
@@ -786,6 +832,7 @@ export type GymSettingsUncheckedCreateWithoutGymInput = {
   waAutoArchive?: boolean
   templateWelcome?: string | null
   templateReceipt?: string | null
+  templateStoreReceipt?: string | null
   templateReminder?: string | null
   templateAbsentee?: string | null
   templateCheckIn?: string | null
@@ -794,6 +841,7 @@ export type GymSettingsUncheckedCreateWithoutGymInput = {
   upiName?: string | null
   address?: string | null
   productsEnabled?: boolean
+  showStoreInRevenue?: boolean
   attendanceMode?: string
   fingerprintAgentPort?: number
 }
@@ -825,6 +873,7 @@ export type GymSettingsUpdateWithoutGymInput = {
   waAutoArchive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateStoreReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReminder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -833,6 +882,7 @@ export type GymSettingsUpdateWithoutGymInput = {
   upiName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
 }
@@ -848,6 +898,7 @@ export type GymSettingsUncheckedUpdateWithoutGymInput = {
   waAutoArchive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateStoreReceipt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateReminder?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -856,6 +907,7 @@ export type GymSettingsUncheckedUpdateWithoutGymInput = {
   upiName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
 }
@@ -874,6 +926,7 @@ export type GymSettingsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   waAutoArchive?: boolean
   templateWelcome?: boolean
   templateReceipt?: boolean
+  templateStoreReceipt?: boolean
   templateReminder?: boolean
   templateAbsentee?: boolean
   templateCheckIn?: boolean
@@ -882,6 +935,7 @@ export type GymSettingsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   upiName?: boolean
   address?: boolean
   productsEnabled?: boolean
+  showStoreInRevenue?: boolean
   attendanceMode?: boolean
   fingerprintAgentPort?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
@@ -899,6 +953,7 @@ export type GymSettingsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   waAutoArchive?: boolean
   templateWelcome?: boolean
   templateReceipt?: boolean
+  templateStoreReceipt?: boolean
   templateReminder?: boolean
   templateAbsentee?: boolean
   templateCheckIn?: boolean
@@ -907,6 +962,7 @@ export type GymSettingsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   upiName?: boolean
   address?: boolean
   productsEnabled?: boolean
+  showStoreInRevenue?: boolean
   attendanceMode?: boolean
   fingerprintAgentPort?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
@@ -924,6 +980,7 @@ export type GymSettingsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   waAutoArchive?: boolean
   templateWelcome?: boolean
   templateReceipt?: boolean
+  templateStoreReceipt?: boolean
   templateReminder?: boolean
   templateAbsentee?: boolean
   templateCheckIn?: boolean
@@ -932,6 +989,7 @@ export type GymSettingsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   upiName?: boolean
   address?: boolean
   productsEnabled?: boolean
+  showStoreInRevenue?: boolean
   attendanceMode?: boolean
   fingerprintAgentPort?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
@@ -949,6 +1007,7 @@ export type GymSettingsSelectScalar = {
   waAutoArchive?: boolean
   templateWelcome?: boolean
   templateReceipt?: boolean
+  templateStoreReceipt?: boolean
   templateReminder?: boolean
   templateAbsentee?: boolean
   templateCheckIn?: boolean
@@ -957,11 +1016,12 @@ export type GymSettingsSelectScalar = {
   upiName?: boolean
   address?: boolean
   productsEnabled?: boolean
+  showStoreInRevenue?: boolean
   attendanceMode?: boolean
   fingerprintAgentPort?: boolean
 }
 
-export type GymSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "absentTrackingEnabled" | "absentThresholdDays" | "waAutoMessages" | "waReminderWindowDays" | "waAttendanceMessages" | "waAutoReply" | "waAutoArchive" | "templateWelcome" | "templateReceipt" | "templateReminder" | "templateAbsentee" | "templateCheckIn" | "templateCheckOut" | "upiId" | "upiName" | "address" | "productsEnabled" | "attendanceMode" | "fingerprintAgentPort", ExtArgs["result"]["gymSettings"]>
+export type GymSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "absentTrackingEnabled" | "absentThresholdDays" | "waAutoMessages" | "waReminderWindowDays" | "waAttendanceMessages" | "waAutoReply" | "waAutoArchive" | "templateWelcome" | "templateReceipt" | "templateStoreReceipt" | "templateReminder" | "templateAbsentee" | "templateCheckIn" | "templateCheckOut" | "upiId" | "upiName" | "address" | "productsEnabled" | "showStoreInRevenue" | "attendanceMode" | "fingerprintAgentPort", ExtArgs["result"]["gymSettings"]>
 export type GymSettingsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }
@@ -989,6 +1049,7 @@ export type $GymSettingsPayload<ExtArgs extends runtime.Types.Extensions.Interna
     waAutoArchive: boolean
     templateWelcome: string | null
     templateReceipt: string | null
+    templateStoreReceipt: string | null
     templateReminder: string | null
     templateAbsentee: string | null
     templateCheckIn: string | null
@@ -997,6 +1058,7 @@ export type $GymSettingsPayload<ExtArgs extends runtime.Types.Extensions.Interna
     upiName: string | null
     address: string | null
     productsEnabled: boolean
+    showStoreInRevenue: boolean
     attendanceMode: string
     fingerprintAgentPort: number
   }, ExtArgs["result"]["gymSettings"]>
@@ -1434,6 +1496,7 @@ export interface GymSettingsFieldRefs {
   readonly waAutoArchive: Prisma.FieldRef<"GymSettings", 'Boolean'>
   readonly templateWelcome: Prisma.FieldRef<"GymSettings", 'String'>
   readonly templateReceipt: Prisma.FieldRef<"GymSettings", 'String'>
+  readonly templateStoreReceipt: Prisma.FieldRef<"GymSettings", 'String'>
   readonly templateReminder: Prisma.FieldRef<"GymSettings", 'String'>
   readonly templateAbsentee: Prisma.FieldRef<"GymSettings", 'String'>
   readonly templateCheckIn: Prisma.FieldRef<"GymSettings", 'String'>
@@ -1442,6 +1505,7 @@ export interface GymSettingsFieldRefs {
   readonly upiName: Prisma.FieldRef<"GymSettings", 'String'>
   readonly address: Prisma.FieldRef<"GymSettings", 'String'>
   readonly productsEnabled: Prisma.FieldRef<"GymSettings", 'Boolean'>
+  readonly showStoreInRevenue: Prisma.FieldRef<"GymSettings", 'Boolean'>
   readonly attendanceMode: Prisma.FieldRef<"GymSettings", 'String'>
   readonly fingerprintAgentPort: Prisma.FieldRef<"GymSettings", 'Int'>
 }

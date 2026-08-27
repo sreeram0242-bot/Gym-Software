@@ -10,6 +10,7 @@ export default function BroadcastPage() {
   
   const [message, setMessage] = useState('');
   const [audience, setAudience] = useState('active');
+  const [selectedPhones, setSelectedPhones] = useState<string[]>([]);
   const [mediaBase64, setMediaBase64] = useState<string | null>(null);
   
   const [isSending, setIsSending] = useState(false);
@@ -45,6 +46,7 @@ export default function BroadcastPage() {
   };
 
   const getRecipientCount = () => {
+    if (audience === 'custom') return selectedPhones.length;
     const activeCustomers = customers.filter(c => c.waActive === true);
     if (audience === 'all') return activeCustomers.length;
     return activeCustomers.filter(c => c.status === audience).length;
@@ -98,7 +100,8 @@ export default function BroadcastPage() {
           gymId,
           message,
           mediaBase64,
-          audience
+          audience,
+          selectedPhones: audience === 'custom' ? selectedPhones : undefined
         })
       });
 

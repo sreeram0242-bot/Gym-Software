@@ -38,6 +38,7 @@ export type CustomerSumAggregateOutputType = {
 
 export type CustomerMinAggregateOutputType = {
   id: string | null
+  memberId: string | null
   gymId: string | null
   name: string | null
   phone: string | null
@@ -57,6 +58,7 @@ export type CustomerMinAggregateOutputType = {
 
 export type CustomerMaxAggregateOutputType = {
   id: string | null
+  memberId: string | null
   gymId: string | null
   name: string | null
   phone: string | null
@@ -76,6 +78,7 @@ export type CustomerMaxAggregateOutputType = {
 
 export type CustomerCountAggregateOutputType = {
   id: number
+  memberId: number
   gymId: number
   name: number
   phone: number
@@ -107,6 +110,7 @@ export type CustomerSumAggregateInputType = {
 
 export type CustomerMinAggregateInputType = {
   id?: true
+  memberId?: true
   gymId?: true
   name?: true
   phone?: true
@@ -126,6 +130,7 @@ export type CustomerMinAggregateInputType = {
 
 export type CustomerMaxAggregateInputType = {
   id?: true
+  memberId?: true
   gymId?: true
   name?: true
   phone?: true
@@ -145,6 +150,7 @@ export type CustomerMaxAggregateInputType = {
 
 export type CustomerCountAggregateInputType = {
   id?: true
+  memberId?: true
   gymId?: true
   name?: true
   phone?: true
@@ -251,6 +257,7 @@ export type CustomerGroupByArgs<ExtArgs extends runtime.Types.Extensions.Interna
 
 export type CustomerGroupByOutputType = {
   id: string
+  memberId: string | null
   gymId: string
   name: string
   phone: string
@@ -293,6 +300,7 @@ export type CustomerWhereInput = {
   OR?: Prisma.CustomerWhereInput[]
   NOT?: Prisma.CustomerWhereInput | Prisma.CustomerWhereInput[]
   id?: Prisma.StringFilter<"Customer"> | string
+  memberId?: Prisma.StringNullableFilter<"Customer"> | string | null
   gymId?: Prisma.StringFilter<"Customer"> | string
   name?: Prisma.StringFilter<"Customer"> | string
   phone?: Prisma.StringFilter<"Customer"> | string
@@ -316,6 +324,7 @@ export type CustomerWhereInput = {
 
 export type CustomerOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  memberId?: Prisma.SortOrderInput | Prisma.SortOrder
   gymId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
@@ -339,6 +348,7 @@ export type CustomerOrderByWithRelationInput = {
 
 export type CustomerWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  memberId?: string
   AND?: Prisma.CustomerWhereInput | Prisma.CustomerWhereInput[]
   OR?: Prisma.CustomerWhereInput[]
   NOT?: Prisma.CustomerWhereInput | Prisma.CustomerWhereInput[]
@@ -361,10 +371,11 @@ export type CustomerWhereUniqueInput = Prisma.AtLeast<{
   attendance?: Prisma.AttendanceRecordListRelationFilter
   transactions?: Prisma.TransactionListRelationFilter
   productSales?: Prisma.ProductSaleListRelationFilter
-}, "id">
+}, "id" | "memberId">
 
 export type CustomerOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  memberId?: Prisma.SortOrderInput | Prisma.SortOrder
   gymId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
@@ -392,6 +403,7 @@ export type CustomerScalarWhereWithAggregatesInput = {
   OR?: Prisma.CustomerScalarWhereWithAggregatesInput[]
   NOT?: Prisma.CustomerScalarWhereWithAggregatesInput | Prisma.CustomerScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Customer"> | string
+  memberId?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   gymId?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   name?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   phone?: Prisma.StringWithAggregatesFilter<"Customer"> | string
@@ -411,6 +423,7 @@ export type CustomerScalarWhereWithAggregatesInput = {
 
 export type CustomerCreateInput = {
   id?: string
+  memberId?: string | null
   name: string
   phone: string
   nfcCardId: string
@@ -433,6 +446,7 @@ export type CustomerCreateInput = {
 
 export type CustomerUncheckedCreateInput = {
   id?: string
+  memberId?: string | null
   gymId: string
   name: string
   phone: string
@@ -455,6 +469,7 @@ export type CustomerUncheckedCreateInput = {
 
 export type CustomerUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -477,6 +492,7 @@ export type CustomerUpdateInput = {
 
 export type CustomerUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gymId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -499,6 +515,7 @@ export type CustomerUncheckedUpdateInput = {
 
 export type CustomerCreateManyInput = {
   id?: string
+  memberId?: string | null
   gymId: string
   name: string
   phone: string
@@ -518,6 +535,7 @@ export type CustomerCreateManyInput = {
 
 export type CustomerUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -536,6 +554,7 @@ export type CustomerUpdateManyMutationInput = {
 
 export type CustomerUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gymId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -565,6 +584,7 @@ export type CustomerOrderByRelationAggregateInput = {
 
 export type CustomerCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  memberId?: Prisma.SortOrder
   gymId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
@@ -589,6 +609,7 @@ export type CustomerAvgOrderByAggregateInput = {
 
 export type CustomerMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  memberId?: Prisma.SortOrder
   gymId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
@@ -608,6 +629,7 @@ export type CustomerMaxOrderByAggregateInput = {
 
 export type CustomerMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  memberId?: Prisma.SortOrder
   gymId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
@@ -738,6 +760,7 @@ export type CustomerUpdateOneWithoutProductSalesNestedInput = {
 
 export type CustomerCreateWithoutGymInput = {
   id?: string
+  memberId?: string | null
   name: string
   phone: string
   nfcCardId: string
@@ -759,6 +782,7 @@ export type CustomerCreateWithoutGymInput = {
 
 export type CustomerUncheckedCreateWithoutGymInput = {
   id?: string
+  memberId?: string | null
   name: string
   phone: string
   nfcCardId: string
@@ -809,6 +833,7 @@ export type CustomerScalarWhereInput = {
   OR?: Prisma.CustomerScalarWhereInput[]
   NOT?: Prisma.CustomerScalarWhereInput | Prisma.CustomerScalarWhereInput[]
   id?: Prisma.StringFilter<"Customer"> | string
+  memberId?: Prisma.StringNullableFilter<"Customer"> | string | null
   gymId?: Prisma.StringFilter<"Customer"> | string
   name?: Prisma.StringFilter<"Customer"> | string
   phone?: Prisma.StringFilter<"Customer"> | string
@@ -828,6 +853,7 @@ export type CustomerScalarWhereInput = {
 
 export type CustomerCreateWithoutAttendanceInput = {
   id?: string
+  memberId?: string | null
   name: string
   phone: string
   nfcCardId: string
@@ -849,6 +875,7 @@ export type CustomerCreateWithoutAttendanceInput = {
 
 export type CustomerUncheckedCreateWithoutAttendanceInput = {
   id?: string
+  memberId?: string | null
   gymId: string
   name: string
   phone: string
@@ -886,6 +913,7 @@ export type CustomerUpdateToOneWithWhereWithoutAttendanceInput = {
 
 export type CustomerUpdateWithoutAttendanceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -907,6 +935,7 @@ export type CustomerUpdateWithoutAttendanceInput = {
 
 export type CustomerUncheckedUpdateWithoutAttendanceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gymId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -928,6 +957,7 @@ export type CustomerUncheckedUpdateWithoutAttendanceInput = {
 
 export type CustomerCreateWithoutTransactionsInput = {
   id?: string
+  memberId?: string | null
   name: string
   phone: string
   nfcCardId: string
@@ -949,6 +979,7 @@ export type CustomerCreateWithoutTransactionsInput = {
 
 export type CustomerUncheckedCreateWithoutTransactionsInput = {
   id?: string
+  memberId?: string | null
   gymId: string
   name: string
   phone: string
@@ -986,6 +1017,7 @@ export type CustomerUpdateToOneWithWhereWithoutTransactionsInput = {
 
 export type CustomerUpdateWithoutTransactionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1007,6 +1039,7 @@ export type CustomerUpdateWithoutTransactionsInput = {
 
 export type CustomerUncheckedUpdateWithoutTransactionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gymId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1028,6 +1061,7 @@ export type CustomerUncheckedUpdateWithoutTransactionsInput = {
 
 export type CustomerCreateWithoutProductSalesInput = {
   id?: string
+  memberId?: string | null
   name: string
   phone: string
   nfcCardId: string
@@ -1049,6 +1083,7 @@ export type CustomerCreateWithoutProductSalesInput = {
 
 export type CustomerUncheckedCreateWithoutProductSalesInput = {
   id?: string
+  memberId?: string | null
   gymId: string
   name: string
   phone: string
@@ -1086,6 +1121,7 @@ export type CustomerUpdateToOneWithWhereWithoutProductSalesInput = {
 
 export type CustomerUpdateWithoutProductSalesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1107,6 +1143,7 @@ export type CustomerUpdateWithoutProductSalesInput = {
 
 export type CustomerUncheckedUpdateWithoutProductSalesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gymId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1128,6 +1165,7 @@ export type CustomerUncheckedUpdateWithoutProductSalesInput = {
 
 export type CustomerCreateManyGymInput = {
   id?: string
+  memberId?: string | null
   name: string
   phone: string
   nfcCardId: string
@@ -1146,6 +1184,7 @@ export type CustomerCreateManyGymInput = {
 
 export type CustomerUpdateWithoutGymInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1167,6 +1206,7 @@ export type CustomerUpdateWithoutGymInput = {
 
 export type CustomerUncheckedUpdateWithoutGymInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1188,6 +1228,7 @@ export type CustomerUncheckedUpdateWithoutGymInput = {
 
 export type CustomerUncheckedUpdateManyWithoutGymInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1255,6 +1296,7 @@ export type CustomerCountOutputTypeCountProductSalesArgs<ExtArgs extends runtime
 
 export type CustomerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  memberId?: boolean
   gymId?: boolean
   name?: boolean
   phone?: boolean
@@ -1279,6 +1321,7 @@ export type CustomerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
 
 export type CustomerSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  memberId?: boolean
   gymId?: boolean
   name?: boolean
   phone?: boolean
@@ -1299,6 +1342,7 @@ export type CustomerSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
 
 export type CustomerSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  memberId?: boolean
   gymId?: boolean
   name?: boolean
   phone?: boolean
@@ -1319,6 +1363,7 @@ export type CustomerSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
 
 export type CustomerSelectScalar = {
   id?: boolean
+  memberId?: boolean
   gymId?: boolean
   name?: boolean
   phone?: boolean
@@ -1336,7 +1381,7 @@ export type CustomerSelectScalar = {
   waActive?: boolean
 }
 
-export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "name" | "phone" | "nfcCardId" | "nfcCardId2" | "fingerprintId" | "planType" | "feeAmount" | "lastPaymentDate" | "nextDueDate" | "pendingBalance" | "balanceDueDate" | "status" | "joinedDate" | "waActive", ExtArgs["result"]["customer"]>
+export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "memberId" | "gymId" | "name" | "phone" | "nfcCardId" | "nfcCardId2" | "fingerprintId" | "planType" | "feeAmount" | "lastPaymentDate" | "nextDueDate" | "pendingBalance" | "balanceDueDate" | "status" | "joinedDate" | "waActive", ExtArgs["result"]["customer"]>
 export type CustomerInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
   attendance?: boolean | Prisma.Customer$attendanceArgs<ExtArgs>
@@ -1361,6 +1406,7 @@ export type $CustomerPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    memberId: string | null
     gymId: string
     name: string
     phone: string
@@ -1804,6 +1850,7 @@ export interface Prisma__CustomerClient<T, Null = never, ExtArgs extends runtime
  */
 export interface CustomerFieldRefs {
   readonly id: Prisma.FieldRef<"Customer", 'String'>
+  readonly memberId: Prisma.FieldRef<"Customer", 'String'>
   readonly gymId: Prisma.FieldRef<"Customer", 'String'>
   readonly name: Prisma.FieldRef<"Customer", 'String'>
   readonly phone: Prisma.FieldRef<"Customer", 'String'>

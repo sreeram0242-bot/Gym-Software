@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle, Megaphone, Lock, CheckCircle, Store } from 'lucide-react';
+import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle, Megaphone, Lock, CheckCircle, Store, Briefcase } from 'lucide-react';
 import { getGyms, findCustomerByNFC, toggleCheckIn, getMemberMonthlyAvgHours, getCustomers, getGymSettings, getActiveAnnouncement } from '@/lib/actions';
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
@@ -216,6 +216,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
     { label: attendanceMode === 'FINGERPRINT' ? 'Fingerprint' : attendanceMode === 'BOTH' ? 'Check-in' : attendanceMode === 'MANUAL' ? 'Check-in' : 'NFC Terminal', href: '/dashboard/checkin', icon: Smartphone },
     { label: 'Members', href: '/dashboard/members', icon: Users },
+    { label: 'Staffs', href: '/dashboard/staffs', icon: Briefcase },
     { label: 'Reminders', href: '/dashboard/reminders', icon: Bell },
     { label: 'Broadcast', href: '/dashboard/broadcast', icon: Megaphone },
     { label: 'Revenue', href: '/dashboard/revenue', icon: CreditCard },

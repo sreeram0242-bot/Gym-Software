@@ -96,3 +96,13 @@ export type GymSettings = Prisma.GymSettingsModel
  * 
  */
 export type Announcement = Prisma.AnnouncementModel
+/**
+ * Model Staff
+ * 
+ */
+export type Staff = Prisma.StaffModel
+/**
+ * Model StaffAttendanceRecord
+ * 
+ */
+export type StaffAttendanceRecord = Prisma.StaffAttendanceRecordModel

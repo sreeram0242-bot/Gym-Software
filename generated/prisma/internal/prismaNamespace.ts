@@ -407,7 +407,9 @@ export const ModelName = {
   ProductSale: 'ProductSale',
   ProductSaleItem: 'ProductSaleItem',
   GymSettings: 'GymSettings',
-  Announcement: 'Announcement'
+  Announcement: 'Announcement',
+  Staff: 'Staff',
+  StaffAttendanceRecord: 'StaffAttendanceRecord'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -423,7 +425,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "gym" | "customer" | "attendanceRecord" | "transaction" | "subscriptionPlan" | "whatsAppSession" | "product" | "productSale" | "productSaleItem" | "gymSettings" | "announcement"
+    modelProps: "gym" | "customer" | "attendanceRecord" | "transaction" | "subscriptionPlan" | "whatsAppSession" | "product" | "productSale" | "productSaleItem" | "gymSettings" | "announcement" | "staff" | "staffAttendanceRecord"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1241,6 +1243,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Staff: {
+      payload: Prisma.$StaffPayload<ExtArgs>
+      fields: Prisma.StaffFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.StaffFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.StaffFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>
+        }
+        findFirst: {
+          args: Prisma.StaffFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.StaffFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>
+        }
+        findMany: {
+          args: Prisma.StaffFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>[]
+        }
+        create: {
+          args: Prisma.StaffCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>
+        }
+        createMany: {
+          args: Prisma.StaffCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.StaffCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>[]
+        }
+        delete: {
+          args: Prisma.StaffDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>
+        }
+        update: {
+          args: Prisma.StaffUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>
+        }
+        deleteMany: {
+          args: Prisma.StaffDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.StaffUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.StaffUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>[]
+        }
+        upsert: {
+          args: Prisma.StaffUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>
+        }
+        aggregate: {
+          args: Prisma.StaffAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStaff>
+        }
+        groupBy: {
+          args: Prisma.StaffGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StaffGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.StaffCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StaffCountAggregateOutputType> | number
+        }
+      }
+    }
+    StaffAttendanceRecord: {
+      payload: Prisma.$StaffAttendanceRecordPayload<ExtArgs>
+      fields: Prisma.StaffAttendanceRecordFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.StaffAttendanceRecordFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffAttendanceRecordPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.StaffAttendanceRecordFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffAttendanceRecordPayload>
+        }
+        findFirst: {
+          args: Prisma.StaffAttendanceRecordFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffAttendanceRecordPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.StaffAttendanceRecordFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffAttendanceRecordPayload>
+        }
+        findMany: {
+          args: Prisma.StaffAttendanceRecordFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffAttendanceRecordPayload>[]
+        }
+        create: {
+          args: Prisma.StaffAttendanceRecordCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffAttendanceRecordPayload>
+        }
+        createMany: {
+          args: Prisma.StaffAttendanceRecordCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.StaffAttendanceRecordCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffAttendanceRecordPayload>[]
+        }
+        delete: {
+          args: Prisma.StaffAttendanceRecordDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffAttendanceRecordPayload>
+        }
+        update: {
+          args: Prisma.StaffAttendanceRecordUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffAttendanceRecordPayload>
+        }
+        deleteMany: {
+          args: Prisma.StaffAttendanceRecordDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.StaffAttendanceRecordUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.StaffAttendanceRecordUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffAttendanceRecordPayload>[]
+        }
+        upsert: {
+          args: Prisma.StaffAttendanceRecordUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffAttendanceRecordPayload>
+        }
+        aggregate: {
+          args: Prisma.StaffAttendanceRecordAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStaffAttendanceRecord>
+        }
+        groupBy: {
+          args: Prisma.StaffAttendanceRecordGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StaffAttendanceRecordGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.StaffAttendanceRecordCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StaffAttendanceRecordCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1298,6 +1448,7 @@ export type GymScalarFieldEnum = (typeof GymScalarFieldEnum)[keyof typeof GymSca
 
 export const CustomerScalarFieldEnum = {
   id: 'id',
+  memberId: 'memberId',
   gymId: 'gymId',
   name: 'name',
   phone: 'phone',
@@ -1429,6 +1580,7 @@ export const GymSettingsScalarFieldEnum = {
   waAutoArchive: 'waAutoArchive',
   templateWelcome: 'templateWelcome',
   templateReceipt: 'templateReceipt',
+  templateStoreReceipt: 'templateStoreReceipt',
   templateReminder: 'templateReminder',
   templateAbsentee: 'templateAbsentee',
   templateCheckIn: 'templateCheckIn',
@@ -1437,6 +1589,7 @@ export const GymSettingsScalarFieldEnum = {
   upiName: 'upiName',
   address: 'address',
   productsEnabled: 'productsEnabled',
+  showStoreInRevenue: 'showStoreInRevenue',
   attendanceMode: 'attendanceMode',
   fingerprintAgentPort: 'fingerprintAgentPort'
 } as const
@@ -1454,6 +1607,36 @@ export const AnnouncementScalarFieldEnum = {
 } as const
 
 export type AnnouncementScalarFieldEnum = (typeof AnnouncementScalarFieldEnum)[keyof typeof AnnouncementScalarFieldEnum]
+
+
+export const StaffScalarFieldEnum = {
+  id: 'id',
+  gymId: 'gymId',
+  name: 'name',
+  phone: 'phone',
+  role: 'role',
+  nfcCardId: 'nfcCardId',
+  fingerprintId: 'fingerprintId',
+  status: 'status',
+  joinedDate: 'joinedDate'
+} as const
+
+export type StaffScalarFieldEnum = (typeof StaffScalarFieldEnum)[keyof typeof StaffScalarFieldEnum]
+
+
+export const StaffAttendanceRecordScalarFieldEnum = {
+  id: 'id',
+  gymId: 'gymId',
+  staffId: 'staffId',
+  staffName: 'staffName',
+  staffPhone: 'staffPhone',
+  checkInTime: 'checkInTime',
+  checkOutTime: 'checkOutTime',
+  durationMinutes: 'durationMinutes',
+  dateStr: 'dateStr'
+} as const
+
+export type StaffAttendanceRecordScalarFieldEnum = (typeof StaffAttendanceRecordScalarFieldEnum)[keyof typeof StaffAttendanceRecordScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1696,6 +1879,8 @@ export type GlobalOmitConfig = {
   productSaleItem?: Prisma.ProductSaleItemOmit
   gymSettings?: Prisma.GymSettingsOmit
   announcement?: Prisma.AnnouncementOmit
+  staff?: Prisma.StaffOmit
+  staffAttendanceRecord?: Prisma.StaffAttendanceRecordOmit
 }
 
 /* Types for Logging */

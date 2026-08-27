@@ -5,10 +5,20 @@ import db from '@/lib/db';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { gymId, message, mediaBase64, audience } = body;
+    const { gymId, message, mediaBase64, audience, selectedPhones } = body;
     
     if (!gymId || !message || !audience) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+    }
+
+    let queuedCount = 0;
+
+    if (audience === 'custom' && Array.isArray(selectedPhones) && selectedPhones.length > 0) {
+      for (const phone of selectedPhones) {
+        WhatsAppManager.sendMessage(gymId, phone, message, mediaBase64).catch(e => console.error(e));
+        queuedCount++;
+      }
+      return NextResponse.json({ success: true, queuedCount });
     }
 
     // Fetch customers based on audience
@@ -19,7 +29,6 @@ export async function POST(request: Request) {
       customers = await db.customer.findMany({ where: { gymId, status: audience, waActive: true } });
     }
 
-    let queuedCount = 0;
 
     for (const customer of customers) {
       if (customer.phone) {

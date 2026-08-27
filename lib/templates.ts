@@ -69,7 +69,25 @@ Hi {{name}}!
 ⏰ *Time:* {{time}}
 ⏱️ *Total Time Active:* {{duration}} Minutes
 
-Consistency builds results. Great effort today! 📈💪`
+Consistency builds results. Great effort today! 📈💪`,
+
+  storeReceipt: `🛍️ *Store Purchase Receipt - {{gymName}}* 🧾
+
+Hi {{name}},
+
+Thank you for your purchase from our Gym Store!
+
+*Purchase Details:*
+{{itemsList}}
+
+💰 *Total Amount Paid:* ₹{{totalAmount}}
+💳 *Payment Mode:* {{paymentMode}}
+📅 *Date:* {{date}}
+
+Fuel your body and keep crushing your workouts! 💪🔥
+
+_Best Regards,_
+*Team {{gymName}}*`
 };
 
 export type TemplateType = keyof typeof DEFAULT_TEMPLATES;
@@ -81,6 +99,7 @@ export function getTemplate(settings: any, type: TemplateType): string {
   switch(type) {
     case 'welcome': return settings.templateWelcome || DEFAULT_TEMPLATES.welcome;
     case 'receipt': return settings.templateReceipt || DEFAULT_TEMPLATES.receipt;
+    case 'storeReceipt': return settings.templateStoreReceipt || DEFAULT_TEMPLATES.storeReceipt;
     case 'reminder': return settings.templateReminder || DEFAULT_TEMPLATES.reminder;
     case 'absentee': return settings.templateAbsentee || DEFAULT_TEMPLATES.absentee;
     case 'checkin': return settings.templateCheckIn || DEFAULT_TEMPLATES.checkin;

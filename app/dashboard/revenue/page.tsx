@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2, Edit2, Download, Banknote, Smartphone, ArrowLeftRight, Copy, Check } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, updateTransaction, deleteTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan, getGyms } from '@/lib/actions';
+import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, updateTransaction, deleteTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan, getGyms, getGymSettings } from '@/lib/actions';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Transaction, SubscriptionPlan } from '@/lib/types';
@@ -12,6 +12,7 @@ import { formatDateDDMMYYYY } from '@/lib/utils';
 export default function RevenuePage() {
   const [gymId, setGymId] = useState<string>('gym_1');
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [gymSettings, setGymSettings] = useState<any>(null);
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE' | 'NEW_MEMBERS'>('ALL');
   const [paymentModeFilter, setPaymentModeFilter] = useState<'ALL' | 'CASH' | 'UPI' | 'CARD'>('ALL');
@@ -81,15 +82,17 @@ export default function RevenuePage() {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
-    const [txs, ps, custs] = await Promise.all([
+    const [txs, ps, custs, settings] = await Promise.all([
       getTransactions(savedId),
       getSubscriptionPlans(savedId),
-      getCustomers(savedId)
+      getCustomers(savedId),
+      getGymSettings(savedId)
     ]);
     
     setTransactions(txs);
     setPlans(ps);
     setAllCustomers(custs);
+    setGymSettings(settings);
   };
 
   const handleAddExpense = async (e: React.FormEvent) => {
@@ -239,6 +242,13 @@ export default function RevenuePage() {
     return true;
   };
 
+  const effectiveTransactions = useMemo(() => {
+    if (gymSettings?.showStoreInRevenue === false) {
+      return transactions.filter(t => t.category !== 'Product Sale');
+    }
+    return transactions;
+  }, [transactions, gymSettings]);
+
   const {
     filteredGlobalTxs,
     totalIncome,
@@ -251,10 +261,10 @@ export default function RevenuePage() {
     cardTotal
   } = useMemo(() => {
     const todayStr = new Date().toISOString().split('T')[0];
-    const filteredTxs = transactions.filter(t => isDateInGlobalFilter(t.date));
+    const filteredTxs = effectiveTransactions.filter(t => isDateInGlobalFilter(t.date));
 
     const inc = filteredTxs.filter((t) => t.type === 'INCOME').reduce((acc, cur) => acc + cur.amount, 0);
-    const todayInc = transactions.filter((t) => t.type === 'INCOME' && t.date === todayStr).reduce((acc, cur) => acc + cur.amount, 0);
+    const todayInc = effectiveTransactions.filter((t) => t.type === 'INCOME' && t.date === todayStr).reduce((acc, cur) => acc + cur.amount, 0);
     const exp = filteredTxs.filter((t) => t.type === 'EXPENSE').reduce((acc, cur) => acc + cur.amount, 0);
 
     const membersCount = allCustomers.filter(c => c.gymId === gymId && isDateInGlobalFilter(c.joinedDate)).length;
@@ -294,7 +304,7 @@ export default function RevenuePage() {
       upiTotal: upi,
       cardTotal: card
     };
-  }, [transactions, allCustomers, gymId, globalTimeFilter, globalDateFrom, globalDateTo]);
+  }, [effectiveTransactions, allCustomers, gymId, globalTimeFilter, globalDateFrom, globalDateTo]);
 
   const chartData = [
     { name: 'May', Income: 14000, Expense: 8000, Net: 6000 },
@@ -303,7 +313,7 @@ export default function RevenuePage() {
     { name: 'Aug (Cur)', Income: totalIncome, Expense: totalExpenses, Net: netProfit },
   ];
 
-  const filteredTxs = transactions.filter((t) => {
+  const filteredTxs = effectiveTransactions.filter((t) => {
     if (!isDateInGlobalFilter(t.date)) return false;
 
     if (paymentModeFilter !== 'ALL') {
@@ -323,18 +333,18 @@ export default function RevenuePage() {
   });
 
   const getExportTransactions = () => {
-    let exportTxs = transactions;
+    let exportTxs = effectiveTransactions;
     if (exportDateFrom && exportDateTo) {
       const minDate = exportDateFrom <= exportDateTo ? exportDateFrom : exportDateTo;
       const maxDate = exportDateFrom <= exportDateTo ? exportDateTo : exportDateFrom;
-      exportTxs = transactions.filter(t => {
+      exportTxs = effectiveTransactions.filter(t => {
         const d = (t.date || '').split('T')[0];
         return d >= minDate && d <= maxDate;
       });
     } else if (exportDateFrom) {
-      exportTxs = transactions.filter(t => (t.date || '').split('T')[0] >= exportDateFrom);
+      exportTxs = effectiveTransactions.filter(t => (t.date || '').split('T')[0] >= exportDateFrom);
     } else if (exportDateTo) {
-      exportTxs = transactions.filter(t => (t.date || '').split('T')[0] <= exportDateTo);
+      exportTxs = effectiveTransactions.filter(t => (t.date || '').split('T')[0] <= exportDateTo);
     } else {
       exportTxs = filteredTxs;
     }

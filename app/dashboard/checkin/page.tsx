@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
 import { Radio, Clock, UserCheck, Fingerprint, Search, Wifi, WifiOff } from 'lucide-react';
-import { getCustomers, getAttendance, findCustomerByNFC, findCustomerByFingerprint, toggleCheckIn, getMemberMonthlyAvgHours, getGymSettings } from '@/lib/actions';
+import { getCustomers, getAttendance, findCustomerByNFC, findCustomerByFingerprint, toggleCheckIn, getMemberMonthlyAvgHours, getGymSettings, findStaffByNFC, findStaffByFingerprint, toggleStaffCheckIn } from '@/lib/actions';
 import { Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 
@@ -97,11 +97,18 @@ export default function NFCCheckInTerminal() {
             const matched = await findCustomerByFingerprint(currentGymId, data.fingerprintId);
             if (matched) {
               await handleCheckInToggle(matched, currentGymId);
-              setFpStatus('Scan registered! Place finger again for next member.');
+              setFpStatus('Scan registered! Place finger again for next person.');
               setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 3000);
             } else {
-              setFpStatus('Fingerprint not registered. Try again or check member profile.');
-              setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 3000);
+              const matchedStaff = await findStaffByFingerprint(currentGymId, data.fingerprintId);
+              if (matchedStaff) {
+                await toggleStaffCheckIn(matchedStaff.id);
+                setFpStatus(`Staff Scan registered: ${matchedStaff.name}`);
+                setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 3000);
+              } else {
+                setFpStatus('Fingerprint not registered. Try again or check profile.');
+                setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 3000);
+              }
             }
           }
         } catch (e) {
@@ -146,6 +153,14 @@ export default function NFCCheckInTerminal() {
         const matched = await findCustomerByNFC(gymId, serialNumber);
         if (matched) {
           await handleCheckInToggle(matched, gymId);
+        } else {
+          const matchedStaff = await findStaffByNFC(gymId, serialNumber);
+          if (matchedStaff) {
+            await toggleStaffCheckIn(matchedStaff.id);
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Staff Scan: ${matchedStaff.name}`, type: 'success' } }));
+            }
+          }
         }
       });
     } catch (err) {

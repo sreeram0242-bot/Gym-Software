@@ -13,6 +13,7 @@ export interface Gym {
 
 export interface Customer {
   id: string;
+  memberId?: string | null;
   gymId: string;
   name: string;
   phone: string;

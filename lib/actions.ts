@@ -268,6 +268,7 @@ export async function getGymSettings(gymId: string) {
         absentTrackingEnabled: false,
         absentThresholdDays: 3,
         productsEnabled: false,
+        showStoreInRevenue: true,
         attendanceMode: 'NFC',
         fingerprintAgentPort: 8765
       };
@@ -415,9 +416,12 @@ export async function addCustomer(data: any) {
 
   const waActive = false; // Only activates when member sends 'start' to WhatsApp bot
 
+  const memberId = data.memberId || ('M-' + Math.floor(1000 + Math.random() * 9000).toString());
+
   try {
     const newCust = await prisma.customer.create({
       data: {
+        memberId: memberId,
         gymId: data.gymId,
         name: data.name,
         phone: data.phone,
@@ -520,6 +524,17 @@ export async function findCustomerByNFC(gymId: string, nfcId: string) {
 export async function findCustomerByFingerprint(gymId: string, fingerprintId: string) {
   const customers = await getCustomers(gymId);
   return customers.find((c: any) => c.fingerprintId && c.fingerprintId.toLowerCase() === fingerprintId.toLowerCase());
+}
+
+export async function findStaffByNFC(gymId: string, nfcId: string) {
+  const cleanId = nfcId.trim().toLowerCase();
+  const staffs = await getStaffs(gymId);
+  return staffs.find((s: any) => s.nfcCardId && s.nfcCardId.toLowerCase() === cleanId);
+}
+
+export async function findStaffByFingerprint(gymId: string, fingerprintId: string) {
+  const staffs = await getStaffs(gymId);
+  return staffs.find((s: any) => s.fingerprintId && s.fingerprintId.toLowerCase() === fingerprintId.toLowerCase());
 }
 
 export async function updateCustomer(id: string, data: any) {
@@ -1399,4 +1414,93 @@ export async function authenticateSuperadmin(userId: string, passwordHash: strin
 
   recordFailedAttempt(`superadmin_${userId}`);
   return { success: false, error: 'Invalid Master Admin credentials.' };
+}
+
+// --- STAFF MANAGEMENT ---
+export async function getStaffs(gymId: string) {
+  try {
+    return await prisma.staff.findMany({ where: { gymId }, orderBy: { name: 'asc' } });
+  } catch (e) {
+    return [];
+  }
+}
+
+export async function addStaff(data: any) {
+  try {
+    return await prisma.staff.create({ data });
+  } catch (e) {
+    throw new Error('Failed to add staff');
+  }
+}
+
+export async function deleteStaff(id: string) {
+  try {
+    await prisma.staffAttendanceRecord.deleteMany({ where: { staffId: id } });
+    return await prisma.staff.delete({ where: { id } });
+  } catch (e) {
+    throw new Error('Failed to delete staff');
+  }
+}
+
+export async function getStaffAttendance(gymId: string) {
+  try {
+    return await prisma.staffAttendanceRecord.findMany({
+      where: { gymId },
+      orderBy: { checkInTime: 'desc' }
+    });
+  } catch (e) {
+    return [];
+  }
+}
+
+export async function toggleStaffCheckIn(staffId: string) {
+  try {
+    const staff = await prisma.staff.findUnique({ where: { id: staffId } });
+    if (!staff) throw new Error('Staff not found');
+
+    const todayStr = getLocalTodayDateString();
+    const nowIso = new Date().toISOString();
+    
+    const activeRecord = await prisma.staffAttendanceRecord.findFirst({
+      where: {
+        staffId: staffId,
+        dateStr: todayStr,
+        checkOutTime: null
+      },
+      orderBy: { checkInTime: 'desc' }
+    });
+
+    if (activeRecord) {
+      const checkInDate = new Date(activeRecord.checkInTime);
+      const now = new Date(nowIso);
+      let diffMins = Math.floor((now.getTime() - checkInDate.getTime()) / 60000);
+      if (diffMins < 0) diffMins = 0;
+
+      const updated = await prisma.staffAttendanceRecord.update({
+        where: { id: activeRecord.id },
+        data: {
+          checkOutTime: nowIso,
+          durationMinutes: diffMins
+        }
+      });
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
+      return { record: updated, action: 'checkout' };
+    } else {
+      const newRec = await prisma.staffAttendanceRecord.create({
+        data: {
+          gymId: staff.gymId,
+          staffId: staff.id,
+          staffName: staff.name,
+          staffPhone: staff.phone,
+          dateStr: todayStr,
+          checkInTime: nowIso
+        }
+      });
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
+      return { record: newRec, action: 'checkin' };
+    }
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
 }

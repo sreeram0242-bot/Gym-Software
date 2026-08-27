@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useDeferredValue, useMemo } from 'react';
-import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell, Banknote, Smartphone, ArrowLeftRight, Tag, ChevronRight, Fingerprint } from 'lucide-react';
+import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell, Banknote, Smartphone, ArrowLeftRight, Tag, ChevronRight, Fingerprint, Download } from 'lucide-react';
 import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, collectPendingBalance, getGyms, getGymSettings, toggleCustomerWaStatus } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
-import { formatDateDDMMYYYY } from '@/lib/utils';
+import { formatDateDDMMYYYY, exportToCSV, getLocalTodayDateString } from '@/lib/utils';
 
 export default function MemberManagementPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -475,6 +475,49 @@ export default function MemberManagementPage() {
     }
   };
 
+  const isOverdue = (nextDueDate: string) => {
+    const today = getLocalTodayDateString();
+    return nextDueDate < today;
+  };
+
+  const exportAllMembers = () => {
+    const dataToExport = filteredCustomers.map(c => ({
+      ID: c.memberId || '',
+      Name: c.name,
+      Phone: c.phone,
+      Status: isOverdue(c.nextDueDate) ? 'Overdue' : 'Active',
+      Plan: c.planType,
+      Joined: c.joinedDate,
+      Renewal_Due: c.nextDueDate,
+      Pending_Balance: c.pendingBalance || 0,
+      NFC_Card: c.nfcCardId || '',
+      Fingerprint_ID: c.fingerprintId || ''
+    }));
+    exportToCSV(dataToExport, 'Gym_Members.csv');
+  };
+
+  const exportIndividualMember = (memberId: string) => {
+    const cust = customers.find(c => c.id === memberId);
+    if (!cust) return;
+    const dataToExport = [{
+      ID: cust.memberId || '',
+      Name: cust.name,
+      Phone: cust.phone,
+      Status: isOverdue(cust.nextDueDate) ? 'Overdue' : 'Active',
+      Plan: cust.planType,
+      Joined: cust.joinedDate,
+      Renewal_Due: cust.nextDueDate,
+      Pending_Balance: cust.pendingBalance || 0,
+      NFC_Card: cust.nfcCardId || '',
+      Fingerprint_ID: cust.fingerprintId || ''
+    }];
+    exportToCSV(dataToExport, `${cust.name}_Data.csv`);
+  };
+
+  // -----------------------------------------------------
+  // Effects
+  // -----------------------------------------------------
+
   const getAvg = (custId: string) => {
     const atts = attendance.filter(a => a.customerId === custId && a.durationMinutes);
     if (atts.length === 0) return 1.2;
@@ -702,6 +745,13 @@ export default function MemberManagementPage() {
           <Plus className="w-4 h-4" />
           <span>Add New Member</span>
         </button>
+        <button 
+          onClick={exportAllMembers}
+          className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex items-center space-x-2 border border-slate-300"
+        >
+          <Download className="w-4 h-4" />
+          <span>Export Members</span>
+        </button>
       </div>
 
       {/* Absentee Warning Banner */}
@@ -840,7 +890,7 @@ export default function MemberManagementPage() {
           return (
             <div
               key={cust.id}
-              onClick={() => setExpandedCustomer(expandedCustomer === cust.id ? null : cust.id)}
+              onClick={() => setSelectedMember(cust)}
               className="bg-white border border-slate-200 hover:border-blue-700 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
             >
               <div>
@@ -850,7 +900,14 @@ export default function MemberManagementPage() {
                       {cust.name.charAt(0)}
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-900 text-sm">{cust.name}</h3>
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="font-bold text-slate-900 text-sm">{cust.name}</h3>
+                        {cust.memberId && (
+                          <span className="text-[10px] font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200 px-1.5 py-0.2 rounded">
+                            {cust.memberId}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-slate-500 font-mono flex items-center gap-1"><Phone className="w-3 h-3" /> {cust.phone}</div>
                     </div>
                   </div>
@@ -1079,13 +1136,20 @@ export default function MemberManagementPage() {
                 {isEditingMember ? <Edit className="w-5 h-5 text-blue-900" /> : <Plus className="w-5 h-5 text-blue-900" />}
                 <span>{isEditingMember ? 'Edit Member Details' : 'Add New Member'}</span>
               </h3>
-              <button onClick={() => {
-                setShowAddModal(false);
-                setIsEditingMember(false);
-                setEditingMemberId(null);
-              }} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-3">
+                {isEditingMember && editingMemberId && (
+                  <button type="button" onClick={() => exportIndividualMember(editingMemberId)} className="text-xs flex items-center gap-1 font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md hover:bg-blue-100">
+                    <Download className="w-3.5 h-3.5" /> Export Data
+                  </button>
+                )}
+                <button onClick={() => {
+                  setShowAddModal(false);
+                  setIsEditingMember(false);
+                  setEditingMemberId(null);
+                }} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleAddMember} className="space-y-3">
@@ -1486,7 +1550,14 @@ export default function MemberManagementPage() {
                   {selectedMember.name.charAt(0)}
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-900 text-lg">{selectedMember.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-black text-slate-900 text-lg">{selectedMember.name}</h3>
+                    {selectedMember.memberId && (
+                      <span className="text-xs font-mono font-bold bg-blue-100 text-blue-900 border border-blue-200 px-2 py-0.5 rounded-md">
+                        {selectedMember.memberId}
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-slate-500 font-mono flex items-center gap-1"><Phone className="w-3 h-3" /> {selectedMember.phone}</div>
                 </div>
               </div>

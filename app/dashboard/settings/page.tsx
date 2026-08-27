@@ -6,7 +6,7 @@ import {
   Settings, Smartphone, MessageSquare, ShieldCheck, Store, FileText,
   Save, RefreshCw, LogOut, CheckCircle2, AlertTriangle, Fingerprint,
   Radio, Lock, Eye, EyeOff, Package, Wifi, WifiOff, Send, RotateCcw,
-  ChevronRight, Key, Search, Shield, Check, QrCode, Printer, Megaphone, X
+  ChevronRight, Key, Search, Shield, Check, QrCode, Printer, Megaphone, X, TrendingUp
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getTemplate, TemplateType, DEFAULT_TEMPLATES } from '@/lib/templates';
@@ -81,6 +81,7 @@ export default function SettingsPage() {
 
   // Store State
   const [productsEnabled, setProductsEnabled] = useState(false);
+  const [showStoreInRevenue, setShowStoreInRevenue] = useState(true);
 
   // UI State
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
@@ -132,8 +133,10 @@ export default function SettingsPage() {
     setAttendanceMode((data.attendanceMode as any) ?? 'NFC');
     setFpPort(data.fingerprintAgentPort ?? 8765);
     setProductsEnabled(data.productsEnabled ?? false);
+    setShowStoreInRevenue(data.showStoreInRevenue ?? true);
     
     if (typeof window !== 'undefined') {
+      localStorage.setItem('show_store_in_revenue', String(data.showStoreInRevenue ?? true));
       setAnimationsEnabled(localStorage.getItem('animations_enabled') !== 'false');
     }
   };
@@ -312,7 +315,15 @@ export default function SettingsPage() {
 
   const handleSaveTemplate = async () => {
     if (!gymId) return;
-    const key: Record<TemplateType, string> = { welcome: 'templateWelcome', receipt: 'templateReceipt', reminder: 'templateReminder', absentee: 'templateAbsentee', checkin: 'templateCheckIn', checkout: 'templateCheckOut' };
+    const key: Record<TemplateType, string> = { 
+      welcome: 'templateWelcome', 
+      receipt: 'templateReceipt', 
+      storeReceipt: 'templateStoreReceipt',
+      reminder: 'templateReminder', 
+      absentee: 'templateAbsentee', 
+      checkin: 'templateCheckIn', 
+      checkout: 'templateCheckOut' 
+    };
     const newSettings = await updateGymSettings(gymId, { [key[selectedTemplate]]: templateContent });
     setSettings(newSettings);
     showSuccess('Template saved!');
@@ -332,6 +343,16 @@ export default function SettingsPage() {
       window.dispatchEvent(new Event('settings_updated'));
     }
     showSuccess(enabled ? 'Store / POS enabled! Refresh to see in sidebar.' : 'Store / POS disabled.');
+  };
+
+  const handleStoreRevenueToggle = async (enabled: boolean) => {
+    setShowStoreInRevenue(enabled);
+    await updateGymSettings(gymId!, { showStoreInRevenue: enabled });
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('show_store_in_revenue', String(enabled));
+      window.dispatchEvent(new Event('settings_updated'));
+    }
+    showSuccess(enabled ? 'Store sales will now appear in Revenue Hub!' : 'Store sales will only appear in Store Sales History.');
   };
 
   const handleAnimationsToggle = (enabled: boolean) => {
@@ -835,19 +856,44 @@ export default function SettingsPage() {
               </div>
 
               {productsEnabled && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-emerald-800 font-semibold mb-2">
-                    <CheckCircle2 className="w-4 h-4" /> Store is enabled
+                <>
+                  <div className="bg-white border-2 border-slate-200 rounded-xl p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${showStoreInRevenue ? 'bg-blue-100' : 'bg-slate-100'}`}>
+                          <TrendingUp className={`w-6 h-6 ${showStoreInRevenue ? 'text-blue-600' : 'text-slate-400'}`} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800">Show Store Sales in Revenue Hub</p>
+                          <p className="text-xs text-slate-500">
+                            {showStoreInRevenue 
+                              ? 'Store sales are included in total revenue stats & charts' 
+                              : 'Store sales will only show in Store page sales history (hidden from Revenue Hub)'}
+                          </p>
+                        </div>
+                      </div>
+                      <button onClick={() => handleStoreRevenueToggle(!showStoreInRevenue)}
+                        className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 ${showStoreInRevenue ? 'bg-blue-600' : 'bg-slate-200'}`}
+                      >
+                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${showStoreInRevenue ? 'translate-x-8' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
                   </div>
-                  <ul className="text-sm text-emerald-700 space-y-1">
-                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Product catalog with categories (Supplements, Accessories, Drinks, etc.)</li>
-                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Point-of-Sale cart with cash / UPI / card / split payments</li>
-                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Live stock tracking &amp; low-stock alerts</li>
-                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Every sale auto-creates an Income entry in Revenue Hub</li>
-                    <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Sales history tab with date filters</li>
-                  </ul>
-                  <p className="text-xs text-emerald-600 mt-3 font-medium">Navigate to "Store / POS" in the sidebar to add products and start selling.</p>
-                </div>
+
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 text-emerald-800 font-semibold mb-2">
+                      <CheckCircle2 className="w-4 h-4" /> Store is enabled
+                    </div>
+                    <ul className="text-sm text-emerald-700 space-y-1">
+                      <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Product catalog with categories (Supplements, Accessories, Drinks, etc.)</li>
+                      <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Point-of-Sale cart with cash / UPI / card / split payments</li>
+                      <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Live stock tracking &amp; low-stock alerts</li>
+                      <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Automatic WhatsApp purchase receipts for members</li>
+                      <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> {showStoreInRevenue ? 'Every sale appears in Revenue Hub' : 'Sales kept separate in Store history'}</li>
+                    </ul>
+                    <p className="text-xs text-emerald-600 mt-3 font-medium">Navigate to "Store / POS" in the sidebar to add products and start selling.</p>
+                  </div>
+                </>
               )}
 
               {!productsEnabled && (
@@ -869,10 +915,12 @@ export default function SettingsPage() {
 
               {/* Template Selector */}
               <div className="flex flex-wrap gap-2 mb-4">
-                {(['welcome', 'receipt', 'reminder', 'absentee', 'checkin', 'checkout'] as TemplateType[]).map(t => (
+                {(['welcome', 'receipt', 'storeReceipt', 'reminder', 'absentee', 'checkin', 'checkout'] as TemplateType[]).map(t => (
                   <button key={t} onClick={() => setSelectedTemplate(t)}
                     className={`px-3.5 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors ${selectedTemplate === t ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                  >{t}</button>
+                  >
+                    {t === 'storeReceipt' ? 'Store Receipt' : t}
+                  </button>
                 ))}
               </div>
 
