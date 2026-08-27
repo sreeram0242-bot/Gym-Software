@@ -1162,3 +1162,133 @@ export async function deleteAnnouncement(id: string) {
     return false;
   }
 }
+
+// --- SECURE AUTHENTICATION & RATE LIMITING ---
+
+// In-memory store for rate limiting failed login attempts.
+// Structure: { [userId]: { attempts: number, lockUntil: number } }
+const loginAttempts = new Map<string, { attempts: number, lockUntil: number }>();
+
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkRateLimit(userId: string) {
+  const record = loginAttempts.get(userId);
+  if (!record) return { allowed: true };
+
+  if (Date.now() < record.lockUntil) {
+    const minutesLeft = Math.ceil((record.lockUntil - Date.now()) / 60000);
+    return { allowed: false, message: `Too many failed attempts. Account locked for ${minutesLeft} minutes.` };
+  }
+
+  // Lock expired, reset
+  if (Date.now() > record.lockUntil && record.attempts >= MAX_FAILED_ATTEMPTS) {
+    loginAttempts.delete(userId);
+  }
+  return { allowed: true };
+}
+
+function recordFailedAttempt(userId: string) {
+  const record = loginAttempts.get(userId) || { attempts: 0, lockUntil: 0 };
+  record.attempts += 1;
+  if (record.attempts >= MAX_FAILED_ATTEMPTS) {
+    record.lockUntil = Date.now() + LOCKOUT_DURATION_MS;
+  }
+  loginAttempts.set(userId, record);
+}
+
+function resetFailedAttempts(userId: string) {
+  loginAttempts.delete(userId);
+}
+
+export async function authenticateGym(userId: string, passwordHash: string) {
+  try {
+    const rateLimit = checkRateLimit(userId);
+    if (!rateLimit.allowed) return { success: false, error: rateLimit.message };
+
+    const gym = await prisma.gym.findUnique({
+      where: { userId }
+    });
+
+    if (!gym || gym.passwordHash !== passwordHash) {
+      const record = loginAttempts.get(userId) || { attempts: 0, lockUntil: 0 };
+      record.attempts += 1;
+      
+      // Hard lock after 6 attempts
+      if (gym && record.attempts >= 6 && gym.status !== 'locked') {
+         await prisma.gym.update({ where: { id: gym.id }, data: { status: 'locked' }});
+         const storeGym = store.gyms.find((g: any) => g.id === gym.id);
+         if (storeGym) storeGym.status = 'locked';
+         return { success: false, error: 'Account locked due to 6 failed login attempts. Please contact Master Admin.' };
+      }
+
+      if (record.attempts >= MAX_FAILED_ATTEMPTS) {
+        record.lockUntil = Date.now() + LOCKOUT_DURATION_MS;
+      }
+      loginAttempts.set(userId, record);
+
+      return { success: false, error: 'Invalid Gym User ID or Password.' };
+    }
+
+    if (gym.status === 'suspended') {
+      return { success: false, error: 'Your account has been suspended. Please contact the Master Admin.' };
+    }
+    
+    if (gym.status === 'locked') {
+      return { success: false, error: 'Your account is locked due to too many failed attempts. Please contact the Master Admin.' };
+    }
+
+    resetFailedAttempts(userId);
+    return { success: true, gym: { id: gym.id, userId: gym.userId } };
+  } catch (e) {
+    // Fallback to mock store
+    const rateLimit = checkRateLimit(userId);
+    if (!rateLimit.allowed) return { success: false, error: rateLimit.message };
+    
+    const gym = store.gyms.find((g: any) => g.userId === userId);
+    
+    if (!gym || gym.passwordHash !== passwordHash) {
+      const record = loginAttempts.get(userId) || { attempts: 0, lockUntil: 0 };
+      record.attempts += 1;
+      
+      if (gym && record.attempts >= 6 && gym.status !== 'locked') {
+         gym.status = 'locked';
+         return { success: false, error: 'Account locked due to 6 failed login attempts. Please contact Master Admin.' };
+      }
+
+      if (record.attempts >= MAX_FAILED_ATTEMPTS) {
+        record.lockUntil = Date.now() + LOCKOUT_DURATION_MS;
+      }
+      loginAttempts.set(userId, record);
+      
+      return { success: false, error: 'Invalid Gym User ID or Password.' };
+    }
+    
+    if (gym.status === 'suspended') {
+      return { success: false, error: 'Your account has been suspended. Please contact the Master Admin.' };
+    }
+    if (gym.status === 'locked') {
+      return { success: false, error: 'Your account is locked due to too many failed attempts. Please contact the Master Admin.' };
+    }
+    resetFailedAttempts(userId);
+    return { success: true, gym: { id: gym.id, userId: gym.userId } };
+  }
+}
+
+export async function authenticateSuperadmin(userId: string, passwordHash: string) {
+  const rateLimit = checkRateLimit(`superadmin_${userId}`);
+  if (!rateLimit.allowed) return { success: false, error: rateLimit.message };
+
+  const isValid = 
+    (userId === 'sree' && passwordHash === 'sree') ||
+    (userId === 'sreeram' && passwordHash === 'Sreeram@007') ||
+    (userId === 'admin' && passwordHash === 'admin');
+
+  if (isValid) {
+    resetFailedAttempts(`superadmin_${userId}`);
+    return { success: true };
+  }
+
+  recordFailedAttempt(`superadmin_${userId}`);
+  return { success: false, error: 'Invalid Master Admin credentials.' };
+}

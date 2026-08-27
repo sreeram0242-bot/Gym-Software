@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, ArrowRight, KeyRound, Lock, AlertCircle, Database } from 'lucide-react';
+import { authenticateSuperadmin } from '@/lib/actions';
 
 export default function MasterLoginPage() {
   const router = useRouter();
@@ -10,18 +11,23 @@ export default function MasterLoginPage() {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
-    // Master Admin Credentials
-    if ((userId === 'sree' && password === 'sree') || (userId === 'sreeram' && password === 'Sreeram@007') || (userId === 'admin' && password === 'admin')) {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('is_master_admin', 'true');
+    try {
+      const response = await authenticateSuperadmin(userId, password);
+      
+      if (response.success) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('is_master_admin', 'true');
+        }
+        router.push('/superadmin');
+      } else {
+        setErrorMsg(response.error || 'Invalid Master Admin credentials.');
       }
-      router.push('/superadmin');
-    } else {
-      setErrorMsg('Invalid Master Admin credentials.');
+    } catch (e) {
+      setErrorMsg('Server error while authenticating.');
     }
   };
 

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Dumbbell, Smartphone, CreditCard, Users, ArrowRight, Database, KeyRound, Lock, AlertCircle } from 'lucide-react';
-import { getGyms } from '@/lib/actions';
+import { authenticateGym } from '@/lib/actions';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -23,26 +23,16 @@ export default function LandingPage() {
     setErrorMsg('');
 
     try {
-      // Gym Partner Login
-      const gyms = await getGyms();
-      const gymMatch = gyms.find(
-        (g: any) => g.userId === userId && g.passwordHash === password && g.status === 'active'
-      );
+      const response = await authenticateGym(userId, password);
 
-      if (gymMatch) {
+      if (response.success && response.gym) {
         if (typeof window !== 'undefined') {
-          localStorage.setItem('active_gym_id', gymMatch.id);
-          localStorage.setItem('active_gym_user_id', gymMatch.userId);
+          localStorage.setItem('active_gym_id', response.gym.id);
+          localStorage.setItem('active_gym_user_id', response.gym.userId);
         }
         router.push('/dashboard');
       } else {
-        // Check if gym exists but is suspended
-        const suspendedGym = gyms.find((g: any) => g.userId === userId && g.passwordHash === password && g.status === 'suspended');
-        if (suspendedGym) {
-          setErrorMsg('Your account has been suspended. Please contact the Master Admin.');
-        } else {
-          setErrorMsg('Invalid Gym User ID or Password.');
-        }
+        setErrorMsg(response.error || 'Invalid Gym User ID or Password.');
       }
     } catch (error: any) {
       console.error(error);

@@ -5,12 +5,13 @@ import pg from 'pg'
 const connectionString = process.env.DATABASE_URL!
 
 const prismaClientSingleton = () => {
+  const isSsl = connectionString?.includes('sslmode=require') || connectionString?.includes('ssl=true')
   const pool = new pg.Pool({ 
     connectionString,
     connectionTimeoutMillis: 10000,
     idleTimeoutMillis: 20000,
     max: 20,
-    ssl: { rejectUnauthorized: false }
+    ...(isSsl ? { ssl: { rejectUnauthorized: false } } : {})
   })
   const adapter = new PrismaPg(pool)
   return new PrismaClient({ adapter })

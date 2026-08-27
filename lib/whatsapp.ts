@@ -109,6 +109,9 @@ export class WhatsAppManager {
     }
 
     globalAny.WhatsAppStatuses.set(gymId, 'initializing');
+    if (globalAny.WhatsAppErrors) {
+      globalAny.WhatsAppErrors.delete(gymId);
+    }
     
     try {
       const { state, saveCreds } = await usePrismaAuthState(gymId);
@@ -339,6 +342,9 @@ export class WhatsAppManager {
     globalAny.WhatsAppSessions.delete(gymId);
     globalAny.WhatsAppStatuses.set(gymId, 'disconnected');
     globalAny.WhatsAppQRs.delete(gymId);
+    if (globalAny.WhatsAppErrors) {
+      globalAny.WhatsAppErrors.delete(gymId);
+    }
     
     try {
       await db.whatsAppSession.deleteMany({ where: { gymId } });
