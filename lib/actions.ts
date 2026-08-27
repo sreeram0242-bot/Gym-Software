@@ -476,6 +476,22 @@ export async function updateCustomer(id: string, data: any) {
   }
 }
 
+export async function toggleCustomerWaStatus(id: string, waActive: boolean) {
+  try {
+    return await prisma.customer.update({
+      where: { id },
+      data: { waActive }
+    });
+  } catch (e) {
+    const idx = store.customers.findIndex((c: any) => c.id === id);
+    if (idx !== -1) {
+      store.customers[idx].waActive = waActive;
+      return store.customers[idx];
+    }
+    return null;
+  }
+}
+
 export async function deleteCustomer(id: string) {
   try {
     await prisma.customer.delete({ where: { id } });

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ShieldCheck, Plus, Search, Building2, UserPlus, Key, Phone, Mail, CheckCircle, AlertCircle, ArrowLeft, Users, Eye, EyeOff, Dumbbell, Lock, Sparkles, Filter, LogOut, Trash2 } from 'lucide-react';
 import { getGyms, getCustomers, addGym, toggleGymStatus, findCustomerByPhone, getMemberMonthlyAvgHours, getGlobalStats, getAnnouncements, createAnnouncement, deleteAnnouncement, updateGymStatus } from '@/lib/actions';
 import { Gym, Customer } from '@/lib/types';
+import { formatDateDDMMYYYY } from '@/lib/utils';
 
 export default function SuperAdminPage() {
   const router = useRouter();
@@ -602,12 +603,12 @@ export default function SuperAdminPage() {
 
                   <div className="p-3 bg-slate-50 rounded-lg">
                     <span className="text-slate-400 font-semibold block mb-0.5">Last Payment</span>
-                    <span className="font-bold text-slate-800">{searchedCustomer.lastPaymentDate}</span>
+                    <span className="font-bold text-slate-800">{formatDateDDMMYYYY(searchedCustomer.lastPaymentDate)}</span>
                   </div>
 
                   <div className="p-3 bg-slate-50 rounded-lg">
                     <span className="text-slate-400 font-semibold block mb-0.5">Next Due Date</span>
-                    <span className="font-bold text-blue-950">{searchedCustomer.nextDueDate}</span>
+                    <span className="font-bold text-blue-950">{formatDateDDMMYYYY(searchedCustomer.nextDueDate)}</span>
                   </div>
 
                   <div className="p-3 bg-slate-50 rounded-lg">

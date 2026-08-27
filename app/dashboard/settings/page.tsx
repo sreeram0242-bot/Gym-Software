@@ -6,7 +6,7 @@ import {
   Settings, Smartphone, MessageSquare, ShieldCheck, Store, FileText,
   Save, RefreshCw, LogOut, CheckCircle2, AlertTriangle, Fingerprint,
   Radio, Lock, Eye, EyeOff, Package, Wifi, WifiOff, Send, RotateCcw,
-  ChevronRight, Key, Search, Shield, Check, QrCode, Printer, Megaphone
+  ChevronRight, Key, Search, Shield, Check, QrCode, Printer, Megaphone, X
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getTemplate, TemplateType, DEFAULT_TEMPLATES } from '@/lib/templates';
@@ -59,6 +59,11 @@ export default function SettingsPage() {
   const [reminderDays, setReminderDays] = useState(3);
   const [absentTracking, setAbsentTracking] = useState(false);
   const [absentDays, setAbsentDays] = useState(3);
+
+  // Test WhatsApp Modal State
+  const [showTestModal, setShowTestModal] = useState(false);
+  const [testPhone, setTestPhone] = useState('');
+  const [sendingTest, setSendingTest] = useState(false);
 
   // Attendance Mode State
   const [attendanceMode, setAttendanceMode] = useState<'MANUAL' | 'NFC' | 'FINGERPRINT' | 'BOTH'>('NFC');
@@ -218,13 +223,41 @@ export default function SettingsPage() {
     } finally { setWaLoading(false); }
   };
 
-  const handleTestMessage = async () => {
+  const handleOpenTestModal = () => {
+    setTestPhone(settings?.ownerPhone || '');
+    setShowTestModal(true);
+  };
+
+  const handleSendTestMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!gymId) return;
-    const phone = prompt('Enter phone with country code (e.g. 919876543210):');
-    if (!phone) return;
-    const res = await fetch('/api/whatsapp/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gymId, phone, message: 'Hello from GymFlow! 🏋️ Your WhatsApp is working perfectly.' }) });
-    const data = await res.json();
-    if (data.success) alert('Test message sent!'); else alert('Failed to send.');
+    if (!testPhone.trim()) {
+      showError('Please enter a valid phone number');
+      return;
+    }
+    setSendingTest(true);
+    try {
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gymId,
+          phone: testPhone.trim(),
+          message: 'Hello from GymFlow! 🏋️ Your WhatsApp is connected and working perfectly.'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowTestModal(false);
+        showSuccess('Test WhatsApp message sent successfully!');
+      } else {
+        showError('Failed to send test message. Check your WhatsApp connection status.');
+      }
+    } catch {
+      showError('Network error while sending test message.');
+    } finally {
+      setSendingTest(false);
+    }
   };
 
   const handleSaveTemplate = async () => {
@@ -287,16 +320,23 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* Tab Nav */}
+      {/* Tab Nav - White & Blue Software UI */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="flex border-b border-slate-100 overflow-x-auto">
+        <div className="flex border-b border-slate-200 overflow-x-auto bg-slate-50/50">
           {TABS.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 -mb-px ${activeTab === tab.key ? 'border-slate-900 text-slate-900 bg-slate-50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+              className={`flex items-center gap-2 px-5 py-3.5 text-sm font-bold whitespace-nowrap transition-all border-b-2 -mb-px ${
+                activeTab === tab.key
+                  ? 'border-blue-900 text-blue-950 bg-white shadow-sm'
+                  : 'border-transparent text-slate-500 hover:text-blue-900 hover:bg-slate-100/60 font-semibold'
+              }`}
             >
-              {tab.icon}{tab.label}
+              <span className={activeTab === tab.key ? 'text-blue-900' : 'text-slate-400'}>
+                {tab.icon}
+              </span>
+              {tab.label}
             </button>
           ))}
         </div>
@@ -435,7 +475,7 @@ export default function SettingsPage() {
 
                 {waStatus === 'connected' ? (
                   <div className="flex gap-3">
-                    <button onClick={handleTestMessage} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg flex items-center gap-2">
+                    <button onClick={handleOpenTestModal} className="px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white text-sm font-bold rounded-lg flex items-center gap-2 shadow-sm transition-colors">
                       <Send className="w-4 h-4" /> Send Test Message
                     </button>
                     <button onClick={handleDisconnectWA} className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-sm font-semibold rounded-lg flex items-center gap-2">
@@ -715,9 +755,10 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+      {/* Reset Template Modal */}
       {showResetConfirm && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" style={{ animation: animationsEnabled ? 'fadeIn 0.2s ease-out' : 'none' }}>
-          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200">
             <div className="p-5 border-b border-slate-100 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center flex-shrink-0 text-rose-500">
                 <AlertTriangle className="w-5 h-5" />
@@ -741,6 +782,97 @@ export default function SettingsPage() {
                 Reset to Default
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Test Message Software UI Modal (White & Blue) */}
+      {showTestModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="px-6 py-5 bg-gradient-to-r from-blue-900 to-indigo-900 text-white flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center text-white">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-white">Send Test WhatsApp</h3>
+                  <p className="text-xs text-blue-200">Verify your WhatsApp live connection</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTestModal(false)}
+                className="p-1.5 text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSendTestMessage} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Recipient Phone Number
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    required
+                    value={testPhone}
+                    onChange={e => setTestPhone(e.target.value.replace(/\D/g, ''))}
+                    placeholder="9876543210"
+                    maxLength={10}
+                    className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition-all"
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-1.5">
+                  Enter a 10-digit mobile number to receive the instant test message.
+                </p>
+              </div>
+
+              {/* Preview Box */}
+              <div className="p-3.5 bg-blue-50/70 border border-blue-100 rounded-xl">
+                <p className="text-xs font-bold text-blue-900 mb-1 flex items-center gap-1.5">
+                  <Megaphone className="w-3.5 h-3.5" /> Message Content Preview:
+                </p>
+                <p className="text-xs text-blue-800 bg-white p-2.5 rounded-lg border border-blue-100 font-mono">
+                  Hello from GymFlow! 🏋️ Your WhatsApp is connected and working perfectly.
+                </p>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowTestModal(false)}
+                  disabled={sendingTest}
+                  className="px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendingTest || !testPhone.trim()}
+                  className="px-5 py-2.5 bg-blue-900 hover:bg-blue-950 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-900/20 flex items-center gap-2 transition-all disabled:opacity-50"
+                >
+                  {sendingTest ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Send Message</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

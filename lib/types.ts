@@ -26,6 +26,7 @@ export interface Customer {
   balanceDueDate?: string | null;
   status: 'active' | 'overdue' | 'due_soon';
   joinedDate: string;
+  waActive?: boolean;
   notes?: string;
 }
 

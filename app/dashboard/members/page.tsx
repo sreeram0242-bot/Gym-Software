@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell, Banknote, Smartphone, ArrowLeftRight, Tag, ChevronRight, Fingerprint } from 'lucide-react';
-import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, collectPendingBalance, getGyms, getGymSettings } from '@/lib/actions';
+import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, collectPendingBalance, getGyms, getGymSettings, toggleCustomerWaStatus } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
+import { formatDateDDMMYYYY } from '@/lib/utils';
 
 export default function MemberManagementPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -17,6 +18,7 @@ export default function MemberManagementPage() {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'active' | 'due_soon' | 'overdue' | 'all' | 'new' | 'absent' | 'has_due'>('all');
+  const [waFilter, setWaFilter] = useState<'all' | 'activated' | 'not_activated'>('all');
   const [timeFilter, setTimeFilter] = useState<'all_time' | 'today' | 'this_week' | 'this_month'>('all_time');
   const [planFilter, setPlanFilter] = useState<string>('all');
   
@@ -582,7 +584,14 @@ export default function MemberManagementPage() {
       matchesPlan = c.planType === planFilter;
     }
 
-    return matchesSearch && matchesStatus && matchesTime && matchesPlan;
+    let matchesWa = true;
+    if (waFilter === 'activated') {
+      matchesWa = !!c.waActive;
+    } else if (waFilter === 'not_activated') {
+      matchesWa = !c.waActive;
+    }
+
+    return matchesSearch && matchesStatus && matchesTime && matchesPlan && matchesWa;
   });
 
   return (
@@ -662,9 +671,12 @@ export default function MemberManagementPage() {
           {(['all', 'new', 'active', 'due_soon', 'overdue', 'has_due', ...(absentTrackingEnabled ? ['absent'] : [])] as Array<'active' | 'due_soon' | 'overdue' | 'all' | 'new' | 'absent' | 'has_due'>).map((st) => (
             <button
               key={st}
-              onClick={() => setStatusFilter(st)}
+              onClick={() => {
+                setStatusFilter(st);
+                if (st === 'all') setWaFilter('all');
+              }}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors whitespace-nowrap ${
-                statusFilter === st
+                statusFilter === st && waFilter === 'all'
                   ? 'bg-blue-900 text-white shadow-sm'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
@@ -672,6 +684,35 @@ export default function MemberManagementPage() {
               {st === 'due_soon' ? 'Due Soon' : st === 'new' ? 'New Members' : st === 'has_due' ? 'Pending Due' : st === 'absent' ? `Absent (${absentThresholdDays}+ Days)` : st}
             </button>
           ))}
+
+          {/* WhatsApp Activated / Non-Activated Scrolling Filters */}
+          <div className="flex items-center space-x-1.5 pl-1 border-l border-slate-200 shrink-0">
+            <button
+              onClick={() => setWaFilter(waFilter === 'activated' ? 'all' : 'activated')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                waFilter === 'activated'
+                  ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600 ring-offset-1'
+                  : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+              }`}
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>WhatsApp: Activated</span>
+              {waFilter === 'activated' && <span className="ml-1 text-[10px] bg-white/20 px-1.5 py-0.2 rounded-full">✓</span>}
+            </button>
+
+            <button
+              onClick={() => setWaFilter(waFilter === 'not_activated' ? 'all' : 'not_activated')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                waFilter === 'not_activated'
+                  ? 'bg-slate-700 text-white shadow-sm ring-2 ring-slate-700 ring-offset-1'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'
+              }`}
+            >
+              <Smartphone className="w-3.5 h-3.5 text-slate-400" />
+              <span>WhatsApp: Non-Activated</span>
+              {waFilter === 'not_activated' && <span className="ml-1 text-[10px] bg-white/20 px-1.5 py-0.2 rounded-full">✓</span>}
+            </button>
+          </div>
           
           {statusFilter === 'new' && (
             <select
@@ -729,6 +770,16 @@ export default function MemberManagementPage() {
                     )}
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        cust.waActive
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-slate-100 text-slate-500 border border-slate-200'
+                      }`}
+                      title={cust.waActive ? 'WhatsApp Bot Activated' : 'WhatsApp Not Activated'}
+                    >
+                      {cust.waActive ? '● WA Active' : '○ No WA'}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                         isAbsent(cust.id) 
                           ? 'bg-purple-50 text-purple-700 border border-purple-200'
                           : cust.status === 'active'
@@ -756,13 +807,13 @@ export default function MemberManagementPage() {
 
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-medium">Next Due Date:</span>
-                    <span className="font-bold text-blue-950">{cust.nextDueDate}</span>
+                    <span className="font-bold text-blue-950">{formatDateDDMMYYYY(cust.nextDueDate)}</span>
                   </div>
 
                   {(cust.pendingBalance || 0) > 0 && (
                     <div className="flex justify-between items-center bg-amber-50/70 p-2 rounded-lg border border-amber-200 text-amber-900">
                       <span className="font-bold text-[11px]">Pending Balance:</span>
-                      <span className="font-mono font-black text-amber-700">₹{cust.pendingBalance} {cust.balanceDueDate ? `(by ${cust.balanceDueDate})` : ''}</span>
+                      <span className="font-mono font-black text-amber-700">₹{cust.pendingBalance} {cust.balanceDueDate ? `(by ${formatDateDDMMYYYY(cust.balanceDueDate)})` : ''}</span>
                     </div>
                   )}
 
@@ -783,7 +834,7 @@ export default function MemberManagementPage() {
                       .slice(0, 2)
                       .map(tx => (
                         <div key={tx.id} className="bg-slate-50 p-2 rounded flex justify-between text-xs">
-                          <span className="text-slate-600">{tx.date}</span>
+                          <span className="text-slate-600 font-medium">{formatDateDDMMYYYY(tx.date)}</span>
                           <span className="font-bold text-emerald-600">₹{tx.amount}</span>
                         </div>
                       ))}
@@ -842,7 +893,7 @@ export default function MemberManagementPage() {
 
       {/* MODAL: ADD NEW MEMBER */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-xl border border-slate-200 animate-in fade-in zoom-in duration-150 max-h-[95vh] overflow-y-auto flex flex-col">
             <div className="flex justify-between items-center pb-2.5 border-b border-slate-200 mb-3 shrink-0">
               <h3 className="font-bold text-slate-900 text-lg flex items-center space-x-2">
@@ -1024,6 +1075,22 @@ export default function MemberManagementPage() {
                         className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium outline-none"
                       />
                     </div>
+
+                    <div className="col-span-1 sm:col-span-2 bg-blue-50/80 border border-blue-200 rounded-lg px-3 py-2 flex items-center justify-between text-xs">
+                      <span className="font-bold text-blue-950 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-blue-900" />
+                        Next Renewal Due Date:
+                      </span>
+                      <span className="font-mono font-bold text-blue-900">
+                        {(() => {
+                          const selectedPlan = plans.find(p => p.name === planType);
+                          const months = selectedPlan ? (selectedPlan.durationMonths || 1) : 1;
+                          const d = new Date(lastPaymentDate || new Date());
+                          d.setMonth(d.getMonth() + months);
+                          return formatDateDDMMYYYY(d.toISOString().split('T')[0]);
+                        })()}
+                      </span>
+                    </div>
                   </div>
 
                   {Number(paidAmount) < Number(feeAmount) && (
@@ -1148,7 +1215,7 @@ export default function MemberManagementPage() {
 
       {/* MODAL / DRAWER: MEMBER DETAILS PROFILE */}
       {selectedMember && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200">
             <div className="flex justify-between items-start pb-4 border-b border-slate-200 mb-4">
               <div className="flex items-center space-x-3">
@@ -1190,12 +1257,39 @@ export default function MemberManagementPage() {
 
                 <div className="p-3 bg-slate-50 rounded-xl">
                   <span className="text-slate-400 font-semibold block mb-0.5">Last Payment</span>
-                  <span className="font-bold text-slate-800">{selectedMember.lastPaymentDate}</span>
+                  <span className="font-bold text-slate-800">{formatDateDDMMYYYY(selectedMember.lastPaymentDate)}</span>
                 </div>
 
                 <div className="p-3 bg-slate-50 rounded-xl">
                   <span className="text-slate-400 font-semibold block mb-0.5">Next Due Date</span>
-                  <span className="font-bold text-amber-700">{selectedMember.nextDueDate}</span>
+                  <span className="font-bold text-amber-700">{formatDateDDMMYYYY(selectedMember.nextDueDate)}</span>
+                </div>
+
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl col-span-2 flex items-center justify-between">
+                  <div>
+                    <span className="text-slate-500 font-bold text-xs block mb-0.5">WhatsApp Automation Status</span>
+                    <span className={`font-bold text-xs flex items-center gap-1.5 ${selectedMember.waActive ? 'text-emerald-700' : 'text-slate-500'}`}>
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      {selectedMember.waActive ? 'Activated (Receiving alerts & bot active)' : 'Not Activated (No bot interaction yet)'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const newStatus = !selectedMember.waActive;
+                      await toggleCustomerWaStatus(selectedMember.id, newStatus);
+                      setSelectedMember({ ...selectedMember, waActive: newStatus });
+                      setCustomers(customers.map(c => c.id === selectedMember.id ? { ...c, waActive: newStatus } : c));
+                      showToast(newStatus ? 'WhatsApp service marked as Activated' : 'WhatsApp service marked as Inactive', 'success');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                      selectedMember.waActive
+                        ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
+                    }`}
+                  >
+                    {selectedMember.waActive ? 'Deactivate WA' : 'Activate WA'}
+                  </button>
                 </div>
 
                 {(selectedMember.pendingBalance || 0) > 0 && (
@@ -1204,7 +1298,7 @@ export default function MemberManagementPage() {
                       <div>
                         <span className="text-amber-800 font-bold block flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Pending Dues / Unpaid Balance</span>
                         <span className="text-[11px] text-amber-700 font-medium">
-                          {selectedMember.balanceDueDate ? `Due before: ${selectedMember.balanceDueDate}` : 'No deadline specified'}
+                          {selectedMember.balanceDueDate ? `Due before: ${formatDateDDMMYYYY(selectedMember.balanceDueDate)}` : 'No deadline specified'}
                         </span>
                       </div>
                       <div className="text-right">
@@ -1376,7 +1470,7 @@ export default function MemberManagementPage() {
                       <div key={tx.id} className="bg-slate-50 p-2.5 rounded-lg flex justify-between items-center border border-slate-100">
                         <div>
                           <div className="font-bold text-slate-800">{tx.description}</div>
-                          <div className="text-slate-500">{tx.date}</div>
+                          <div className="text-slate-500">{formatDateDDMMYYYY(tx.date)}</div>
                         </div>
                         <span className="font-black text-emerald-600">₹{tx.amount}</span>
                       </div>
@@ -1396,7 +1490,7 @@ export default function MemberManagementPage() {
                     .map(a => (
                       <div key={a.id} className="bg-slate-50 p-2.5 rounded-lg flex justify-between items-center border border-slate-100">
                         <div>
-                          <div className="font-bold text-slate-800">{a.dateStr}</div>
+                          <div className="font-bold text-slate-800">{formatDateDDMMYYYY(a.dateStr)}</div>
                           <div className="text-slate-500">In: {new Date(a.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                         </div>
                         {a.checkOutTime ? (
@@ -1421,7 +1515,7 @@ export default function MemberManagementPage() {
 
       {/* MODAL: COLLECT PENDING DUE */}
       {showCollectDueModal && collectDueMember && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
             <div className="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
               <div className="flex items-center space-x-2.5">
@@ -1566,7 +1660,7 @@ export default function MemberManagementPage() {
 
       {/* CUSTOM UI CONFIRM MODAL */}
       {confirmDialog && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 z-[70] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 md:p-8 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-4">
               <AlertTriangle className="w-6 h-6" />

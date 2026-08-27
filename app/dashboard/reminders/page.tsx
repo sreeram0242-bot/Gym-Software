@@ -5,6 +5,7 @@ import { Bell, AlertTriangle, CheckCircle2, MessageSquare, Phone, RefreshCw, Cal
 import { getCustomers, renewMemberPayment, getGymSettings, getGyms } from '@/lib/actions';
 import { Customer } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
+import { formatDateDDMMYYYY } from '@/lib/utils';
 
 export default function RemindersPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -146,7 +147,7 @@ export default function RemindersPage() {
                   phone: cust.phone,
                   plan: cust.planType,
                   amount: cust.feeAmount,
-                  dueDate: cust.nextDueDate
+                  dueDate: formatDateDDMMYYYY(cust.nextDueDate)
                 }) + `\n\n_Generated: ${dateString} ${timeString}_`
               );
 
@@ -175,7 +176,7 @@ export default function RemindersPage() {
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 mt-1">
                         <span className="font-mono flex items-center gap-1"><Phone className="w-3 h-3" /> {cust.phone}</span>
                         <span>Plan: <strong>{cust.planType}</strong> (₹{cust.feeAmount})</span>
-                        <span>Due Date: <strong className={isOverdue ? 'text-rose-600' : 'text-amber-700'}>{cust.nextDueDate}</strong></span>
+                        <span>Due Date: <strong className={isOverdue ? 'text-rose-600' : 'text-amber-700'}>{formatDateDDMMYYYY(cust.nextDueDate)}</strong></span>
                       </div>
                     </div>
                   </div>

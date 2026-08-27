@@ -1310,7 +1310,8 @@ export const CustomerScalarFieldEnum = {
   pendingBalance: 'pendingBalance',
   balanceDueDate: 'balanceDueDate',
   status: 'status',
-  joinedDate: 'joinedDate'
+  joinedDate: 'joinedDate',
+  waActive: 'waActive'
 } as const
 
 export type CustomerScalarFieldEnum = (typeof CustomerScalarFieldEnum)[keyof typeof CustomerScalarFieldEnum]

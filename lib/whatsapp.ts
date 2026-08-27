@@ -21,6 +21,7 @@ if (!globalAny.WhatsAppSessions) {
 
 import db from './db';
 import { getTemplate, compileTemplate } from './templates';
+import { formatDateDDMMYYYY } from './utils';
 
 async function usePrismaAuthState(gymId: string) {
   const { initAuthCreds, BufferJSON, proto } = baileys;
@@ -228,14 +229,24 @@ export class WhatsAppManager {
       
       console.log('[WA DEBUG] Found customer:', customer.name, 'Processing keyword:', cleanText);
 
+      // Auto-mark WhatsApp as activated for this customer
+      if (!customer.waActive) {
+        try {
+          await db.customer.update({
+            where: { id: customer.id },
+            data: { waActive: true }
+          });
+        } catch (e) {}
+      }
+
       const footer = '\n\n---\nReply *start* to see the main menu anytime.';
       let replyText = '';
 
       if (cleanText === '1') {
         const balanceNotice = (customer.pendingBalance || 0) > 0 
-          ? `\n⏳ *Pending Balance:* ₹${customer.pendingBalance}${customer.balanceDueDate ? ` (Due by ${customer.balanceDueDate})` : ''}`
+          ? `\n⏳ *Pending Balance:* ₹${customer.pendingBalance}${customer.balanceDueDate ? ` (Due by ${formatDateDDMMYYYY(customer.balanceDueDate)})` : ''}`
           : '';
-        replyText = `📋 *Your Plan Details*\n\n*Name:* ${customer.name}\n*Plan:* ${customer.planType}\n*Fee Amount:* ₹${customer.feeAmount}${balanceNotice}\n*Next Due Date:* ${customer.nextDueDate}`;
+        replyText = `📋 *Your Plan Details*\n\n*Name:* ${customer.name}\n*Plan:* ${customer.planType}\n*Fee Amount:* ₹${customer.feeAmount}${balanceNotice}\n*Next Due Date:* ${formatDateDDMMYYYY(customer.nextDueDate)}`;
       } else if (cleanText === '2') {
         const txs = await db.transaction.findMany({
           where: { customerId: customer.id, type: 'INCOME' },
@@ -247,7 +258,7 @@ export class WhatsAppManager {
         } else {
           replyText = `💰 *Last 3 Payments for ${customer.name}*\n\n` + txs.map(t => {
             const methodTag = t.paymentMethod ? ` [${t.paymentMethod}]` : '';
-            return `• ₹${t.amount}${methodTag} on ${t.date}`;
+            return `• ₹${t.amount}${methodTag} on ${formatDateDDMMYYYY(t.date)}`;
           }).join('\n');
         }
       } else if (cleanText === '3') {
@@ -260,7 +271,7 @@ export class WhatsAppManager {
           replyText = `⏱️ *Recent Attendance for ${customer.name}*\n\nNo recent check-ins found.`;
         } else {
           replyText = `⏱️ *Last 3 Days Attendance for ${customer.name}*\n\n` + atts.map(a => {
-            const date = a.dateStr;
+            const date = formatDateDDMMYYYY(a.dateStr);
             const hrs = ((a.durationMinutes || 0) / 60).toFixed(1);
             return `• ${date}: ${hrs} hours`;
           }).join('\n');
@@ -274,7 +285,7 @@ export class WhatsAppManager {
           if (gym) gymName = gym.name;
         } catch (e) {}
 
-        const joinDate = customer.joinedDate ? new Date(customer.joinedDate).toLocaleDateString() : 'N/A';
+        const joinDate = customer.joinedDate ? formatDateDDMMYYYY(customer.joinedDate) : 'N/A';
         
         replyText = compileTemplate(rawTemplate, {
           gymName: gymName,
@@ -283,7 +294,7 @@ export class WhatsAppManager {
           plan: customer.planType,
           amount: customer.feeAmount.toString(),
           joinDate: joinDate,
-          dueDate: customer.nextDueDate
+          dueDate: formatDateDDMMYYYY(customer.nextDueDate)
         });
         
         // Append menu options to the welcome message

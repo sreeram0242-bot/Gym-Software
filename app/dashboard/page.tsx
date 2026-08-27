@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Users, Smartphone, Bell, CreditCard, Plus, ArrowUpRight, CheckCircle2, Clock, Dumbbell, AlertTriangle, TrendingUp, ChevronRight, Zap } from 'lucide-react';
 import { getGyms, getCustomers, getAttendance, getTransactions } from '@/lib/actions';
 import { Customer, AttendanceRecord, Transaction, Gym } from '@/lib/types';
+import { formatDateDDMMYYYY } from '@/lib/utils';
 
 export default function DashboardOverview() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -285,10 +286,10 @@ export default function DashboardOverview() {
                   <div key={cust.id} className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg flex items-center justify-between">
                     <div>
                       <div className="font-bold text-slate-900 text-xs">{cust.name}</div>
-                      <div className="text-[11px] text-slate-500">Due: <span className="font-bold text-amber-700">{cust.nextDueDate}</span></div>
+                      <div className="text-[11px] text-slate-500">Due: <span className="font-bold text-amber-700">{formatDateDDMMYYYY(cust.nextDueDate)}</span></div>
                     </div>
                     <a
-                      href={`https://wa.me/91${cust.phone}?text=Hi%20${encodeURIComponent(cust.name)},%20your%20gym%20membership%20fee%20(₹${cust.feeAmount})%20is%20due%20on%20${cust.nextDueDate}.%20Please%20renew.`}
+                      href={`https://wa.me/91${cust.phone}?text=Hi%20${encodeURIComponent(cust.name)},%20your%20gym%20membership%20fee%20(₹${cust.feeAmount})%20is%20due%20on%20${formatDateDDMMYYYY(cust.nextDueDate)}.%20Please%20renew.`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-md transition-colors shadow-sm"

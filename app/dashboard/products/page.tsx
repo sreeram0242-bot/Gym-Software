@@ -46,6 +46,7 @@ export default function ProductsPage() {
   const [showPosCustomerDropdown, setShowPosCustomerDropdown] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [lastSaleMsg, setLastSaleMsg] = useState<string | null>(null);
+  const [posErrorMsg, setPosErrorMsg] = useState<string | null>(null);
 
   // Delete confirmation
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -128,6 +129,7 @@ export default function ProductsPage() {
   const handleCheckout = async () => {
     if (cart.length === 0) return;
     setCheckoutLoading(true);
+    setPosErrorMsg(null);
     try {
       const selectedCust = customers.find((c: any) => c.id === posCustomer);
       const splitDetails = posPaymentMethod === 'SPLIT' ? { cash: Number(posCashSplit) || 0, upi: Number(posUpiSplit) || 0 } : null;
@@ -135,7 +137,7 @@ export default function ProductsPage() {
       if (posPaymentMethod === 'SPLIT') {
         const splitSum = (splitDetails?.cash || 0) + (splitDetails?.upi || 0);
         if (splitSum !== cartTotal) {
-          alert(`Split amounts (Cash: ₹${splitDetails?.cash}, UPI: ₹${splitDetails?.upi}) must equal the Cart Total (₹${cartTotal}).`);
+          setPosErrorMsg(`Split amounts (Cash: ₹${splitDetails?.cash || 0}, UPI: ₹${splitDetails?.upi || 0}) must equal Cart Total (₹${cartTotal}).`);
           setCheckoutLoading(false);
           return;
         }
@@ -402,10 +404,17 @@ export default function ProductsPage() {
                         )}
                       </div>
 
-                      <button onClick={handleCheckout} disabled={checkoutLoading || cart.length === 0}
-                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-colors">
-                        {checkoutLoading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing...</> : <><Check className="w-4 h-4" /> Complete Sale · ₹{cartTotal.toLocaleString('en-IN')}</>}
-                      </button>
+                        {posErrorMsg && (
+                          <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-xs font-semibold text-rose-700 flex items-center gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span>{posErrorMsg}</span>
+                          </div>
+                        )}
+
+                        <button onClick={handleCheckout} disabled={checkoutLoading || cart.length === 0}
+                          className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-colors shadow-sm">
+                          {checkoutLoading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing...</> : <><Check className="w-4 h-4" /> Complete Sale · ₹{cartTotal.toLocaleString('en-IN')}</>}
+                        </button>
                     </div>
                   </>
                 )}
@@ -453,7 +462,7 @@ export default function ProductsPage() {
 
       {/* Add/Edit Product Modal */}
       {showProductModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-black text-slate-900">{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
@@ -502,7 +511,7 @@ export default function ProductsPage() {
 
       {/* Delete Confirm */}
       {deleteId && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[110] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
             <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-3"><AlertTriangle className="w-6 h-6 text-rose-600" /></div>
             <h3 className="text-lg font-black text-slate-900 mb-1">Delete Product?</h3>

@@ -7,6 +7,7 @@ import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, up
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Transaction, SubscriptionPlan } from '@/lib/types';
+import { formatDateDDMMYYYY } from '@/lib/utils';
 
 export default function RevenuePage() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -103,12 +104,10 @@ export default function RevenuePage() {
 
   const handleEditTxSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const numAmount = Number(editAmount);
-    if (!editingTxId || numAmount <= 0) return;
+    if (!editingTxId || !editAmount) return;
 
     await updateTransaction(editingTxId, {
-      amount: numAmount,
-      paidAmount: numAmount,
+      amount: Number(editAmount),
       category: editCategory,
       description: editDesc,
       date: editDate,
@@ -168,40 +167,38 @@ export default function RevenuePage() {
     setNewPlanPrice(2500);
   };
 
-  const handleDeletePlan = async (id: string) => {
-    setDeletePlanDialog(id);
+  const handleDeletePlan = (planId: string) => {
+    setDeletePlanDialog(planId);
   };
 
   const executeDeletePlan = async () => {
-    if (deletePlanDialog) {
-      await deleteSubscriptionPlan(deletePlanDialog);
-      setDeletePlanDialog(null);
-      loadData();
-    }
+    if (!deletePlanDialog) return;
+    await deleteSubscriptionPlan(deletePlanDialog);
+    setDeletePlanDialog(null);
+    loadData();
   };
 
-
-  // Global Time Filter Logic
+  // Helper filter for global date toolbar
   const isDateInGlobalFilter = (dateStr: string) => {
     if (globalTimeFilter === 'ALL') return true;
     const d = new Date(dateStr);
-    const today = new Date();
-    
+    const now = new Date();
+
     if (globalTimeFilter === 'TODAY') {
-      return d.toDateString() === today.toDateString();
+      return d.toDateString() === now.toDateString();
     }
     if (globalTimeFilter === 'THIS_MONTH') {
-      return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     }
     if (globalTimeFilter === 'THIS_YEAR') {
-      return d.getFullYear() === today.getFullYear();
+      return d.getFullYear() === now.getFullYear();
     }
     if (globalTimeFilter === 'CUSTOM') {
       if (!globalDateFrom || !globalDateTo) return true;
-      const from = new Date(globalDateFrom);
-      const to = new Date(globalDateTo);
-      to.setHours(23, 59, 59, 999);
-      return d >= from && d <= to;
+      const cleanDate = (dateStr || '').split('T')[0];
+      const minDate = globalDateFrom <= globalDateTo ? globalDateFrom : globalDateTo;
+      const maxDate = globalDateFrom <= globalDateTo ? globalDateTo : globalDateFrom;
+      return cleanDate >= minDate && cleanDate <= maxDate;
     }
     return true;
   };
@@ -212,7 +209,6 @@ export default function RevenuePage() {
     .filter((t) => t.type === 'INCOME')
     .reduce((acc, cur) => acc + cur.amount, 0);
 
-  // Still show today's payments fixed as it's specifically labelled "Today's Payments"
   const todayStr = new Date().toISOString().split('T')[0];
   const todayIncome = transactions
     .filter((t) => t.type === 'INCOME' && t.date === todayStr)
@@ -225,7 +221,6 @@ export default function RevenuePage() {
   const netProfit = totalIncome - totalExpenses;
   const newMembersCount = allCustomers.filter(c => c.gymId === gymId && isDateInGlobalFilter(c.joinedDate)).length;
 
-  // Breakdown by Payment Mode
   const cashTotal = filteredGlobalTxs
     .filter(t => t.type === 'INCOME')
     .reduce((acc, cur) => {
@@ -256,7 +251,6 @@ export default function RevenuePage() {
     .filter(t => t.type === 'INCOME' && t.paymentMethod === 'CARD')
     .reduce((acc, cur) => acc + cur.amount, 0);
 
-  // Monthly Chart Mock Data aggregation
   const chartData = [
     { name: 'May', Income: 14000, Expense: 8000, Net: 6000 },
     { name: 'Jun', Income: 18500, Expense: 12000, Net: 6500 },
@@ -283,35 +277,40 @@ export default function RevenuePage() {
     return t.type === filterType;
   });
 
-  const executeExport = () => {
+  const getExportTransactions = () => {
     let exportTxs = transactions;
-
     if (exportDateFrom && exportDateTo) {
-      const from = new Date(exportDateFrom);
-      const to = new Date(exportDateTo);
-      to.setHours(23, 59, 59, 999);
-      exportTxs = exportTxs.filter(t => {
-        const d = new Date(t.date);
-        return d >= from && d <= to;
+      const minDate = exportDateFrom <= exportDateTo ? exportDateFrom : exportDateTo;
+      const maxDate = exportDateFrom <= exportDateTo ? exportDateTo : exportDateFrom;
+      exportTxs = transactions.filter(t => {
+        const d = (t.date || '').split('T')[0];
+        return d >= minDate && d <= maxDate;
       });
+    } else if (exportDateFrom) {
+      exportTxs = transactions.filter(t => (t.date || '').split('T')[0] >= exportDateFrom);
+    } else if (exportDateTo) {
+      exportTxs = transactions.filter(t => (t.date || '').split('T')[0] <= exportDateTo);
     } else {
-       // fallback to currently filtered txs if no dates selected
-       exportTxs = filteredTxs;
+      exportTxs = filteredTxs;
     }
+    return exportTxs;
+  };
 
+  const executeExport = () => {
+    const exportTxs = getExportTransactions();
     let runningBalance = 0;
     
     // Export chronologically (oldest first) to make the running balance logical
     const chronologicalTxs = [...exportTxs].reverse();
 
     const rows = [
-      ['Date', 'Type', 'Category', 'Description', 'Payment Mode', 'Amount (₹)', 'Paid Amount (₹)', 'Discount (₹)', 'Customer', 'Balance (₹)'],
+      ['Date (DD/MM/YYYY)', 'Type', 'Category', 'Description', 'Payment Mode', 'Amount (₹)', 'Paid Amount (₹)', 'Discount (₹)', 'Customer', 'Balance (₹)'],
       ...chronologicalTxs.map(t => {
         if (t.type === 'INCOME') runningBalance += t.amount;
         else if (t.type === 'EXPENSE') runningBalance -= t.amount;
 
         return [
-          t.date,
+          formatDateDDMMYYYY(t.date),
           t.type,
           t.category,
           `"${t.description?.replace(/"/g, "'") || ''}"`,
@@ -336,20 +335,7 @@ export default function RevenuePage() {
   };
 
   const executeExportPDF = async () => {
-    let exportTxs = transactions;
-
-    if (exportDateFrom && exportDateTo) {
-      const from = new Date(exportDateFrom);
-      const to = new Date(exportDateTo);
-      to.setHours(23, 59, 59, 999);
-      exportTxs = exportTxs.filter(t => {
-        const d = new Date(t.date);
-        return d >= from && d <= to;
-      });
-    } else {
-       exportTxs = filteredTxs;
-    }
-
+    const exportTxs = getExportTransactions();
     let runningBalance = 0;
     const chronologicalTxs = [...exportTxs].reverse();
 
@@ -358,16 +344,14 @@ export default function RevenuePage() {
       else if (t.type === 'EXPENSE') runningBalance -= t.amount;
 
       return [
-        new Date(t.date).toLocaleDateString(),
+        formatDateDDMMYYYY(t.date),
         t.type,
         t.category,
         t.description?.replace(/"/g, "'") || '-',
         t.paymentMethod || 'CASH',
-        `${t.amount}`,
-        `${t.paidAmount ?? t.amount}`,
-        `${t.discountAmount ?? 0}`,
+        `Rs ${t.amount.toLocaleString('en-IN')}`,
         t.customerName || '-',
-        `${runningBalance}`
+        `Rs ${runningBalance.toLocaleString('en-IN')}`
       ];
     });
 
@@ -377,26 +361,47 @@ export default function RevenuePage() {
     
     const doc = new jsPDF('landscape');
     
-    // Header
-    doc.setFontSize(22);
-    doc.text(gymName, 14, 22);
+    // Header Branding
+    doc.setFontSize(20);
+    doc.setTextColor(30, 58, 138); // Deep Navy Blue
+    doc.text(gymName, 14, 18);
     
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    const dateLabel = exportDateFrom && exportDateTo ? `From: ${exportDateFrom} To: ${exportDateTo}` : `Date: ${new Date().toLocaleDateString()}`;
-    doc.text(`Financial Report | ${dateLabel}`, 14, 30);
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139); // Slate Muted
+    const dateLabel = exportDateFrom && exportDateTo 
+      ? `Period: ${formatDateDDMMYYYY(exportDateFrom)} to ${formatDateDDMMYYYY(exportDateTo)} (${exportTxs.length} Transactions)`
+      : `Generated On: ${formatDateDDMMYYYY(new Date().toISOString())} (${exportTxs.length} Transactions)`;
+    doc.text(`Financial Ledger & Profit/Loss Report | ${dateLabel}`, 14, 26);
     
     autoTable(doc, {
-      startY: 40,
-      head: [['Date', 'Type', 'Category', 'Description', 'Payment Mode', 'Amount (Rs)', 'Paid (Rs)', 'Discount', 'Customer', 'Balance (Rs)']],
+      startY: 34,
+      head: [['Date (DD/MM/YYYY)', 'Type', 'Category', 'Description', 'Payment Mode', 'Amount', 'Customer', 'Balance']],
       body: body,
       theme: 'grid',
-      headStyles: { fillColor: [30, 58, 138] }, // Navy blue
-      styles: { fontSize: 9 },
+      headStyles: { fillColor: [30, 58, 138], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+      styles: { fontSize: 8.5, cellPadding: 2.5 },
+      didParseCell: (data) => {
+        if (data.section === 'body') {
+          const rawRow = data.row.raw;
+          const typeVal = Array.isArray(rawRow) ? rawRow[1] : '';
+          
+          if (typeVal === 'EXPENSE') {
+            if (data.column.index === 1 || data.column.index === 5) {
+              data.cell.styles.textColor = [220, 38, 38]; // Red for expenses
+              data.cell.styles.fontStyle = 'bold';
+            }
+          } else if (typeVal === 'INCOME') {
+            if (data.column.index === 1 || data.column.index === 5) {
+              data.cell.styles.textColor = [16, 185, 129]; // Green for revenue
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
+        }
+      }
     });
 
     const fileNameDate = exportDateFrom && exportDateTo ? `${exportDateFrom}-to-${exportDateTo}` : 'export';
-    doc.save(`gymflow-transactions-${fileNameDate}.pdf`);
+    doc.save(`gymflow-report-${fileNameDate}.pdf`);
     setShowExportModal(false);
   };
 
@@ -671,7 +676,7 @@ export default function RevenuePage() {
                   </td>
 
                   <td className="py-3 px-4 text-slate-600 font-medium">{tx.category}</td>
-                  <td className="py-3 px-4 text-slate-500 font-mono text-xs">{tx.date}</td>
+                  <td className="py-3 px-4 text-slate-600 font-mono text-xs font-bold">{formatDateDDMMYYYY(tx.date)}</td>
                   <td
                     className={`py-3 px-4 text-right font-extrabold ${
                       tx.type === 'INCOME' ? 'text-emerald-600' : 'text-rose-600'
@@ -713,7 +718,7 @@ export default function RevenuePage() {
 
       {/* MODAL: ADD EXPENSE */}
       {showExpenseModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
             <div className="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
               <h3 className="font-bold text-slate-900 text-lg flex items-center space-x-2">
@@ -830,7 +835,7 @@ export default function RevenuePage() {
 
       {/* MODAL: SETTINGS */}
       {showSettingsModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
               <h3 className="font-bold text-slate-900 text-lg flex items-center space-x-2">
@@ -876,11 +881,11 @@ export default function RevenuePage() {
                    )}
                  </div>
                  <div className="grid grid-cols-2 gap-3 mb-3">
-                   <input type="text" placeholder="Package Name" value={newPlanName} onChange={e => setNewPlanName(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
-                   <input type="number" placeholder="Months" value={newPlanMonths} onChange={e => setNewPlanMonths(e.target.value === '' ? '' : Number(e.target.value))} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
+                   <input type="text" placeholder="Package Name (e.g. Annual)" value={newPlanName} onChange={e => setNewPlanName(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
+                   <input type="number" min={1} max={60} placeholder="Duration in Months (e.g. 12)" value={newPlanMonths} onChange={e => setNewPlanMonths(e.target.value === '' ? '' : Math.min(60, Math.max(1, Number(e.target.value))))} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
                    <div className="col-span-2 relative">
                      <span className="absolute left-3 top-2 text-slate-400 font-bold">₹</span>
-                      <input type="number" placeholder="Price" value={newPlanPrice} onChange={e => setNewPlanPrice(e.target.value === '' ? '' : Number(e.target.value))} className="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
+                      <input type="number" placeholder="Price (₹)" value={newPlanPrice} onChange={e => setNewPlanPrice(e.target.value === '' ? '' : Number(e.target.value))} className="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
                    </div>
                  </div>
                  <button onClick={handleAddPlan} className="w-full py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg text-sm font-bold transition-colors">
@@ -894,7 +899,7 @@ export default function RevenuePage() {
 
       {/* MODAL: EDIT TRANSACTION / BILL */}
       {showEditTxModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
             <div className="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
               <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
@@ -1004,7 +1009,7 @@ export default function RevenuePage() {
 
       {/* MODAL: DELETE TRANSACTION CONFIRMATION */}
       {deleteTxDialog && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 z-[110] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center text-rose-600 mb-4">
               <Trash2 className="w-6 h-6" />
@@ -1033,7 +1038,7 @@ export default function RevenuePage() {
 
       {/* MODAL: EXPORT CSV */}
       {showExportModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex justify-between items-center mb-5">
               <h2 className="text-lg font-black text-slate-900">Custom Export CSV</h2>
@@ -1090,7 +1095,7 @@ export default function RevenuePage() {
 
       {/* MODAL: DELETE PLAN CONFIRMATION */}
       {deletePlanDialog && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 z-[110] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center text-rose-600 mb-4">
               <Trash2 className="w-6 h-6" />

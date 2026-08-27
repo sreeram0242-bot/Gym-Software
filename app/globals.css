@@ -101,15 +101,15 @@ select:focus {
 }
 
 /* ─────────────────────────────────────
-   PAGE ENTER — fade + slide up on route change
+   PAGE ENTER — smooth opacity transition on route change (no transform so fixed modals span full viewport)
 ───────────────────────────────────── */
 @keyframes page-enter {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: none;    }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .page-animate {
-  animation: page-enter var(--dur-slow) var(--ease-out) both;
+  animation: page-enter var(--dur-base) var(--ease-out) both;
 }
 
 /* ─────────────────────────────────────

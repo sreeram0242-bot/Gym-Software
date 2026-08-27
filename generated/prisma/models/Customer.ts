@@ -51,6 +51,7 @@ export type CustomerMinAggregateOutputType = {
   balanceDueDate: string | null
   status: string | null
   joinedDate: string | null
+  waActive: boolean | null
 }
 
 export type CustomerMaxAggregateOutputType = {
@@ -68,6 +69,7 @@ export type CustomerMaxAggregateOutputType = {
   balanceDueDate: string | null
   status: string | null
   joinedDate: string | null
+  waActive: boolean | null
 }
 
 export type CustomerCountAggregateOutputType = {
@@ -85,6 +87,7 @@ export type CustomerCountAggregateOutputType = {
   balanceDueDate: number
   status: number
   joinedDate: number
+  waActive: number
   _all: number
 }
 
@@ -114,6 +117,7 @@ export type CustomerMinAggregateInputType = {
   balanceDueDate?: true
   status?: true
   joinedDate?: true
+  waActive?: true
 }
 
 export type CustomerMaxAggregateInputType = {
@@ -131,6 +135,7 @@ export type CustomerMaxAggregateInputType = {
   balanceDueDate?: true
   status?: true
   joinedDate?: true
+  waActive?: true
 }
 
 export type CustomerCountAggregateInputType = {
@@ -148,6 +153,7 @@ export type CustomerCountAggregateInputType = {
   balanceDueDate?: true
   status?: true
   joinedDate?: true
+  waActive?: true
   _all?: true
 }
 
@@ -252,6 +258,7 @@ export type CustomerGroupByOutputType = {
   balanceDueDate: string | null
   status: string
   joinedDate: string
+  waActive: boolean
   _count: CustomerCountAggregateOutputType | null
   _avg: CustomerAvgAggregateOutputType | null
   _sum: CustomerSumAggregateOutputType | null
@@ -292,6 +299,7 @@ export type CustomerWhereInput = {
   balanceDueDate?: Prisma.StringNullableFilter<"Customer"> | string | null
   status?: Prisma.StringFilter<"Customer"> | string
   joinedDate?: Prisma.StringFilter<"Customer"> | string
+  waActive?: Prisma.BoolFilter<"Customer"> | boolean
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
   attendance?: Prisma.AttendanceRecordListRelationFilter
   transactions?: Prisma.TransactionListRelationFilter
@@ -313,6 +321,7 @@ export type CustomerOrderByWithRelationInput = {
   balanceDueDate?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
+  waActive?: Prisma.SortOrder
   gym?: Prisma.GymOrderByWithRelationInput
   attendance?: Prisma.AttendanceRecordOrderByRelationAggregateInput
   transactions?: Prisma.TransactionOrderByRelationAggregateInput
@@ -337,6 +346,7 @@ export type CustomerWhereUniqueInput = Prisma.AtLeast<{
   balanceDueDate?: Prisma.StringNullableFilter<"Customer"> | string | null
   status?: Prisma.StringFilter<"Customer"> | string
   joinedDate?: Prisma.StringFilter<"Customer"> | string
+  waActive?: Prisma.BoolFilter<"Customer"> | boolean
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
   attendance?: Prisma.AttendanceRecordListRelationFilter
   transactions?: Prisma.TransactionListRelationFilter
@@ -358,6 +368,7 @@ export type CustomerOrderByWithAggregationInput = {
   balanceDueDate?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
+  waActive?: Prisma.SortOrder
   _count?: Prisma.CustomerCountOrderByAggregateInput
   _avg?: Prisma.CustomerAvgOrderByAggregateInput
   _max?: Prisma.CustomerMaxOrderByAggregateInput
@@ -383,6 +394,7 @@ export type CustomerScalarWhereWithAggregatesInput = {
   balanceDueDate?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   status?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   joinedDate?: Prisma.StringWithAggregatesFilter<"Customer"> | string
+  waActive?: Prisma.BoolWithAggregatesFilter<"Customer"> | boolean
 }
 
 export type CustomerCreateInput = {
@@ -399,6 +411,7 @@ export type CustomerCreateInput = {
   balanceDueDate?: string | null
   status?: string
   joinedDate: string
+  waActive?: boolean
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
@@ -420,6 +433,7 @@ export type CustomerUncheckedCreateInput = {
   balanceDueDate?: string | null
   status?: string
   joinedDate: string
+  waActive?: boolean
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
@@ -439,6 +453,7 @@ export type CustomerUpdateInput = {
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
@@ -460,6 +475,7 @@ export type CustomerUncheckedUpdateInput = {
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
@@ -480,6 +496,7 @@ export type CustomerCreateManyInput = {
   balanceDueDate?: string | null
   status?: string
   joinedDate: string
+  waActive?: boolean
 }
 
 export type CustomerUpdateManyMutationInput = {
@@ -496,6 +513,7 @@ export type CustomerUpdateManyMutationInput = {
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type CustomerUncheckedUpdateManyInput = {
@@ -513,6 +531,7 @@ export type CustomerUncheckedUpdateManyInput = {
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type CustomerListRelationFilter = {
@@ -540,6 +559,7 @@ export type CustomerCountOrderByAggregateInput = {
   balanceDueDate?: Prisma.SortOrder
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
+  waActive?: Prisma.SortOrder
 }
 
 export type CustomerAvgOrderByAggregateInput = {
@@ -562,6 +582,7 @@ export type CustomerMaxOrderByAggregateInput = {
   balanceDueDate?: Prisma.SortOrder
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
+  waActive?: Prisma.SortOrder
 }
 
 export type CustomerMinOrderByAggregateInput = {
@@ -579,6 +600,7 @@ export type CustomerMinOrderByAggregateInput = {
   balanceDueDate?: Prisma.SortOrder
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
+  waActive?: Prisma.SortOrder
 }
 
 export type CustomerSumOrderByAggregateInput = {
@@ -642,6 +664,10 @@ export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
 export type CustomerCreateNestedOneWithoutAttendanceInput = {
   create?: Prisma.XOR<Prisma.CustomerCreateWithoutAttendanceInput, Prisma.CustomerUncheckedCreateWithoutAttendanceInput>
   connectOrCreate?: Prisma.CustomerCreateOrConnectWithoutAttendanceInput
@@ -702,6 +728,7 @@ export type CustomerCreateWithoutGymInput = {
   balanceDueDate?: string | null
   status?: string
   joinedDate: string
+  waActive?: boolean
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutCustomerInput
@@ -721,6 +748,7 @@ export type CustomerUncheckedCreateWithoutGymInput = {
   balanceDueDate?: string | null
   status?: string
   joinedDate: string
+  waActive?: boolean
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
@@ -770,6 +798,7 @@ export type CustomerScalarWhereInput = {
   balanceDueDate?: Prisma.StringNullableFilter<"Customer"> | string | null
   status?: Prisma.StringFilter<"Customer"> | string
   joinedDate?: Prisma.StringFilter<"Customer"> | string
+  waActive?: Prisma.BoolFilter<"Customer"> | boolean
 }
 
 export type CustomerCreateWithoutAttendanceInput = {
@@ -786,6 +815,7 @@ export type CustomerCreateWithoutAttendanceInput = {
   balanceDueDate?: string | null
   status?: string
   joinedDate: string
+  waActive?: boolean
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutCustomerInput
@@ -806,6 +836,7 @@ export type CustomerUncheckedCreateWithoutAttendanceInput = {
   balanceDueDate?: string | null
   status?: string
   joinedDate: string
+  waActive?: boolean
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
 }
@@ -840,6 +871,7 @@ export type CustomerUpdateWithoutAttendanceInput = {
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutCustomerNestedInput
@@ -860,6 +892,7 @@ export type CustomerUncheckedUpdateWithoutAttendanceInput = {
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
 }
@@ -878,6 +911,7 @@ export type CustomerCreateWithoutTransactionsInput = {
   balanceDueDate?: string | null
   status?: string
   joinedDate: string
+  waActive?: boolean
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutCustomerInput
@@ -898,6 +932,7 @@ export type CustomerUncheckedCreateWithoutTransactionsInput = {
   balanceDueDate?: string | null
   status?: string
   joinedDate: string
+  waActive?: boolean
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
 }
@@ -932,6 +967,7 @@ export type CustomerUpdateWithoutTransactionsInput = {
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutCustomerNestedInput
@@ -952,6 +988,7 @@ export type CustomerUncheckedUpdateWithoutTransactionsInput = {
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
 }
@@ -970,6 +1007,7 @@ export type CustomerCreateWithoutProductSalesInput = {
   balanceDueDate?: string | null
   status?: string
   joinedDate: string
+  waActive?: boolean
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
@@ -990,6 +1028,7 @@ export type CustomerUncheckedCreateWithoutProductSalesInput = {
   balanceDueDate?: string | null
   status?: string
   joinedDate: string
+  waActive?: boolean
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
 }
@@ -1024,6 +1063,7 @@ export type CustomerUpdateWithoutProductSalesInput = {
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
@@ -1044,6 +1084,7 @@ export type CustomerUncheckedUpdateWithoutProductSalesInput = {
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
 }
@@ -1062,6 +1103,7 @@ export type CustomerCreateManyGymInput = {
   balanceDueDate?: string | null
   status?: string
   joinedDate: string
+  waActive?: boolean
 }
 
 export type CustomerUpdateWithoutGymInput = {
@@ -1078,6 +1120,7 @@ export type CustomerUpdateWithoutGymInput = {
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutCustomerNestedInput
@@ -1097,6 +1140,7 @@ export type CustomerUncheckedUpdateWithoutGymInput = {
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1116,6 +1160,7 @@ export type CustomerUncheckedUpdateManyWithoutGymInput = {
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
+  waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
@@ -1182,6 +1227,7 @@ export type CustomerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   balanceDueDate?: boolean
   status?: boolean
   joinedDate?: boolean
+  waActive?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
   attendance?: boolean | Prisma.Customer$attendanceArgs<ExtArgs>
   transactions?: boolean | Prisma.Customer$transactionsArgs<ExtArgs>
@@ -1204,6 +1250,7 @@ export type CustomerSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   balanceDueDate?: boolean
   status?: boolean
   joinedDate?: boolean
+  waActive?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["customer"]>
 
@@ -1222,6 +1269,7 @@ export type CustomerSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   balanceDueDate?: boolean
   status?: boolean
   joinedDate?: boolean
+  waActive?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["customer"]>
 
@@ -1240,9 +1288,10 @@ export type CustomerSelectScalar = {
   balanceDueDate?: boolean
   status?: boolean
   joinedDate?: boolean
+  waActive?: boolean
 }
 
-export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "name" | "phone" | "nfcCardId" | "fingerprintId" | "planType" | "feeAmount" | "lastPaymentDate" | "nextDueDate" | "pendingBalance" | "balanceDueDate" | "status" | "joinedDate", ExtArgs["result"]["customer"]>
+export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "name" | "phone" | "nfcCardId" | "fingerprintId" | "planType" | "feeAmount" | "lastPaymentDate" | "nextDueDate" | "pendingBalance" | "balanceDueDate" | "status" | "joinedDate" | "waActive", ExtArgs["result"]["customer"]>
 export type CustomerInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
   attendance?: boolean | Prisma.Customer$attendanceArgs<ExtArgs>
@@ -1280,6 +1329,7 @@ export type $CustomerPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     balanceDueDate: string | null
     status: string
     joinedDate: string
+    waActive: boolean
   }, ExtArgs["result"]["customer"]>
   composites: {}
 }
@@ -1721,6 +1771,7 @@ export interface CustomerFieldRefs {
   readonly balanceDueDate: Prisma.FieldRef<"Customer", 'String'>
   readonly status: Prisma.FieldRef<"Customer", 'String'>
   readonly joinedDate: Prisma.FieldRef<"Customer", 'String'>
+  readonly waActive: Prisma.FieldRef<"Customer", 'Boolean'>
 }
     
 

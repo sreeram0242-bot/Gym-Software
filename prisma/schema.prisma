@@ -45,6 +45,7 @@ model Customer {
   balanceDueDate  String?
   status          String   @default("active")
   joinedDate      String
+  waActive        Boolean  @default(false)
 
   attendance   AttendanceRecord[]
   transactions Transaction[]
