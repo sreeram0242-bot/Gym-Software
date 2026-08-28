@@ -115,7 +115,9 @@ export const CustomerScalarFieldEnum = {
   balanceDueDate: 'balanceDueDate',
   status: 'status',
   joinedDate: 'joinedDate',
-  waActive: 'waActive'
+  waActive: 'waActive',
+  lastReminderSentDate: 'lastReminderSentDate',
+  lastAbsenteeSentDate: 'lastAbsenteeSentDate'
 } as const
 
 export type CustomerScalarFieldEnum = (typeof CustomerScalarFieldEnum)[keyof typeof CustomerScalarFieldEnum]
@@ -243,7 +245,9 @@ export const GymSettingsScalarFieldEnum = {
   productsEnabled: 'productsEnabled',
   showStoreInRevenue: 'showStoreInRevenue',
   attendanceMode: 'attendanceMode',
-  fingerprintAgentPort: 'fingerprintAgentPort'
+  fingerprintAgentPort: 'fingerprintAgentPort',
+  memberCutoffHours: 'memberCutoffHours',
+  staffCutoffHours: 'staffCutoffHours'
 } as const
 
 export type GymSettingsScalarFieldEnum = (typeof GymSettingsScalarFieldEnum)[keyof typeof GymSettingsScalarFieldEnum]

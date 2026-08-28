@@ -50,6 +50,8 @@ model Customer {
   status          String   @default("active")
   joinedDate      String
   waActive        Boolean  @default(false)
+  lastReminderSentDate String?
+  lastAbsenteeSentDate String?
 
   attendance   AttendanceRecord[]
   transactions Transaction[]
@@ -202,6 +204,10 @@ model GymSettings {
   // Attendance hardware mode: MANUAL | NFC | FINGERPRINT | BOTH
   attendanceMode        String  @default("NFC")
   fingerprintAgentPort  Int     @default(8765)
+
+  // Attendance Cut-off / Auto-checkout timing (in hours)
+  memberCutoffHours     Int     @default(4)
+  staffCutoffHours      Int     @default(12)
 }
 
 model Announcement {

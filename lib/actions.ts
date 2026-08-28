@@ -1,7 +1,9 @@
 'use server';
 
 import prisma from './db';
-import { getLocalTodayDateString } from './utils';
+import { getLocalTodayDateString, formatDateDDMMYYYY } from './utils';
+import { getTemplate, compileTemplate } from './templates';
+import { WhatsAppManager } from './whatsapp';
 
 // Global in-memory fallback store for offline development and testing
 const globalAny: any = global;
@@ -751,6 +753,26 @@ export async function collectPendingBalance(
 // --- ATTENDANCE ---
 export async function getAttendance(gymId?: string) {
   try {
+    if (gymId) {
+      // Auto-expire orphan member sessions exceeding cutoff hours
+      const gymSettings = await prisma.gymSettings.findUnique({ where: { gymId } });
+      const cutoffHours = gymSettings?.memberCutoffHours || 4;
+      const cutoffThreshold = new Date(Date.now() - (cutoffHours * 60 * 60 * 1000)).toISOString();
+      
+      const expired = await prisma.attendanceRecord.findMany({
+        where: { gymId, checkOutTime: null, checkInTime: { lt: cutoffThreshold } }
+      });
+      
+      for (const rec of expired) {
+        const checkIn = new Date(rec.checkInTime);
+        const autoOut = new Date(checkIn.getTime() + (cutoffHours * 60 * 60 * 1000)).toISOString();
+        await prisma.attendanceRecord.update({
+          where: { id: rec.id },
+          data: { checkOutTime: autoOut, durationMinutes: cutoffHours * 60 }
+        }).catch(() => {});
+      }
+    }
+
     if (!gymId) return await prisma.attendanceRecord.findMany({ orderBy: { checkInTime: 'desc' } });
     return await prisma.attendanceRecord.findMany({
       where: { gymId },
@@ -775,6 +797,10 @@ export async function toggleCheckIn(customerId: string) {
   const nowIso = new Date().toISOString();
 
   try {
+    // Get gym cutoff timer setting
+    const gymSettings = await prisma.gymSettings.findUnique({ where: { gymId: customer.gymId } });
+    const cutoffHours = gymSettings?.memberCutoffHours || 4;
+
     // Find latest active session without checkout time
     const activeSession = await prisma.attendanceRecord.findFirst({
       where: {
@@ -789,8 +815,8 @@ export async function toggleCheckIn(customerId: string) {
       const checkOutTime = new Date(nowIso);
       const diffHours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
 
-      // If active session is within 20 hours, treat as checkout
-      if (diffHours < 20) {
+      // If active session is within cutoffHours, treat as normal checkout
+      if (diffHours <= cutoffHours) {
         const diffMinutes = Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60));
         const updated = await prisma.attendanceRecord.update({
           where: { id: activeSession.id },
@@ -799,7 +825,19 @@ export async function toggleCheckIn(customerId: string) {
             durationMinutes: diffMinutes > 0 ? diffMinutes : 1
           }
         });
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
         return { record: updated, action: 'checkout' as const };
+      } else {
+        // Session exceeded cutoff timer (member forgot to checkout earlier)
+        // Auto-close previous session and start fresh checkin
+        const autoOut = new Date(checkInTime.getTime() + (cutoffHours * 60 * 60 * 1000)).toISOString();
+        await prisma.attendanceRecord.update({
+          where: { id: activeSession.id },
+          data: {
+            checkOutTime: autoOut,
+            durationMinutes: cutoffHours * 60
+          }
+        }).catch(() => {});
       }
     }
 
@@ -813,6 +851,7 @@ export async function toggleCheckIn(customerId: string) {
         dateStr: todayStr
       }
     });
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
     return { record: newRecord, action: 'checkin' as const };
   } catch (e) {
     const active = store.attendance.find((a: any) => a.customerId === customer.id && !a.checkOutTime && a.dateStr === todayStr);
@@ -1434,31 +1473,103 @@ export async function getStaffs(gymId: string) {
 export async function addStaff(data: any) {
   try {
     const today = getLocalTodayDateString();
+    const gymId = data.gymId;
+    const cleanPhone = String(data.phone || '').trim();
+    const cleanName = String(data.name || '').trim();
+    const cleanRole = String(data.role || 'Trainer').trim();
+    const cleanNfc = data.nfcCardId && String(data.nfcCardId).trim() ? String(data.nfcCardId).trim() : null;
+    const cleanFp = data.fingerprintId && String(data.fingerprintId).trim() ? String(data.fingerprintId).trim() : null;
+
+    // 1. Check duplicate phone
+    const existingPhone = await prisma.staff.findFirst({
+      where: { gymId, phone: cleanPhone }
+    });
+    if (existingPhone) {
+      throw new Error(`Phone number "${cleanPhone}" is already registered for staff: ${existingPhone.name} (${existingPhone.role}).`);
+    }
+
+    // 2. Check duplicate NFC Card
+    if (cleanNfc) {
+      const existingNfc = await prisma.staff.findFirst({
+        where: { gymId, nfcCardId: cleanNfc }
+      });
+      if (existingNfc) {
+        throw new Error(`NFC Card ID "${cleanNfc}" is already assigned to staff: ${existingNfc.name}.`);
+      }
+    }
+
+    // 3. Check duplicate Fingerprint ID
+    if (cleanFp) {
+      const existingFp = await prisma.staff.findFirst({
+        where: { gymId, fingerprintId: cleanFp }
+      });
+      if (existingFp) {
+        throw new Error(`Fingerprint ID "${cleanFp}" is already assigned to staff: ${existingFp.name}.`);
+      }
+    }
+
     const cleanData = {
       gymId: data.gymId,
-      name: String(data.name || '').trim(),
-      phone: String(data.phone || '').trim(),
-      role: String(data.role || 'Trainer').trim(),
-      nfcCardId: data.nfcCardId && String(data.nfcCardId).trim() ? String(data.nfcCardId).trim() : null,
-      fingerprintId: data.fingerprintId && String(data.fingerprintId).trim() ? String(data.fingerprintId).trim() : null,
+      name: cleanName,
+      phone: cleanPhone,
+      role: cleanRole,
+      nfcCardId: cleanNfc,
+      fingerprintId: cleanFp,
       status: data.status || 'active',
       joinedDate: data.joinedDate || today
     };
     return await prisma.staff.create({ data: cleanData });
-  } catch (e) {
+  } catch (e: any) {
     console.error('Failed to add staff:', e);
-    throw new Error('Failed to add staff');
+    throw new Error(e?.message || 'Failed to add staff');
   }
 }
 
 export async function updateStaff(id: string, data: any) {
   try {
+    const current = await prisma.staff.findUnique({ where: { id } });
+    if (!current) throw new Error('Staff member not found');
+
+    const cleanPhone = data.phone !== undefined ? String(data.phone).trim() : current.phone;
+    const cleanNfc = data.nfcCardId !== undefined ? (data.nfcCardId ? String(data.nfcCardId).trim() : null) : current.nfcCardId;
+    const cleanFp = data.fingerprintId !== undefined ? (data.fingerprintId ? String(data.fingerprintId).trim() : null) : current.fingerprintId;
+
+    // Check duplicate phone for other staff
+    if (cleanPhone !== current.phone) {
+      const existingPhone = await prisma.staff.findFirst({
+        where: { gymId: current.gymId, phone: cleanPhone, NOT: { id } }
+      });
+      if (existingPhone) {
+        throw new Error(`Phone number "${cleanPhone}" is already registered for staff: ${existingPhone.name}.`);
+      }
+    }
+
+    // Check duplicate NFC for other staff
+    if (cleanNfc && cleanNfc !== current.nfcCardId) {
+      const existingNfc = await prisma.staff.findFirst({
+        where: { gymId: current.gymId, nfcCardId: cleanNfc, NOT: { id } }
+      });
+      if (existingNfc) {
+        throw new Error(`NFC Card ID "${cleanNfc}" is already assigned to staff: ${existingNfc.name}.`);
+      }
+    }
+
+    // Check duplicate Fingerprint for other staff
+    if (cleanFp && cleanFp !== current.fingerprintId) {
+      const existingFp = await prisma.staff.findFirst({
+        where: { gymId: current.gymId, fingerprintId: cleanFp, NOT: { id } }
+      });
+      if (existingFp) {
+        throw new Error(`Fingerprint ID "${cleanFp}" is already assigned to staff: ${existingFp.name}.`);
+      }
+    }
+
     const cleanData: any = {};
     if (data.name !== undefined) cleanData.name = String(data.name).trim();
-    if (data.phone !== undefined) cleanData.phone = String(data.phone).trim();
+    if (data.phone !== undefined) cleanData.phone = cleanPhone;
     if (data.role !== undefined) cleanData.role = String(data.role).trim();
-    if (data.nfcCardId !== undefined) cleanData.nfcCardId = data.nfcCardId && String(data.nfcCardId).trim() ? String(data.nfcCardId).trim() : null;
-    if (data.fingerprintId !== undefined) cleanData.fingerprintId = data.fingerprintId && String(data.fingerprintId).trim() ? String(data.fingerprintId).trim() : null;
+    if (data.nfcCardId !== undefined) cleanData.nfcCardId = cleanNfc;
+    if (data.fingerprintId !== undefined) cleanData.fingerprintId = cleanFp;
     if (data.status !== undefined) cleanData.status = data.status;
     if (data.joinedDate !== undefined) cleanData.joinedDate = data.joinedDate;
 
@@ -1466,9 +1577,9 @@ export async function updateStaff(id: string, data: any) {
       where: { id },
       data: cleanData
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error('Failed to update staff:', e);
-    throw new Error('Failed to update staff');
+    throw new Error(e?.message || 'Failed to update staff');
   }
 }
 
@@ -1483,6 +1594,24 @@ export async function deleteStaff(id: string) {
 
 export async function getStaffAttendance(gymId: string) {
   try {
+    // Auto-expire orphan staff shifts exceeding cutoff hours
+    const gymSettings = await prisma.gymSettings.findUnique({ where: { gymId } });
+    const cutoffHours = gymSettings?.staffCutoffHours || 12;
+    const cutoffThreshold = new Date(Date.now() - (cutoffHours * 60 * 60 * 1000)).toISOString();
+    
+    const expired = await prisma.staffAttendanceRecord.findMany({
+      where: { gymId, checkOutTime: null, checkInTime: { lt: cutoffThreshold } }
+    });
+    
+    for (const rec of expired) {
+      const checkIn = new Date(rec.checkInTime);
+      const autoOut = new Date(checkIn.getTime() + (cutoffHours * 60 * 60 * 1000)).toISOString();
+      await prisma.staffAttendanceRecord.update({
+        where: { id: rec.id },
+        data: { checkOutTime: autoOut, durationMinutes: cutoffHours * 60 }
+      }).catch(() => {});
+    }
+
     return await prisma.staffAttendanceRecord.findMany({
       where: { gymId },
       orderBy: { checkInTime: 'desc' }
@@ -1500,6 +1629,10 @@ export async function toggleStaffCheckIn(staffId: string) {
     const todayStr = getLocalTodayDateString();
     const nowIso = new Date().toISOString();
     
+    // Get gym staff cutoff timer setting
+    const gymSettings = await prisma.gymSettings.findUnique({ where: { gymId: staff.gymId } });
+    const cutoffHours = gymSettings?.staffCutoffHours || 12;
+
     const activeRecord = await prisma.staffAttendanceRecord.findFirst({
       where: {
         staffId: staffId,
@@ -1513,8 +1646,8 @@ export async function toggleStaffCheckIn(staffId: string) {
       const now = new Date(nowIso);
       const diffHours = (now.getTime() - checkInDate.getTime()) / (1000 * 60 * 60);
 
-      // If active shift was started within the last 20 hours, treat as checkout
-      if (diffHours < 20) {
+      // If active shift was started within cutoffHours, treat as checkout
+      if (diffHours <= cutoffHours) {
         let diffMins = Math.floor((now.getTime() - checkInDate.getTime()) / 60000);
         if (diffMins < 0) diffMins = 0;
 
@@ -1527,6 +1660,17 @@ export async function toggleStaffCheckIn(staffId: string) {
         });
         if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
         return { record: updated, action: 'checkout' };
+      } else {
+        // Shift exceeded cut-off threshold (staff forgot to punch out earlier)
+        // Auto-close previous shift and start fresh punch-in
+        const autoOut = new Date(checkInDate.getTime() + (cutoffHours * 60 * 60 * 1000)).toISOString();
+        await prisma.staffAttendanceRecord.update({
+          where: { id: activeRecord.id },
+          data: {
+            checkOutTime: autoOut,
+            durationMinutes: cutoffHours * 60
+          }
+        }).catch(() => {});
       }
     }
 
@@ -1545,5 +1689,118 @@ export async function toggleStaffCheckIn(staffId: string) {
   } catch (e) {
     console.error(e);
     return null;
+  }
+}
+
+// --- AUTOMATED WHATSAPP REMINDERS ENGINE ---
+export async function processDailyAutomatedReminders(gymId: string) {
+  try {
+    const today = getLocalTodayDateString();
+    const gym = await prisma.gym.findUnique({ where: { id: gymId } });
+    if (!gym) return { success: false, reason: 'Gym not found' };
+
+    const settings = await prisma.gymSettings.findUnique({ where: { gymId } });
+    if (!settings) return { success: false, reason: 'Settings not found' };
+
+    const waAutoMessages = settings.waAutoMessages ?? true;
+    const absentTracking = settings.absentTrackingEnabled ?? false;
+    const reminderWindowDays = settings.waReminderWindowDays ?? 3;
+    const absentThresholdDays = settings.absentThresholdDays ?? 3;
+
+    // Fetch all members of this gym who activated WhatsApp services (waActive === true)
+    const activeWaMembers = await prisma.customer.findMany({
+      where: { gymId, waActive: true },
+      include: {
+        attendance: {
+          orderBy: { checkInTime: 'desc' },
+          take: 1
+        }
+      }
+    });
+
+    let dueRemindersSent = 0;
+    let absenteeRemindersSent = 0;
+
+    const [todayY, todayM, todayD] = today.split('-').map(Number);
+    const targetDateObj = new Date(todayY, todayM - 1, todayD + reminderWindowDays);
+    const targetDateStr = `${targetDateObj.getFullYear()}-${String(targetDateObj.getMonth() + 1).padStart(2, '0')}-${String(targetDateObj.getDate()).padStart(2, '0')}`;
+
+    for (const cust of activeWaMembers) {
+      // 1. DUE / SUBSCRIPTION & OVERDUE REMINDER (Runs if waAutoMessages is enabled)
+      if (waAutoMessages && cust.nextDueDate) {
+        // If due within reminderWindowDays or overdue (nextDueDate <= targetDateStr)
+        const isDueOrOverdue = cust.nextDueDate <= targetDateStr;
+        const notSentToday = cust.lastReminderSentDate !== today;
+
+        if (isDueOrOverdue && notSentToday) {
+          const rawTemplate = getTemplate(settings, 'reminder');
+          const waMessage = compileTemplate(rawTemplate, {
+            name: cust.name,
+            gymName: gym.name,
+            phone: cust.phone,
+            plan: cust.planType,
+            amount: cust.feeAmount?.toString() || '0',
+            dueDate: formatDateDDMMYYYY(cust.nextDueDate)
+          });
+
+          await WhatsAppManager.sendMessage(gymId, cust.phone, waMessage).catch(() => {});
+          
+          await prisma.customer.update({
+            where: { id: cust.id },
+            data: { lastReminderSentDate: today }
+          }).catch(() => {});
+
+          dueRemindersSent++;
+        }
+      }
+
+      // 2. ABSENTEE REMINDER (Runs if absentTrackingEnabled is enabled)
+      if (absentTracking) {
+        const lastAtt = cust.attendance[0];
+        let daysAbsent = 999;
+
+        if (lastAtt && lastAtt.dateStr) {
+          const [aY, aM, aD] = lastAtt.dateStr.split('-').map(Number);
+          const attDate = new Date(aY, aM - 1, aD);
+          const todayDate = new Date(todayY, todayM - 1, todayD);
+          daysAbsent = Math.floor((todayDate.getTime() - attDate.getTime()) / (1000 * 60 * 60 * 24));
+        } else if (cust.joinedDate) {
+          const [jY, jM, jD] = cust.joinedDate.split('-').map(Number);
+          const joinDate = new Date(jY, jM - 1, jD);
+          const todayDate = new Date(todayY, todayM - 1, todayD);
+          daysAbsent = Math.floor((todayDate.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24));
+        }
+
+        const isAbsentThresholdMet = daysAbsent >= absentThresholdDays;
+        const notSentAbsentToday = cust.lastAbsenteeSentDate !== today;
+
+        if (isAbsentThresholdMet && notSentAbsentToday) {
+          const rawTemplate = getTemplate(settings, 'absentee');
+          const waMessage = compileTemplate(rawTemplate, {
+            name: cust.name,
+            gymName: gym.name,
+            days: daysAbsent.toString()
+          });
+
+          await WhatsAppManager.sendMessage(gymId, cust.phone, waMessage).catch(() => {});
+
+          await prisma.customer.update({
+            where: { id: cust.id },
+            data: { lastAbsenteeSentDate: today }
+          }).catch(() => {});
+
+          absenteeRemindersSent++;
+        }
+      }
+    }
+
+    return {
+      success: true,
+      dueRemindersSent,
+      absenteeRemindersSent
+    };
+  } catch (err: any) {
+    console.error('Error processing automated reminders:', err);
+    return { success: false, error: err?.message };
   }
 }

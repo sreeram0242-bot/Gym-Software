@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   UserPlus, Download, Trash2, Search, Briefcase, LogIn, LogOut, Clock, 
   UserCheck, Calendar, Filter, Edit, Radio, Fingerprint, Phone, CheckCircle, 
-  AlertCircle, ChevronRight, X, Sparkles, Shield
+  AlertCircle, ChevronRight, X, Sparkles, Shield, Users
 } from 'lucide-react';
 import { getStaffs, getStaffAttendance, addStaff, updateStaff, deleteStaff, toggleStaffCheckIn } from '@/lib/actions';
 import { exportToCSV, formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
@@ -95,13 +95,43 @@ export default function StaffPage() {
 
   const handleSaveStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!staffName.trim()) {
+    const cleanName = staffName.trim();
+    const cleanPhone = staffPhone.trim();
+    const cleanNfc = nfcCardId.trim();
+    const cleanFp = fingerprintId.trim();
+
+    if (!cleanName) {
       setModalError('Please enter the employee full name.');
       return;
     }
-    if (!staffPhone.trim()) {
+    if (!cleanPhone) {
       setModalError('Please enter the employee contact phone number.');
       return;
+    }
+
+    // 1. Check duplicate phone
+    const dupPhone = staffs.find(s => s.phone === cleanPhone && s.id !== editingStaffId);
+    if (dupPhone) {
+      setModalError(`Phone number "${cleanPhone}" is already assigned to staff: ${dupPhone.name} (${dupPhone.role}).`);
+      return;
+    }
+
+    // 2. Check duplicate NFC Card ID
+    if (cleanNfc) {
+      const dupNfc = staffs.find(s => s.nfcCardId && s.nfcCardId.toLowerCase() === cleanNfc.toLowerCase() && s.id !== editingStaffId);
+      if (dupNfc) {
+        setModalError(`NFC Card ID "${cleanNfc}" is already assigned to staff: ${dupNfc.name}.`);
+        return;
+      }
+    }
+
+    // 3. Check duplicate Fingerprint ID
+    if (cleanFp) {
+      const dupFp = staffs.find(s => s.fingerprintId && s.fingerprintId.toLowerCase() === cleanFp.toLowerCase() && s.id !== editingStaffId);
+      if (dupFp) {
+        setModalError(`Fingerprint ID "${cleanFp}" is already assigned to staff: ${dupFp.name}.`);
+        return;
+      }
     }
 
     setIsSaving(true);
@@ -110,11 +140,11 @@ export default function StaffPage() {
     try {
       const payload = {
         gymId,
-        name: staffName.trim(),
-        phone: staffPhone.trim(),
+        name: cleanName,
+        phone: cleanPhone,
         role: staffRole.trim() || 'Trainer',
-        nfcCardId: nfcCardId.trim() || null,
-        fingerprintId: fingerprintId.trim() || null,
+        nfcCardId: cleanNfc || null,
+        fingerprintId: cleanFp || null,
         joinedDate: joinedDate || getLocalTodayDateString(),
         status: 'active'
       };
@@ -138,7 +168,19 @@ export default function StaffPage() {
   const handleManualPunch = async (staffId: string) => {
     setPunchLoading(staffId);
     try {
-      await toggleStaffCheckIn(staffId);
+      const staffRes = await toggleStaffCheckIn(staffId);
+      const staffObj = staffs.find(s => s.id === staffId);
+      if (staffObj && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('staff_punch_event', {
+          detail: {
+            staffName: staffObj.name,
+            staffRole: staffObj.role,
+            action: staffRes?.action,
+            record: staffRes?.record,
+            durationMinutes: staffRes?.record?.durationMinutes
+          }
+        }));
+      }
       await loadData();
     } catch (err) {
       console.error('Punch error:', err);
@@ -257,6 +299,26 @@ export default function StaffPage() {
     return (totalMinutes / 60 / completed.length).toFixed(1);
   }, [attendance]);
 
+  // Today's Unique Staff Attendance Cards (Same design as members)
+  const todayStr = getLocalTodayDateString();
+  const todayStaffRecords = attendance.filter((a) => a.dateStr === todayStr);
+  const activeStaffSessions = todayStaffRecords.filter(a => !a.checkOutTime);
+
+  const uniqueTodayStaffRecords: any[] = [];
+  const seenStaffIds = new Set<string>();
+  const sortedRawStaffRecords = [...todayStaffRecords].sort((a, b) => {
+    if (!a.checkOutTime && b.checkOutTime) return -1;
+    if (a.checkOutTime && !b.checkOutTime) return 1;
+    return 0;
+  });
+
+  sortedRawStaffRecords.forEach(rec => {
+    if (!seenStaffIds.has(rec.staffId)) {
+      seenStaffIds.add(rec.staffId);
+      uniqueTodayStaffRecords.push(rec);
+    }
+  });
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-24">
       {/* Header Banner */}
@@ -330,6 +392,116 @@ export default function StaffPage() {
           <p className="text-2xl font-black text-slate-900">{avgShiftHours} <span className="text-sm font-semibold text-slate-400">hrs</span></p>
           <p className="text-[11px] text-slate-400 mt-0.5 font-medium">Per completed shift</p>
         </div>
+      </div>
+
+      {/* SECTION: Today's Active Staff Shift Cards (Exact same design as member cards) */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <h2 className="font-black text-slate-900 text-base mb-1 flex items-center space-x-2">
+          <Briefcase className="w-5 h-5 text-blue-600" />
+          <span>Today's Staff Shift Status ({activeStaffSessions.length} On Duty)</span>
+        </h2>
+        <p className="text-xs text-slate-500 mb-6">
+          Real-time check-in and check-out status of gym trainers and staff today.
+        </p>
+
+        {uniqueTodayStaffRecords.length === 0 ? (
+          <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center">
+            <Briefcase className="w-8 h-8 mb-2 opacity-40 text-slate-500" />
+            <p className="font-bold text-slate-600 text-sm">No staff punches logged today</p>
+            <p className="text-xs mt-0.5 text-slate-400">Scan employee NFC badge, tap fingerprint sensor, or use quick punch below.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {uniqueTodayStaffRecords.map(session => {
+              const staffObj = staffs.find(s => s.id === session.staffId);
+              const isActive = !session.checkOutTime;
+              const checkInDate = new Date(session.checkInTime);
+              const elapsedMinutes = Math.floor((Date.now() - checkInDate.getTime()) / 60000);
+              const isPunching = punchLoading === session.staffId;
+
+              return (
+                <div key={session.id} className={`p-4 rounded-2xl border relative overflow-hidden transition-all hover:shadow-md ${
+                  isActive 
+                    ? 'border-purple-300 bg-gradient-to-br from-purple-50/70 via-white to-emerald-50/30 shadow-sm' 
+                    : 'border-slate-200 bg-slate-50/50 opacity-80'
+                }`}>
+                  <div className={`absolute top-0 right-0 text-[10px] font-black px-2.5 py-1 rounded-bl-xl shadow-xs flex items-center gap-1 ${
+                    isActive 
+                      ? 'bg-emerald-600 text-white animate-pulse' 
+                      : 'bg-slate-400 text-white'
+                  }`}>
+                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
+                    <span>{isActive ? `ON DUTY (${elapsedMinutes}m)` : 'COMPLETED'}</span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm border ${
+                      isActive 
+                        ? 'bg-purple-900 text-white border-purple-900 shadow-sm' 
+                        : 'bg-slate-200 text-slate-600 border-slate-300'
+                    }`}>
+                      {session.staffName.charAt(0)}
+                    </div>
+                    <div className="min-w-0 pr-12">
+                      <div className="font-bold text-slate-900 text-sm leading-tight truncate">{session.staffName}</div>
+                      <div className="text-[10px] font-mono text-slate-500 font-semibold">{staffObj?.role || 'Staff'} • {session.staffPhone}</div>
+                    </div>
+                  </div>
+                  
+                  <div className={`space-y-1.5 text-xs text-slate-600 mt-4 border-t pt-3 ${
+                    isActive ? 'border-purple-100' : 'border-slate-200'
+                  }`}>
+                    <div className="flex justify-between">
+                      <span className="font-semibold text-slate-400">Punch IN:</span>
+                      <span className="font-bold text-slate-800">{checkInDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true})}</span>
+                    </div>
+                    {!isActive && (
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-slate-400">Punch OUT:</span>
+                        <span className="font-bold text-slate-800">{new Date(session.checkOutTime!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true})}</span>
+                      </div>
+                    )}
+                    {staffObj && (
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-slate-400">Hardware ID:</span>
+                        <span className="font-mono font-bold text-slate-800 text-[11px]">
+                          {staffObj.nfcCardId ? `NFC: ${staffObj.nfcCardId}` : staffObj.fingerprintId ? `FP: #${staffObj.fingerprintId}` : 'Manual'}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center pt-2 mt-1 border-t border-slate-100 border-dashed">
+                      <span className="font-semibold text-slate-400">Shift Total:</span>
+                      <span className="font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                        {session.durationMinutes ? `${Math.floor(session.durationMinutes / 60)}h ${session.durationMinutes % 60}m` : 'In Progress'}
+                      </span>
+                    </div>
+
+                    {/* Quick Punch Button on card */}
+                    <div className="pt-2">
+                      <button
+                        onClick={() => handleManualPunch(session.staffId)}
+                        disabled={isPunching}
+                        className={`w-full py-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-xs ${
+                          isActive 
+                            ? 'bg-rose-600 hover:bg-rose-700 text-white' 
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        {isPunching ? (
+                          <span className="animate-spin text-xs">⌛</span>
+                        ) : isActive ? (
+                          <><LogOut className="w-3.5 h-3.5" /> Punch OUT</>
+                        ) : (
+                          <><LogIn className="w-3.5 h-3.5" /> Punch IN</>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Main Content Layout */}

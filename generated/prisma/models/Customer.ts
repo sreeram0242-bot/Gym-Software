@@ -54,6 +54,8 @@ export type CustomerMinAggregateOutputType = {
   status: string | null
   joinedDate: string | null
   waActive: boolean | null
+  lastReminderSentDate: string | null
+  lastAbsenteeSentDate: string | null
 }
 
 export type CustomerMaxAggregateOutputType = {
@@ -74,6 +76,8 @@ export type CustomerMaxAggregateOutputType = {
   status: string | null
   joinedDate: string | null
   waActive: boolean | null
+  lastReminderSentDate: string | null
+  lastAbsenteeSentDate: string | null
 }
 
 export type CustomerCountAggregateOutputType = {
@@ -94,6 +98,8 @@ export type CustomerCountAggregateOutputType = {
   status: number
   joinedDate: number
   waActive: number
+  lastReminderSentDate: number
+  lastAbsenteeSentDate: number
   _all: number
 }
 
@@ -126,6 +132,8 @@ export type CustomerMinAggregateInputType = {
   status?: true
   joinedDate?: true
   waActive?: true
+  lastReminderSentDate?: true
+  lastAbsenteeSentDate?: true
 }
 
 export type CustomerMaxAggregateInputType = {
@@ -146,6 +154,8 @@ export type CustomerMaxAggregateInputType = {
   status?: true
   joinedDate?: true
   waActive?: true
+  lastReminderSentDate?: true
+  lastAbsenteeSentDate?: true
 }
 
 export type CustomerCountAggregateInputType = {
@@ -166,6 +176,8 @@ export type CustomerCountAggregateInputType = {
   status?: true
   joinedDate?: true
   waActive?: true
+  lastReminderSentDate?: true
+  lastAbsenteeSentDate?: true
   _all?: true
 }
 
@@ -273,6 +285,8 @@ export type CustomerGroupByOutputType = {
   status: string
   joinedDate: string
   waActive: boolean
+  lastReminderSentDate: string | null
+  lastAbsenteeSentDate: string | null
   _count: CustomerCountAggregateOutputType | null
   _avg: CustomerAvgAggregateOutputType | null
   _sum: CustomerSumAggregateOutputType | null
@@ -316,6 +330,8 @@ export type CustomerWhereInput = {
   status?: Prisma.StringFilter<"Customer"> | string
   joinedDate?: Prisma.StringFilter<"Customer"> | string
   waActive?: Prisma.BoolFilter<"Customer"> | boolean
+  lastReminderSentDate?: Prisma.StringNullableFilter<"Customer"> | string | null
+  lastAbsenteeSentDate?: Prisma.StringNullableFilter<"Customer"> | string | null
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
   attendance?: Prisma.AttendanceRecordListRelationFilter
   transactions?: Prisma.TransactionListRelationFilter
@@ -340,6 +356,8 @@ export type CustomerOrderByWithRelationInput = {
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
   waActive?: Prisma.SortOrder
+  lastReminderSentDate?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastAbsenteeSentDate?: Prisma.SortOrderInput | Prisma.SortOrder
   gym?: Prisma.GymOrderByWithRelationInput
   attendance?: Prisma.AttendanceRecordOrderByRelationAggregateInput
   transactions?: Prisma.TransactionOrderByRelationAggregateInput
@@ -367,6 +385,8 @@ export type CustomerWhereUniqueInput = Prisma.AtLeast<{
   status?: Prisma.StringFilter<"Customer"> | string
   joinedDate?: Prisma.StringFilter<"Customer"> | string
   waActive?: Prisma.BoolFilter<"Customer"> | boolean
+  lastReminderSentDate?: Prisma.StringNullableFilter<"Customer"> | string | null
+  lastAbsenteeSentDate?: Prisma.StringNullableFilter<"Customer"> | string | null
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
   attendance?: Prisma.AttendanceRecordListRelationFilter
   transactions?: Prisma.TransactionListRelationFilter
@@ -391,6 +411,8 @@ export type CustomerOrderByWithAggregationInput = {
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
   waActive?: Prisma.SortOrder
+  lastReminderSentDate?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastAbsenteeSentDate?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.CustomerCountOrderByAggregateInput
   _avg?: Prisma.CustomerAvgOrderByAggregateInput
   _max?: Prisma.CustomerMaxOrderByAggregateInput
@@ -419,6 +441,8 @@ export type CustomerScalarWhereWithAggregatesInput = {
   status?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   joinedDate?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   waActive?: Prisma.BoolWithAggregatesFilter<"Customer"> | boolean
+  lastReminderSentDate?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
+  lastAbsenteeSentDate?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
 }
 
 export type CustomerCreateInput = {
@@ -438,6 +462,8 @@ export type CustomerCreateInput = {
   status?: string
   joinedDate: string
   waActive?: boolean
+  lastReminderSentDate?: string | null
+  lastAbsenteeSentDate?: string | null
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
@@ -462,6 +488,8 @@ export type CustomerUncheckedCreateInput = {
   status?: string
   joinedDate: string
   waActive?: boolean
+  lastReminderSentDate?: string | null
+  lastAbsenteeSentDate?: string | null
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
@@ -484,6 +512,8 @@ export type CustomerUpdateInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
@@ -508,6 +538,8 @@ export type CustomerUncheckedUpdateInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
@@ -531,6 +563,8 @@ export type CustomerCreateManyInput = {
   status?: string
   joinedDate: string
   waActive?: boolean
+  lastReminderSentDate?: string | null
+  lastAbsenteeSentDate?: string | null
 }
 
 export type CustomerUpdateManyMutationInput = {
@@ -550,6 +584,8 @@ export type CustomerUpdateManyMutationInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type CustomerUncheckedUpdateManyInput = {
@@ -570,6 +606,8 @@ export type CustomerUncheckedUpdateManyInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type CustomerListRelationFilter = {
@@ -600,6 +638,8 @@ export type CustomerCountOrderByAggregateInput = {
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
   waActive?: Prisma.SortOrder
+  lastReminderSentDate?: Prisma.SortOrder
+  lastAbsenteeSentDate?: Prisma.SortOrder
 }
 
 export type CustomerAvgOrderByAggregateInput = {
@@ -625,6 +665,8 @@ export type CustomerMaxOrderByAggregateInput = {
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
   waActive?: Prisma.SortOrder
+  lastReminderSentDate?: Prisma.SortOrder
+  lastAbsenteeSentDate?: Prisma.SortOrder
 }
 
 export type CustomerMinOrderByAggregateInput = {
@@ -645,6 +687,8 @@ export type CustomerMinOrderByAggregateInput = {
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
   waActive?: Prisma.SortOrder
+  lastReminderSentDate?: Prisma.SortOrder
+  lastAbsenteeSentDate?: Prisma.SortOrder
 }
 
 export type CustomerSumOrderByAggregateInput = {
@@ -775,6 +819,8 @@ export type CustomerCreateWithoutGymInput = {
   status?: string
   joinedDate: string
   waActive?: boolean
+  lastReminderSentDate?: string | null
+  lastAbsenteeSentDate?: string | null
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutCustomerInput
@@ -797,6 +843,8 @@ export type CustomerUncheckedCreateWithoutGymInput = {
   status?: string
   joinedDate: string
   waActive?: boolean
+  lastReminderSentDate?: string | null
+  lastAbsenteeSentDate?: string | null
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
@@ -849,6 +897,8 @@ export type CustomerScalarWhereInput = {
   status?: Prisma.StringFilter<"Customer"> | string
   joinedDate?: Prisma.StringFilter<"Customer"> | string
   waActive?: Prisma.BoolFilter<"Customer"> | boolean
+  lastReminderSentDate?: Prisma.StringNullableFilter<"Customer"> | string | null
+  lastAbsenteeSentDate?: Prisma.StringNullableFilter<"Customer"> | string | null
 }
 
 export type CustomerCreateWithoutAttendanceInput = {
@@ -868,6 +918,8 @@ export type CustomerCreateWithoutAttendanceInput = {
   status?: string
   joinedDate: string
   waActive?: boolean
+  lastReminderSentDate?: string | null
+  lastAbsenteeSentDate?: string | null
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutCustomerInput
@@ -891,6 +943,8 @@ export type CustomerUncheckedCreateWithoutAttendanceInput = {
   status?: string
   joinedDate: string
   waActive?: boolean
+  lastReminderSentDate?: string | null
+  lastAbsenteeSentDate?: string | null
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
 }
@@ -928,6 +982,8 @@ export type CustomerUpdateWithoutAttendanceInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutCustomerNestedInput
@@ -951,6 +1007,8 @@ export type CustomerUncheckedUpdateWithoutAttendanceInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
 }
@@ -972,6 +1030,8 @@ export type CustomerCreateWithoutTransactionsInput = {
   status?: string
   joinedDate: string
   waActive?: boolean
+  lastReminderSentDate?: string | null
+  lastAbsenteeSentDate?: string | null
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutCustomerInput
@@ -995,6 +1055,8 @@ export type CustomerUncheckedCreateWithoutTransactionsInput = {
   status?: string
   joinedDate: string
   waActive?: boolean
+  lastReminderSentDate?: string | null
+  lastAbsenteeSentDate?: string | null
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
 }
@@ -1032,6 +1094,8 @@ export type CustomerUpdateWithoutTransactionsInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutCustomerNestedInput
@@ -1055,6 +1119,8 @@ export type CustomerUncheckedUpdateWithoutTransactionsInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
 }
@@ -1076,6 +1142,8 @@ export type CustomerCreateWithoutProductSalesInput = {
   status?: string
   joinedDate: string
   waActive?: boolean
+  lastReminderSentDate?: string | null
+  lastAbsenteeSentDate?: string | null
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
@@ -1099,6 +1167,8 @@ export type CustomerUncheckedCreateWithoutProductSalesInput = {
   status?: string
   joinedDate: string
   waActive?: boolean
+  lastReminderSentDate?: string | null
+  lastAbsenteeSentDate?: string | null
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
 }
@@ -1136,6 +1206,8 @@ export type CustomerUpdateWithoutProductSalesInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
@@ -1159,6 +1231,8 @@ export type CustomerUncheckedUpdateWithoutProductSalesInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
 }
@@ -1180,6 +1254,8 @@ export type CustomerCreateManyGymInput = {
   status?: string
   joinedDate: string
   waActive?: boolean
+  lastReminderSentDate?: string | null
+  lastAbsenteeSentDate?: string | null
 }
 
 export type CustomerUpdateWithoutGymInput = {
@@ -1199,6 +1275,8 @@ export type CustomerUpdateWithoutGymInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutCustomerNestedInput
@@ -1221,6 +1299,8 @@ export type CustomerUncheckedUpdateWithoutGymInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1243,6 +1323,8 @@ export type CustomerUncheckedUpdateManyWithoutGymInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -1312,6 +1394,8 @@ export type CustomerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   status?: boolean
   joinedDate?: boolean
   waActive?: boolean
+  lastReminderSentDate?: boolean
+  lastAbsenteeSentDate?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
   attendance?: boolean | Prisma.Customer$attendanceArgs<ExtArgs>
   transactions?: boolean | Prisma.Customer$transactionsArgs<ExtArgs>
@@ -1337,6 +1421,8 @@ export type CustomerSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   status?: boolean
   joinedDate?: boolean
   waActive?: boolean
+  lastReminderSentDate?: boolean
+  lastAbsenteeSentDate?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["customer"]>
 
@@ -1358,6 +1444,8 @@ export type CustomerSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   status?: boolean
   joinedDate?: boolean
   waActive?: boolean
+  lastReminderSentDate?: boolean
+  lastAbsenteeSentDate?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["customer"]>
 
@@ -1379,9 +1467,11 @@ export type CustomerSelectScalar = {
   status?: boolean
   joinedDate?: boolean
   waActive?: boolean
+  lastReminderSentDate?: boolean
+  lastAbsenteeSentDate?: boolean
 }
 
-export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "memberId" | "gymId" | "name" | "phone" | "nfcCardId" | "nfcCardId2" | "fingerprintId" | "planType" | "feeAmount" | "lastPaymentDate" | "nextDueDate" | "pendingBalance" | "balanceDueDate" | "status" | "joinedDate" | "waActive", ExtArgs["result"]["customer"]>
+export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "memberId" | "gymId" | "name" | "phone" | "nfcCardId" | "nfcCardId2" | "fingerprintId" | "planType" | "feeAmount" | "lastPaymentDate" | "nextDueDate" | "pendingBalance" | "balanceDueDate" | "status" | "joinedDate" | "waActive" | "lastReminderSentDate" | "lastAbsenteeSentDate", ExtArgs["result"]["customer"]>
 export type CustomerInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
   attendance?: boolean | Prisma.Customer$attendanceArgs<ExtArgs>
@@ -1422,6 +1512,8 @@ export type $CustomerPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     status: string
     joinedDate: string
     waActive: boolean
+    lastReminderSentDate: string | null
+    lastAbsenteeSentDate: string | null
   }, ExtArgs["result"]["customer"]>
   composites: {}
 }
@@ -1866,6 +1958,8 @@ export interface CustomerFieldRefs {
   readonly status: Prisma.FieldRef<"Customer", 'String'>
   readonly joinedDate: Prisma.FieldRef<"Customer", 'String'>
   readonly waActive: Prisma.FieldRef<"Customer", 'Boolean'>
+  readonly lastReminderSentDate: Prisma.FieldRef<"Customer", 'String'>
+  readonly lastAbsenteeSentDate: Prisma.FieldRef<"Customer", 'String'>
 }
     
 

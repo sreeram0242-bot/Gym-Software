@@ -15,12 +15,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [gyms, setGyms] = useState<any[]>([]);
   const [currentGym, setCurrentGym] = useState<any | null>(null);
 
-  // Global Notification for NFC scans
+  // Global Notification for Member Scans (Top Right)
   const [globalNotification, setGlobalNotification] = useState<{
     customerName: string;
     action: 'checkin' | 'checkout';
     record: any;
     avgHours: number;
+  } | null>(null);
+
+  // Global Notification for Staff Punches (Bottom Right)
+  const [globalStaffNotification, setGlobalStaffNotification] = useState<{
+    staffName: string;
+    staffRole: string;
+    action: 'checkin' | 'checkout';
+    record: any;
+    durationMinutes?: number | null;
   } | null>(null);
 
   const [waStatus, setWaStatus] = useState<string>('connected');
@@ -85,6 +94,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       };
       checkWaStatus(matched.id);
       const waInterval = setInterval(() => checkWaStatus(matched.id), 60000);
+
+      // Automated Daily Reminders (Due, Overdue, Absentee)
+      const runDailyReminders = async (id: string) => {
+        try {
+          const lastRunKey = `last_auto_reminders_${id}`;
+          const today = new Date().toISOString().split('T')[0];
+          if (localStorage.getItem(lastRunKey) !== today) {
+            localStorage.setItem(lastRunKey, today);
+            fetch('/api/whatsapp/auto-reminders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ gymId: id })
+            }).catch(() => {});
+          }
+        } catch (e) {}
+      };
+      runDailyReminders(matched.id);
 
       // Global NFC scanner keyboard listener
       let buffer = '';
@@ -166,14 +192,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             if (matchedStaff) {
               const staffRes = await toggleStaffCheckIn(matchedStaff.id);
               const isPunchIn = staffRes?.action === 'checkin';
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('global-toast', { 
-                  detail: { 
-                    message: `Staff ${isPunchIn ? 'Punch IN' : 'Punch OUT'}: ${matchedStaff.name} (${matchedStaff.role})`, 
-                    type: 'success' 
-                  } 
-                }));
-              }
+              
+              setGlobalStaffNotification({
+                staffName: matchedStaff.name,
+                staffRole: matchedStaff.role || 'Staff',
+                action: isPunchIn ? 'checkin' : 'checkout',
+                record: staffRes?.record,
+                durationMinutes: staffRes?.record?.durationMinutes
+              });
+
+              if (notificationTimeout) clearTimeout(notificationTimeout);
+              notificationTimeout = setTimeout(() => {
+                setGlobalStaffNotification(null);
+              }, 5000);
             } else {
               // New unregistered NFC Card scanned!
               if (typeof window !== 'undefined') {
@@ -199,9 +230,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       };
       window.addEventListener('global-toast', handleGlobalToast);
 
+      const handleStaffPunchEvent = (e: any) => {
+        if (e.detail) {
+          setGlobalStaffNotification({
+            staffName: e.detail.staffName,
+            staffRole: e.detail.staffRole || 'Staff',
+            action: e.detail.action || 'checkin',
+            record: e.detail.record,
+            durationMinutes: e.detail.durationMinutes
+          });
+          if (notificationTimeout) clearTimeout(notificationTimeout);
+          notificationTimeout = setTimeout(() => {
+            setGlobalStaffNotification(null);
+          }, 5000);
+        }
+      };
+      window.addEventListener('staff_punch_event', handleStaffPunchEvent);
+
       return () => {
         window.removeEventListener('keydown', handleKeyDown as unknown as EventListener);
         window.removeEventListener('global-toast', handleGlobalToast);
+        window.removeEventListener('staff_punch_event', handleStaffPunchEvent);
         if (notificationTimeout) clearTimeout(notificationTimeout);
         clearInterval(waInterval);
       };
@@ -487,14 +536,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         })}
       </div>
 
-      {/* GLOBAL NFC NOTIFICATION POPUP */}
+      {/* MEMBER CHECK-IN NOTIFICATION POPUP (TOP RIGHT CORNER) */}
       {globalNotification && (
         <div className="fixed top-20 right-4 sm:right-8 z-[100] max-w-sm w-full animate-in slide-in-from-right-8 fade-in duration-300">
           <div
             className={`p-4 rounded-2xl border shadow-2xl flex items-center justify-between relative ${
               globalNotification.action === 'checkin'
                 ? 'bg-blue-900 text-white border-blue-950'
-                : 'bg-slate-500 text-white border-slate-600'
+                : 'bg-slate-700 text-white border-slate-800'
             }`}
           >
             <div className="flex items-center space-x-3">
@@ -502,8 +551,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {globalNotification.customerName.charAt(0)}
               </div>
               <div>
-                <div className="text-[10px] uppercase font-bold tracking-wider opacity-80">
-                  {globalNotification.action === 'checkin' ? '✓ MEMBER CHECKED IN' : '✓ MEMBER CHECKED OUT'}
+                <div className="text-[10px] uppercase font-bold tracking-wider opacity-80 flex items-center gap-1">
+                  <span>{globalNotification.action === 'checkin' ? '✓ MEMBER CHECKED IN' : '✓ MEMBER CHECKED OUT'}</span>
                 </div>
                 <h3 className="font-extrabold text-base leading-tight">{globalNotification.customerName}</h3>
                 <p className="text-xs opacity-90 mt-0.5">
@@ -514,12 +563,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="text-right font-mono text-[10px] bg-white/10 px-2 py-1.5 rounded-lg backdrop-blur-md self-start ml-2">
               <div>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-              {globalNotification.record.durationMinutes && (
+              {globalNotification.record?.durationMinutes && (
                 <div className="mt-1">Session: {globalNotification.record.durationMinutes}m</div>
               )}
             </div>
             
             <button onClick={() => setGlobalNotification(null)} className="absolute -top-2 -right-2 bg-white text-slate-900 rounded-full p-1 shadow-md hover:bg-slate-100">
+               <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STAFF CHECK-IN / SHIFT NOTIFICATION POPUP (BOTTOM RIGHT CORNER) */}
+      {globalStaffNotification && (
+        <div className="fixed bottom-6 right-4 sm:right-8 z-[100] max-w-sm w-full animate-in slide-in-from-bottom-8 fade-in duration-300">
+          <div
+            className={`p-4 rounded-2xl border shadow-2xl flex items-center justify-between relative ${
+              globalStaffNotification.action === 'checkin'
+                ? 'bg-purple-900 text-white border-purple-950'
+                : 'bg-rose-900 text-white border-rose-950'
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center font-bold text-xl">
+                {globalStaffNotification.staffName.charAt(0)}
+              </div>
+              <div>
+                <div className="text-[10px] uppercase font-bold tracking-wider opacity-80 flex items-center gap-1">
+                  <span>{globalStaffNotification.action === 'checkin' ? '✓ STAFF PUNCH IN (SHIFT STARTED)' : '✓ STAFF PUNCH OUT (SHIFT ENDED)'}</span>
+                </div>
+                <h3 className="font-extrabold text-base leading-tight">{globalStaffNotification.staffName}</h3>
+                <p className="text-xs opacity-90 mt-0.5 font-semibold">
+                  Role: <span className="font-bold underline">{globalStaffNotification.staffRole}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="text-right font-mono text-[10px] bg-white/10 px-2 py-1.5 rounded-lg backdrop-blur-md self-start ml-2">
+              <div>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+              {globalStaffNotification.durationMinutes ? (
+                <div className="mt-1 font-bold">Shift: {Math.floor(globalStaffNotification.durationMinutes / 60)}h {globalStaffNotification.durationMinutes % 60}m</div>
+              ) : null}
+            </div>
+            
+            <button onClick={() => setGlobalStaffNotification(null)} className="absolute -top-2 -right-2 bg-white text-slate-900 rounded-full p-1 shadow-md hover:bg-slate-100">
                <X className="w-4 h-4" />
             </button>
           </div>

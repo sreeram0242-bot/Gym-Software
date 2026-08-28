@@ -30,12 +30,16 @@ export type GymSettingsAvgAggregateOutputType = {
   absentThresholdDays: number | null
   waReminderWindowDays: number | null
   fingerprintAgentPort: number | null
+  memberCutoffHours: number | null
+  staffCutoffHours: number | null
 }
 
 export type GymSettingsSumAggregateOutputType = {
   absentThresholdDays: number | null
   waReminderWindowDays: number | null
   fingerprintAgentPort: number | null
+  memberCutoffHours: number | null
+  staffCutoffHours: number | null
 }
 
 export type GymSettingsMinAggregateOutputType = {
@@ -62,6 +66,8 @@ export type GymSettingsMinAggregateOutputType = {
   showStoreInRevenue: boolean | null
   attendanceMode: string | null
   fingerprintAgentPort: number | null
+  memberCutoffHours: number | null
+  staffCutoffHours: number | null
 }
 
 export type GymSettingsMaxAggregateOutputType = {
@@ -88,6 +94,8 @@ export type GymSettingsMaxAggregateOutputType = {
   showStoreInRevenue: boolean | null
   attendanceMode: string | null
   fingerprintAgentPort: number | null
+  memberCutoffHours: number | null
+  staffCutoffHours: number | null
 }
 
 export type GymSettingsCountAggregateOutputType = {
@@ -114,6 +122,8 @@ export type GymSettingsCountAggregateOutputType = {
   showStoreInRevenue: number
   attendanceMode: number
   fingerprintAgentPort: number
+  memberCutoffHours: number
+  staffCutoffHours: number
   _all: number
 }
 
@@ -122,12 +132,16 @@ export type GymSettingsAvgAggregateInputType = {
   absentThresholdDays?: true
   waReminderWindowDays?: true
   fingerprintAgentPort?: true
+  memberCutoffHours?: true
+  staffCutoffHours?: true
 }
 
 export type GymSettingsSumAggregateInputType = {
   absentThresholdDays?: true
   waReminderWindowDays?: true
   fingerprintAgentPort?: true
+  memberCutoffHours?: true
+  staffCutoffHours?: true
 }
 
 export type GymSettingsMinAggregateInputType = {
@@ -154,6 +168,8 @@ export type GymSettingsMinAggregateInputType = {
   showStoreInRevenue?: true
   attendanceMode?: true
   fingerprintAgentPort?: true
+  memberCutoffHours?: true
+  staffCutoffHours?: true
 }
 
 export type GymSettingsMaxAggregateInputType = {
@@ -180,6 +196,8 @@ export type GymSettingsMaxAggregateInputType = {
   showStoreInRevenue?: true
   attendanceMode?: true
   fingerprintAgentPort?: true
+  memberCutoffHours?: true
+  staffCutoffHours?: true
 }
 
 export type GymSettingsCountAggregateInputType = {
@@ -206,6 +224,8 @@ export type GymSettingsCountAggregateInputType = {
   showStoreInRevenue?: true
   attendanceMode?: true
   fingerprintAgentPort?: true
+  memberCutoffHours?: true
+  staffCutoffHours?: true
   _all?: true
 }
 
@@ -319,6 +339,8 @@ export type GymSettingsGroupByOutputType = {
   showStoreInRevenue: boolean
   attendanceMode: string
   fingerprintAgentPort: number
+  memberCutoffHours: number
+  staffCutoffHours: number
   _count: GymSettingsCountAggregateOutputType | null
   _avg: GymSettingsAvgAggregateOutputType | null
   _sum: GymSettingsSumAggregateOutputType | null
@@ -368,6 +390,8 @@ export type GymSettingsWhereInput = {
   showStoreInRevenue?: Prisma.BoolFilter<"GymSettings"> | boolean
   attendanceMode?: Prisma.StringFilter<"GymSettings"> | string
   fingerprintAgentPort?: Prisma.IntFilter<"GymSettings"> | number
+  memberCutoffHours?: Prisma.IntFilter<"GymSettings"> | number
+  staffCutoffHours?: Prisma.IntFilter<"GymSettings"> | number
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
 }
 
@@ -395,6 +419,8 @@ export type GymSettingsOrderByWithRelationInput = {
   showStoreInRevenue?: Prisma.SortOrder
   attendanceMode?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
+  memberCutoffHours?: Prisma.SortOrder
+  staffCutoffHours?: Prisma.SortOrder
   gym?: Prisma.GymOrderByWithRelationInput
 }
 
@@ -425,6 +451,8 @@ export type GymSettingsWhereUniqueInput = Prisma.AtLeast<{
   showStoreInRevenue?: Prisma.BoolFilter<"GymSettings"> | boolean
   attendanceMode?: Prisma.StringFilter<"GymSettings"> | string
   fingerprintAgentPort?: Prisma.IntFilter<"GymSettings"> | number
+  memberCutoffHours?: Prisma.IntFilter<"GymSettings"> | number
+  staffCutoffHours?: Prisma.IntFilter<"GymSettings"> | number
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
 }, "id" | "gymId">
 
@@ -452,6 +480,8 @@ export type GymSettingsOrderByWithAggregationInput = {
   showStoreInRevenue?: Prisma.SortOrder
   attendanceMode?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
+  memberCutoffHours?: Prisma.SortOrder
+  staffCutoffHours?: Prisma.SortOrder
   _count?: Prisma.GymSettingsCountOrderByAggregateInput
   _avg?: Prisma.GymSettingsAvgOrderByAggregateInput
   _max?: Prisma.GymSettingsMaxOrderByAggregateInput
@@ -486,6 +516,8 @@ export type GymSettingsScalarWhereWithAggregatesInput = {
   showStoreInRevenue?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
   attendanceMode?: Prisma.StringWithAggregatesFilter<"GymSettings"> | string
   fingerprintAgentPort?: Prisma.IntWithAggregatesFilter<"GymSettings"> | number
+  memberCutoffHours?: Prisma.IntWithAggregatesFilter<"GymSettings"> | number
+  staffCutoffHours?: Prisma.IntWithAggregatesFilter<"GymSettings"> | number
 }
 
 export type GymSettingsCreateInput = {
@@ -511,6 +543,8 @@ export type GymSettingsCreateInput = {
   showStoreInRevenue?: boolean
   attendanceMode?: string
   fingerprintAgentPort?: number
+  memberCutoffHours?: number
+  staffCutoffHours?: number
   gym: Prisma.GymCreateNestedOneWithoutGymSettingsInput
 }
 
@@ -538,6 +572,8 @@ export type GymSettingsUncheckedCreateInput = {
   showStoreInRevenue?: boolean
   attendanceMode?: string
   fingerprintAgentPort?: number
+  memberCutoffHours?: number
+  staffCutoffHours?: number
 }
 
 export type GymSettingsUpdateInput = {
@@ -563,6 +599,8 @@ export type GymSettingsUpdateInput = {
   showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
+  memberCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
+  staffCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
   gym?: Prisma.GymUpdateOneRequiredWithoutGymSettingsNestedInput
 }
 
@@ -590,6 +628,8 @@ export type GymSettingsUncheckedUpdateInput = {
   showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
+  memberCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
+  staffCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type GymSettingsCreateManyInput = {
@@ -616,6 +656,8 @@ export type GymSettingsCreateManyInput = {
   showStoreInRevenue?: boolean
   attendanceMode?: string
   fingerprintAgentPort?: number
+  memberCutoffHours?: number
+  staffCutoffHours?: number
 }
 
 export type GymSettingsUpdateManyMutationInput = {
@@ -641,6 +683,8 @@ export type GymSettingsUpdateManyMutationInput = {
   showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
+  memberCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
+  staffCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type GymSettingsUncheckedUpdateManyInput = {
@@ -667,6 +711,8 @@ export type GymSettingsUncheckedUpdateManyInput = {
   showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
+  memberCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
+  staffCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type GymSettingsNullableScalarRelationFilter = {
@@ -698,12 +744,16 @@ export type GymSettingsCountOrderByAggregateInput = {
   showStoreInRevenue?: Prisma.SortOrder
   attendanceMode?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
+  memberCutoffHours?: Prisma.SortOrder
+  staffCutoffHours?: Prisma.SortOrder
 }
 
 export type GymSettingsAvgOrderByAggregateInput = {
   absentThresholdDays?: Prisma.SortOrder
   waReminderWindowDays?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
+  memberCutoffHours?: Prisma.SortOrder
+  staffCutoffHours?: Prisma.SortOrder
 }
 
 export type GymSettingsMaxOrderByAggregateInput = {
@@ -730,6 +780,8 @@ export type GymSettingsMaxOrderByAggregateInput = {
   showStoreInRevenue?: Prisma.SortOrder
   attendanceMode?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
+  memberCutoffHours?: Prisma.SortOrder
+  staffCutoffHours?: Prisma.SortOrder
 }
 
 export type GymSettingsMinOrderByAggregateInput = {
@@ -756,12 +808,16 @@ export type GymSettingsMinOrderByAggregateInput = {
   showStoreInRevenue?: Prisma.SortOrder
   attendanceMode?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
+  memberCutoffHours?: Prisma.SortOrder
+  staffCutoffHours?: Prisma.SortOrder
 }
 
 export type GymSettingsSumOrderByAggregateInput = {
   absentThresholdDays?: Prisma.SortOrder
   waReminderWindowDays?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
+  memberCutoffHours?: Prisma.SortOrder
+  staffCutoffHours?: Prisma.SortOrder
 }
 
 export type GymSettingsCreateNestedOneWithoutGymInput = {
@@ -819,6 +875,8 @@ export type GymSettingsCreateWithoutGymInput = {
   showStoreInRevenue?: boolean
   attendanceMode?: string
   fingerprintAgentPort?: number
+  memberCutoffHours?: number
+  staffCutoffHours?: number
 }
 
 export type GymSettingsUncheckedCreateWithoutGymInput = {
@@ -844,6 +902,8 @@ export type GymSettingsUncheckedCreateWithoutGymInput = {
   showStoreInRevenue?: boolean
   attendanceMode?: string
   fingerprintAgentPort?: number
+  memberCutoffHours?: number
+  staffCutoffHours?: number
 }
 
 export type GymSettingsCreateOrConnectWithoutGymInput = {
@@ -885,6 +945,8 @@ export type GymSettingsUpdateWithoutGymInput = {
   showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
+  memberCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
+  staffCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type GymSettingsUncheckedUpdateWithoutGymInput = {
@@ -910,6 +972,8 @@ export type GymSettingsUncheckedUpdateWithoutGymInput = {
   showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
+  memberCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
+  staffCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 
@@ -938,6 +1002,8 @@ export type GymSettingsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   showStoreInRevenue?: boolean
   attendanceMode?: boolean
   fingerprintAgentPort?: boolean
+  memberCutoffHours?: boolean
+  staffCutoffHours?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["gymSettings"]>
 
@@ -965,6 +1031,8 @@ export type GymSettingsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   showStoreInRevenue?: boolean
   attendanceMode?: boolean
   fingerprintAgentPort?: boolean
+  memberCutoffHours?: boolean
+  staffCutoffHours?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["gymSettings"]>
 
@@ -992,6 +1060,8 @@ export type GymSettingsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   showStoreInRevenue?: boolean
   attendanceMode?: boolean
   fingerprintAgentPort?: boolean
+  memberCutoffHours?: boolean
+  staffCutoffHours?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["gymSettings"]>
 
@@ -1019,9 +1089,11 @@ export type GymSettingsSelectScalar = {
   showStoreInRevenue?: boolean
   attendanceMode?: boolean
   fingerprintAgentPort?: boolean
+  memberCutoffHours?: boolean
+  staffCutoffHours?: boolean
 }
 
-export type GymSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "absentTrackingEnabled" | "absentThresholdDays" | "waAutoMessages" | "waReminderWindowDays" | "waAttendanceMessages" | "waAutoReply" | "waAutoArchive" | "templateWelcome" | "templateReceipt" | "templateStoreReceipt" | "templateReminder" | "templateAbsentee" | "templateCheckIn" | "templateCheckOut" | "upiId" | "upiName" | "address" | "productsEnabled" | "showStoreInRevenue" | "attendanceMode" | "fingerprintAgentPort", ExtArgs["result"]["gymSettings"]>
+export type GymSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "absentTrackingEnabled" | "absentThresholdDays" | "waAutoMessages" | "waReminderWindowDays" | "waAttendanceMessages" | "waAutoReply" | "waAutoArchive" | "templateWelcome" | "templateReceipt" | "templateStoreReceipt" | "templateReminder" | "templateAbsentee" | "templateCheckIn" | "templateCheckOut" | "upiId" | "upiName" | "address" | "productsEnabled" | "showStoreInRevenue" | "attendanceMode" | "fingerprintAgentPort" | "memberCutoffHours" | "staffCutoffHours", ExtArgs["result"]["gymSettings"]>
 export type GymSettingsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }
@@ -1061,6 +1133,8 @@ export type $GymSettingsPayload<ExtArgs extends runtime.Types.Extensions.Interna
     showStoreInRevenue: boolean
     attendanceMode: string
     fingerprintAgentPort: number
+    memberCutoffHours: number
+    staffCutoffHours: number
   }, ExtArgs["result"]["gymSettings"]>
   composites: {}
 }
@@ -1508,6 +1582,8 @@ export interface GymSettingsFieldRefs {
   readonly showStoreInRevenue: Prisma.FieldRef<"GymSettings", 'Boolean'>
   readonly attendanceMode: Prisma.FieldRef<"GymSettings", 'String'>
   readonly fingerprintAgentPort: Prisma.FieldRef<"GymSettings", 'Int'>
+  readonly memberCutoffHours: Prisma.FieldRef<"GymSettings", 'Int'>
+  readonly staffCutoffHours: Prisma.FieldRef<"GymSettings", 'Int'>
 }
     
 

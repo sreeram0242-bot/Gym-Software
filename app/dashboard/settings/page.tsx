@@ -6,7 +6,8 @@ import {
   Settings, Smartphone, MessageSquare, ShieldCheck, Store, FileText,
   Save, RefreshCw, LogOut, CheckCircle2, AlertTriangle, Fingerprint,
   Radio, Lock, Eye, EyeOff, Package, Wifi, WifiOff, Send, RotateCcw,
-  ChevronRight, Key, Search, Shield, Check, QrCode, Printer, Megaphone, X, TrendingUp
+  ChevronRight, Key, Search, Shield, Check, QrCode, Printer, Megaphone, X, TrendingUp,
+  Clock, UserCheck, Briefcase, Timer
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getTemplate, TemplateType, DEFAULT_TEMPLATES } from '@/lib/templates';
@@ -17,7 +18,7 @@ type TabType = 'general' | 'whatsapp' | 'attendance' | 'store' | 'templates' | '
 const TABS: { key: TabType; label: string; icon: React.ReactNode }[] = [
   { key: 'general', label: 'General', icon: <Settings className="w-4 h-4" /> },
   { key: 'whatsapp', label: 'WhatsApp', icon: <Smartphone className="w-4 h-4" /> },
-  { key: 'attendance', label: 'Attendance', icon: <Fingerprint className="w-4 h-4" /> },
+  { key: 'attendance', label: 'Attendance & Timers', icon: <Fingerprint className="w-4 h-4" /> },
   { key: 'store', label: 'Store / POS', icon: <Store className="w-4 h-4" /> },
   { key: 'templates', label: 'Templates', icon: <FileText className="w-4 h-4" /> },
   { key: 'password', label: 'Password', icon: <Key className="w-4 h-4" /> },
@@ -75,9 +76,11 @@ export default function SettingsPage() {
   const [testPhone, setTestPhone] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
 
-  // Attendance Mode State
+  // Attendance Mode & Cutoff Timers State
   const [attendanceMode, setAttendanceMode] = useState<'MANUAL' | 'NFC' | 'FINGERPRINT' | 'BOTH'>('NFC');
   const [fpPort, setFpPort] = useState(8765);
+  const [memberCutoffHours, setMemberCutoffHours] = useState<number>(4);
+  const [staffCutoffHours, setStaffCutoffHours] = useState<number>(12);
 
   // Store State
   const [productsEnabled, setProductsEnabled] = useState(false);
@@ -132,6 +135,8 @@ export default function SettingsPage() {
     setAbsentDays(data.absentThresholdDays ?? 3);
     setAttendanceMode((data.attendanceMode as any) ?? 'NFC');
     setFpPort(data.fingerprintAgentPort ?? 8765);
+    setMemberCutoffHours(data.memberCutoffHours ?? 4);
+    setStaffCutoffHours(data.staffCutoffHours ?? 12);
     setProductsEnabled(data.productsEnabled ?? false);
     setShowStoreInRevenue(data.showStoreInRevenue ?? true);
     
@@ -816,6 +821,93 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
+
+              {/* ⏱️ Auto-Checkout & Shift Cut-off Timers */}
+              <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 space-y-6 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-900 flex items-center justify-center font-bold">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900">Auto-Checkout &amp; Shift Cut-off Timers</h3>
+                    <p className="text-xs text-slate-500">
+                      Configure maximum duration thresholds for members and staff who forget to punch out when leaving.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
+                  {/* Member Workout Cut-off */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                        <UserCheck className="w-4 h-4 text-blue-600" /> Member Workout Cut-off
+                      </label>
+                      <span className="text-xs font-black px-2.5 py-0.5 bg-blue-100 text-blue-800 rounded-md border border-blue-200">
+                        {memberCutoffHours} Hours
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      If a member forgets to punch out, their active session automatically expires after this duration. Their next tap will be logged as a fresh check-in.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      {[2, 3, 4, 5, 6, 8].map(h => (
+                        <button
+                          key={h}
+                          type="button"
+                          onClick={async () => {
+                            setMemberCutoffHours(h);
+                            await saveSetting({ memberCutoffHours: h });
+                            showSuccess(`Member cut-off set to ${h} hours`);
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                            memberCutoffHours === h 
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-xs' 
+                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {h}h {h === 4 && '(Default)'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Staff Shift Cut-off */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                        <Briefcase className="w-4 h-4 text-purple-600" /> Staff Shift Cut-off
+                      </label>
+                      <span className="text-xs font-black px-2.5 py-0.5 bg-purple-100 text-purple-800 rounded-md border border-purple-200">
+                        {staffCutoffHours} Hours
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      If a trainer or employee forgets to punch out at the end of their shift, the shift auto-closes after this threshold. Their next tap begins a new shift.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      {[6, 8, 10, 12, 14, 16].map(h => (
+                        <button
+                          key={h}
+                          type="button"
+                          onClick={async () => {
+                            setStaffCutoffHours(h);
+                            await saveSetting({ staffCutoffHours: h });
+                            showSuccess(`Staff cut-off set to ${h} hours`);
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                            staffCutoffHours === h 
+                              ? 'bg-purple-600 text-white border-purple-600 shadow-xs' 
+                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {h}h {h === 12 && '(Default)'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {attendanceMode === 'NFC' && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
