@@ -206,11 +206,11 @@ export default function SettingsPage() {
     const interval = setInterval(() => { 
       if (document.hidden) return;
       if (waStatus !== 'connected') fetchStatus(); 
-    }, 3000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [gymId, waStatus]);
 
-  const showSuccess = (text: string) => { setSaveMsg({ type: 'success', text }); setTimeout(() => setSaveMsg(null), 3000); };
+  const showSuccess = (text: string) => { setSaveMsg({ type: 'success', text }); setTimeout(() => setSaveMsg(null), 30000); };
   const showError = (text: string) => { setSaveMsg({ type: 'error', text }); setTimeout(() => setSaveMsg(null), 4000); };
 
   const saveSetting = async (data: any) => {

@@ -210,7 +210,7 @@ export default function CheckInTerminal() {
             if (matched) {
               await handleCheckInToggle(matched, currentGymId);
               setFpStatus(`Member Scan: ${matched.name}`);
-              setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 3000);
+              setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 30000);
             } else {
               const matchedStaff = await findStaffByFingerprint(currentGymId, data.fingerprintId);
               if (matchedStaff) {
@@ -229,10 +229,10 @@ export default function CheckInTerminal() {
                 }
                 setFpStatus(`Staff ${isPunchIn ? 'Punch IN' : 'Punch OUT'}: ${matchedStaff.name}`);
                 await loadData();
-                setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 3000);
+                setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 30000);
               } else {
                 setFpStatus('Fingerprint not registered. Try again or check profile.');
-                setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 3000);
+                setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 30000);
               }
             }
           }

@@ -20,7 +20,7 @@ export default function RemindersPage() {
     const interval = setInterval(() => {
       if (document.hidden) return;
       loadData();
-    }, 3000);
+    }, 30000);
 
     const handleFocus = () => loadData();
     window.addEventListener('focus', handleFocus);
@@ -94,7 +94,7 @@ export default function RemindersPage() {
 
       // Anti-ban delay between 3 to 6 seconds
       if (i < recipients.length - 1) {
-        const delay = Math.floor(Math.random() * 3000) + 3000;
+        const delay = Math.floor(Math.random() * 30000) + 3000;
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

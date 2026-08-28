@@ -25,7 +25,7 @@ export default function BroadcastPage() {
     const interval = setInterval(() => {
       if (document.hidden) return;
       loadData();
-    }, 3000);
+    }, 30000);
 
     const handleFocus = () => loadData();
     window.addEventListener('focus', handleFocus);

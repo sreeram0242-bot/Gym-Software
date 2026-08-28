@@ -65,7 +65,7 @@ export default function ProductsPage() {
       if (document.hidden) return;
       const currentId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
       loadAll(currentId);
-    }, 3000);
+    }, 30000);
 
     const handleFocus = () => {
       const currentId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';

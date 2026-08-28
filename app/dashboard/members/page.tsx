@@ -81,7 +81,7 @@ export default function MemberManagementPage() {
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 30000);
   };
 
   const handleEditInit = (cust: any) => {
@@ -149,7 +149,7 @@ export default function MemberManagementPage() {
     const interval = setInterval(() => {
       if (document.hidden) return;
       loadData();
-    }, 3000);
+    }, 30000);
 
     const handleFocus = () => {
       loadData();
