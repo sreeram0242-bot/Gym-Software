@@ -516,24 +516,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
 
-      {/* MOBILE BOTTOM NAVIGATION BAR (THUMB FRIENDLY) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 px-2 py-1.5 flex items-center justify-around shadow-lg">
-        {navItems.filter(item => item.label !== 'Reminders' && item.label !== 'Broadcast').map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors touch-target ${
-                isActive ? 'text-blue-900 font-bold' : 'text-slate-500 hover:text-slate-800 font-medium'
-              }`}
-            >
-              <Icon className={`w-5 h-5 mb-0.5 ${isActive ? 'text-blue-900 scale-110' : 'text-slate-400'}`} />
-              <span className="text-[10px] leading-none">{item.label}</span>
-            </Link>
-          );
-        })}
+      {/* MOBILE BOTTOM NAVIGATION BAR (SLEEK & COMPACT) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-50 px-1 py-1 shadow-lg">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar px-1 justify-between">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all shrink-0 min-w-[54px] ${
+                  isActive 
+                    ? 'bg-blue-50 text-blue-900 font-black shadow-2xs border border-blue-200/60' 
+                    : 'text-slate-500 hover:text-slate-800 font-semibold'
+                }`}
+              >
+                <Icon className={`w-4 h-4 mb-0.5 transition-transform ${isActive ? 'text-blue-600 scale-110' : 'text-slate-400'}`} />
+                <span className="text-[9.5px] leading-tight tracking-tight whitespace-nowrap">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
       {/* MEMBER CHECK-IN NOTIFICATION POPUP (TOP RIGHT CORNER) */}

@@ -242,3 +242,15 @@ select:focus {
   transition-duration:      0.01ms !important;
   scroll-behavior:          auto   !important;
 }
+
+/* ─────────────────────────────────────
+   NO SCROLLBAR UTILITY FOR MOBILE TABS
+───────────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

@@ -155,24 +155,24 @@ export default function BroadcastPage() {
             
             <div className="p-6 space-y-5">
               
-              {/* Audience Selector */}
+              {/* Audience Selector - Compact & Mobile Friendly */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Target Audience</label>
-                <div className="flex bg-slate-100 p-1 rounded-xl">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Target Audience</label>
+                <div className="flex bg-slate-100/90 p-1 rounded-xl border border-slate-200/80 gap-1">
                   {['all', 'active', 'due_soon'].map(opt => (
                     <button
                       key={opt}
                       onClick={() => setAudience(opt)}
-                      className={`flex-1 text-sm font-bold py-2 rounded-lg transition-all capitalize ${
-                        audience === opt ? 'bg-white text-blue-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-all capitalize ${
+                        audience === opt ? 'bg-white text-blue-900 shadow-2xs' : 'text-slate-500 hover:text-slate-700'
                       }`}
                     >
                       {opt.replace('_', ' ')}
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-blue-700 font-bold mt-2 flex items-center bg-blue-50 w-max px-3 py-1 rounded-full">
-                  <Users className="w-3.5 h-3.5 mr-1.5" />
+                <p className="text-xs text-blue-700 font-bold mt-2 flex items-center bg-blue-50 w-max px-3 py-1 rounded-full border border-blue-100">
+                  <Users className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
                   Sending to {getRecipientCount()} members
                 </p>
               </div>

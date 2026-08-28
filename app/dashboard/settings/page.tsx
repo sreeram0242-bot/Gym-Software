@@ -396,28 +396,28 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* Tab Nav - White & Blue Software UI */}
+      {/* Tab Nav - White & Blue Software UI (Compact & Mobile-friendly) */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="flex border-b border-slate-200 overflow-x-auto bg-slate-50/50">
+        <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar bg-slate-50/70 p-1 sm:p-1.5 gap-1 sm:gap-1.5">
           {TABS.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-5 py-3.5 text-sm font-bold whitespace-nowrap transition-all border-b-2 -mb-px ${
+              className={`flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold whitespace-nowrap transition-all rounded-xl shrink-0 ${
                 activeTab === tab.key
-                  ? 'border-blue-900 text-blue-950 bg-white shadow-sm'
-                  : 'border-transparent text-slate-500 hover:text-blue-900 hover:bg-slate-100/60 font-semibold'
+                  ? 'bg-white text-blue-900 shadow-xs border border-slate-200/80'
+                  : 'text-slate-500 hover:text-blue-900 hover:bg-white/50'
               }`}
             >
               <span className={activeTab === tab.key ? 'text-blue-900' : 'text-slate-400'}>
                 {tab.icon}
               </span>
-              {tab.label}
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
 
           {/* ─── GENERAL TAB ─── */}
           {activeTab === 'general' && (
@@ -1006,10 +1006,10 @@ export default function SettingsPage() {
               </div>
 
               {/* Template Selector */}
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="flex flex-wrap gap-1.5 mb-4">
                 {(['welcome', 'receipt', 'storeReceipt', 'reminder', 'absentee', 'checkin', 'checkout'] as TemplateType[]).map(t => (
                   <button key={t} onClick={() => setSelectedTemplate(t)}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors ${selectedTemplate === t ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold capitalize transition-colors ${selectedTemplate === t ? 'bg-blue-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                   >
                     {t === 'storeReceipt' ? 'Store Receipt' : t}
                   </button>

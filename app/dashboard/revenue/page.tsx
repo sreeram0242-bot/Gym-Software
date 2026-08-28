@@ -517,15 +517,15 @@ export default function RevenuePage() {
         </div>
       </div>
 
-      {/* Global Filter Bar */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+      {/* Global Filter Bar - Compact & Neat */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between min-w-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full sm:w-auto py-0.5 min-w-0">
           {(['ALL', 'TODAY', 'THIS_WEEK', 'THIS_MONTH', 'THIS_YEAR', 'CUSTOM'] as const).map(f => (
             <button
               key={f}
               onClick={() => setGlobalTimeFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                globalTimeFilter === f ? 'bg-blue-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
+                globalTimeFilter === f ? 'bg-blue-900 text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               {f.replace('_', ' ')}
@@ -668,27 +668,27 @@ export default function RevenuePage() {
             <p className="text-xs text-slate-500">History of customer membership payments and gym expenses.</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
             {(['ALL', 'INCOME', 'EXPENSE', 'NEW_MEMBERS'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setFilterType(t)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                  filterType === t ? 'bg-blue-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
+                  filterType === t ? 'bg-blue-900 text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {t === 'NEW_MEMBERS' ? 'New Members' : t}
               </button>
             ))}
 
-            <span className="text-slate-300">|</span>
+            <span className="text-slate-300 shrink-0">|</span>
 
             {(['ALL', 'CASH', 'UPI', 'CARD'] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setPaymentModeFilter(m)}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap flex items-center space-x-1 ${
-                  paymentModeFilter === m ? 'bg-emerald-700 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                className={`px-2 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap flex items-center space-x-1 shrink-0 ${
+                  paymentModeFilter === m ? 'bg-emerald-700 text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 <span className="flex items-center gap-1">{m === 'CASH' ? <><Banknote className="w-3 h-3" /> Cash</> : m === 'UPI' ? <><Smartphone className="w-3 h-3" /> UPI</> : m === 'CARD' ? <><CreditCard className="w-3 h-3" /> Card</> : 'All Modes'}</span>

@@ -1,18 +1,20 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
-import { Radio, Clock, UserCheck, Fingerprint, Search, Wifi, WifiOff, Briefcase, LogIn, LogOut, Shield, Users } from 'lucide-react';
+import { Radio, Clock, UserCheck, Fingerprint, Search, Wifi, WifiOff, Briefcase, LogIn, LogOut, Shield, Users, FileText, FileSpreadsheet } from 'lucide-react';
 import { 
   getCustomers, getAttendance, findCustomerByNFC, findCustomerByFingerprint, toggleCheckIn, 
   getMemberMonthlyAvgHours, getGymSettings, getStaffs, getStaffAttendance, findStaffByNFC, 
-  findStaffByFingerprint, toggleStaffCheckIn 
+  findStaffByFingerprint, toggleStaffCheckIn, getGyms
 } from '@/lib/actions';
 import { Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
-import { getLocalTodayDateString } from '@/lib/utils';
+import { getLocalTodayDateString, exportToCSV, formatDateDDMMYYYY } from '@/lib/utils';
+import { exportToPDF } from '@/lib/exportPdf';
 
 export default function CheckInTerminal() {
   const [gymId, setGymId] = useState<string>('gym_1');
+  const [gymName, setGymName] = useState<string>('Our Gym');
   const [activeTab, setActiveTab] = useState<'members' | 'staff'>('members');
   
   // Members State
@@ -72,12 +74,13 @@ export default function CheckInTerminal() {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
-    const [custs, atts, stfs, stfAtts, gymSettings] = await Promise.all([
+    const [custs, atts, stfs, stfAtts, gymSettings, loadedGyms] = await Promise.all([
       getCustomers(savedId),
       getAttendance(savedId),
       getStaffs(savedId),
       getStaffAttendance(savedId),
-      getGymSettings(savedId)
+      getGymSettings(savedId),
+      getGyms()
     ]);
     
     setCustomers(custs || []);
@@ -89,11 +92,102 @@ export default function CheckInTerminal() {
     const port = gymSettings?.fingerprintAgentPort || 8765;
     setAttendanceMode(mode);
     setFpPort(port);
+    const matched = loadedGyms?.find((g: any) => g.id === savedId);
+    if (matched) setGymName(matched.name);
 
     // Connect fingerprint WebSocket if needed
     if ((mode === 'FINGERPRINT' || mode === 'BOTH') && !fpWsRef.current) {
       connectFingerprintBridge(savedId, port);
     }
+  };
+
+  // ─── DUAL EXPORT HANDLERS (CSV & PDF) ───
+  const exportMemberVisitsCSV = () => {
+    const exportData = todayMemberRecords.map(r => ({
+      Date: formatDateDDMMYYYY(r.dateStr),
+      Member_Name: r.customerName,
+      Phone: r.customerPhone,
+      Check_IN: new Date(r.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
+      Check_OUT: r.checkOutTime ? new Date(r.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : 'In Gym',
+      Duration_Minutes: r.durationMinutes || (r.checkOutTime ? 0 : 'In Progress'),
+      Monthly_Avg_Hours: `${getAvg(r.customerId)} hrs/day`
+    }));
+    exportToCSV(exportData, `Today_Member_Visits_${getLocalTodayDateString()}.csv`);
+  };
+
+  const exportMemberVisitsPDF = () => {
+    const head = [['Member Name', 'Phone', 'Check-IN', 'Check-OUT', 'Workout Duration', 'Monthly Avg']];
+    const body = todayMemberRecords.map(r => [
+      r.customerName,
+      r.customerPhone,
+      new Date(r.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
+      r.checkOutTime ? new Date(r.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : 'IN GYM',
+      r.durationMinutes ? `${Math.floor(r.durationMinutes / 60)}h ${r.durationMinutes % 60}m` : 'In Progress',
+      `${getAvg(r.customerId)} hrs/day`
+    ]);
+
+    exportToPDF({
+      gymName,
+      title: "Today's Member Visit Report",
+      subtitle: `Date: ${formatDateDDMMYYYY(getLocalTodayDateString())} | Total Visits: ${todayMemberRecords.length} | Currently in Gym: ${activeMemberSessions.length}`,
+      filename: `Member_Visits_${getLocalTodayDateString()}.pdf`,
+      head,
+      body,
+      orientation: 'portrait',
+      summaryBoxes: [
+        { label: 'Total Visits Today', value: String(todayMemberRecords.length) },
+        { label: 'Currently In Gym', value: String(activeMemberSessions.length) },
+        { label: 'Completed Visits', value: String(todayMemberRecords.length - activeMemberSessions.length) }
+      ]
+    });
+  };
+
+  const exportTodayStaffShiftsCSV = () => {
+    const exportData = todayStaffRecords.map(r => {
+      const staffObj = staffs.find(s => s.id === r.staffId);
+      return {
+        Date: formatDateDDMMYYYY(r.dateStr),
+        Staff_Name: r.staffName,
+        Role: staffObj?.role || 'Staff',
+        Phone: r.staffPhone,
+        Punch_IN: new Date(r.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
+        Punch_OUT: r.checkOutTime ? new Date(r.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : 'On Duty',
+        Duration_Minutes: r.durationMinutes || 0,
+        Hardware_ID: staffObj?.nfcCardId ? `NFC: ${staffObj.nfcCardId}` : staffObj?.fingerprintId ? `FP: #${staffObj.fingerprintId}` : 'Manual'
+      };
+    });
+    exportToCSV(exportData, `Today_Staff_Shifts_${getLocalTodayDateString()}.csv`);
+  };
+
+  const exportTodayStaffShiftsPDF = () => {
+    const head = [['Staff Member', 'Role', 'Phone', 'Punch IN', 'Punch OUT', 'Shift Duration', 'Hardware ID']];
+    const body = todayStaffRecords.map(r => {
+      const staffObj = staffs.find(s => s.id === r.staffId);
+      return [
+        r.staffName,
+        staffObj?.role || 'Staff',
+        r.staffPhone,
+        new Date(r.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
+        r.checkOutTime ? new Date(r.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : 'ON DUTY',
+        r.durationMinutes ? `${Math.floor(r.durationMinutes / 60)}h ${r.durationMinutes % 60}m` : 'In Progress',
+        staffObj?.nfcCardId ? `NFC: ${staffObj.nfcCardId}` : staffObj?.fingerprintId ? `FP: #${staffObj.fingerprintId}` : 'Manual'
+      ];
+    });
+
+    exportToPDF({
+      gymName,
+      title: "Today's Staff Shift Report",
+      subtitle: `Date: ${formatDateDDMMYYYY(getLocalTodayDateString())} | Total Shifts: ${todayStaffRecords.length} | Currently On Duty: ${activeStaffSessions.length}`,
+      filename: `Staff_Shifts_${getLocalTodayDateString()}.pdf`,
+      head,
+      body,
+      orientation: 'portrait',
+      summaryBoxes: [
+        { label: 'Total Shifts', value: String(todayStaffRecords.length) },
+        { label: 'Currently On Duty', value: String(activeStaffSessions.length) },
+        { label: 'Completed Shifts', value: String(todayStaffRecords.length - activeStaffSessions.length) }
+      ]
+    });
   };
 
   // Connect to local MFS100 WebSocket bridge agent
@@ -384,34 +478,34 @@ export default function CheckInTerminal() {
         </div>
       </div>
 
-      {/* Segmented Tab Switcher (Members vs Staff) */}
-      <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm gap-2">
+      {/* Segmented Tab Switcher (Members vs Staff) - Sleek & Compact */}
+      <div className="flex bg-slate-100/90 p-1 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-2xs gap-1 sm:gap-1.5">
         <button
           onClick={() => { setActiveTab('members'); setManualSearch(''); loadData(); }}
-          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all ${
+          className={`flex-1 py-1.5 px-2 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl font-black text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'members'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'text-slate-600 hover:bg-slate-100'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-white/60'
           }`}
         >
-          <Users className="w-4 h-4" />
-          <span>Members Check-in</span>
-          <span className={`px-2 py-0.5 rounded-full text-xs font-black ${activeTab === 'members' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-800'}`}>
+          <Users className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Members Check-in</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[9.5px] sm:text-[10px] font-black shrink-0 ${activeTab === 'members' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-800'}`}>
             {activeMemberSessions.length} Active
           </span>
         </button>
 
         <button
           onClick={() => { setActiveTab('staff'); setManualSearch(''); loadData(); }}
-          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all ${
+          className={`flex-1 py-1.5 px-2 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl font-black text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'staff'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'text-slate-600 hover:bg-slate-100'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-white/60'
           }`}
         >
-          <Briefcase className="w-4 h-4" />
-          <span>Staff &amp; Trainers</span>
-          <span className={`px-2 py-0.5 rounded-full text-xs font-black ${activeTab === 'staff' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-800'}`}>
+          <Briefcase className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Staff &amp; Trainers</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[9.5px] sm:text-[10px] font-black shrink-0 ${activeTab === 'staff' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-800'}`}>
             {activeStaffSessions.length} On Duty
           </span>
         </button>
@@ -556,13 +650,35 @@ export default function CheckInTerminal() {
 
           {/* SECTION: Today's Detailed Member Attendance Log */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+            <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50/50">
               <div>
                 <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-blue-600" />
                   <span>Today's Member Visit Log ({todayMemberRecords.length})</span>
                 </h3>
                 <p className="text-xs text-slate-500">Live list of today's member check-ins with workout durations.</p>
+              </div>
+
+              {/* Dual Export Buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={exportMemberVisitsCSV}
+                  disabled={todayMemberRecords.length === 0}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>CSV</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={exportMemberVisitsPDF}
+                  disabled={todayMemberRecords.length === 0}
+                  className="px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 disabled:opacity-40 text-blue-900 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                >
+                  <FileText className="w-3.5 h-3.5 text-blue-600" />
+                  <span>PDF</span>
+                </button>
               </div>
             </div>
 
@@ -777,26 +893,28 @@ export default function CheckInTerminal() {
                           </span>
                         </div>
 
-                        {/* Quick One-Click Punch Button on card */}
-                        <div className="pt-2">
-                          <button
-                            onClick={() => handleManualStaffPunch(session.staffId)}
-                            disabled={isPunching}
-                            className={`w-full py-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-xs ${
-                              isActive 
-                                ? 'bg-rose-600 hover:bg-rose-700 text-white' 
-                                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                            }`}
-                          >
-                            {isPunching ? (
-                              <span className="animate-spin text-xs">⌛</span>
-                            ) : isActive ? (
-                              <><LogOut className="w-3.5 h-3.5" /> Punch OUT</>
-                            ) : (
-                              <><LogIn className="w-3.5 h-3.5" /> Punch IN</>
-                            )}
-                          </button>
-                        </div>
+                        {/* Manual Punch Button only when attendanceMode is MANUAL */}
+                        {attendanceMode === 'MANUAL' && (
+                          <div className="pt-2">
+                            <button
+                              onClick={() => handleManualStaffPunch(session.staffId)}
+                              disabled={isPunching}
+                              className={`w-full py-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-xs ${
+                                isActive 
+                                  ? 'bg-rose-600 hover:bg-rose-700 text-white' 
+                                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                              }`}
+                            >
+                              {isPunching ? (
+                                <span className="animate-spin text-xs">⌛</span>
+                              ) : isActive ? (
+                                <><LogOut className="w-3.5 h-3.5" /> Punch OUT</>
+                              ) : (
+                                <><LogIn className="w-3.5 h-3.5" /> Punch IN</>
+                              )}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -807,13 +925,35 @@ export default function CheckInTerminal() {
 
           {/* SECTION: Today's Detailed Staff Shift Log Table */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+            <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50/50">
               <div>
                 <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-blue-600" />
                   <span>Today's Staff Shift Log ({todayStaffRecords.length})</span>
                 </h3>
                 <p className="text-xs text-slate-500">Live list of staff check-in and check-out punches with shift hours.</p>
+              </div>
+
+              {/* Dual Export Buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={exportTodayStaffShiftsCSV}
+                  disabled={todayStaffRecords.length === 0}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>CSV</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={exportTodayStaffShiftsPDF}
+                  disabled={todayStaffRecords.length === 0}
+                  className="px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 disabled:opacity-40 text-blue-900 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                >
+                  <FileText className="w-3.5 h-3.5 text-blue-600" />
+                  <span>PDF</span>
+                </button>
               </div>
             </div>
 

@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useDeferredValue, useMemo } from 'react';
-import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell, Banknote, Smartphone, ArrowLeftRight, Tag, ChevronRight, Fingerprint, Download } from 'lucide-react';
+import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell, Banknote, Smartphone, ArrowLeftRight, Tag, ChevronRight, Fingerprint, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, collectPendingBalance, getGyms, getGymSettings, toggleCustomerWaStatus } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 import { formatDateDDMMYYYY, exportToCSV, getLocalTodayDateString } from '@/lib/utils';
+import { exportToPDF } from '@/lib/exportPdf';
 
 export default function MemberManagementPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -480,38 +481,116 @@ export default function MemberManagementPage() {
     return nextDueDate < today;
   };
 
-  const exportAllMembers = () => {
-    const dataToExport = filteredCustomers.map(c => ({
-      ID: c.memberId || '',
+  // ─── DUAL EXPORT HANDLERS (CSV & PDF) ───
+  const exportMembersCSV = () => {
+    const exportData = filteredCustomers.map(c => ({
+      Member_ID: c.memberId || '',
       Name: c.name,
       Phone: c.phone,
-      Status: isOverdue(c.nextDueDate) ? 'Overdue' : 'Active',
       Plan: c.planType,
-      Joined: c.joinedDate,
-      Renewal_Due: c.nextDueDate,
+      Fee_Amount: c.feeAmount,
+      Joined_Date: formatDateDDMMYYYY(c.joinedDate),
+      Next_Due_Date: formatDateDDMMYYYY(c.nextDueDate),
       Pending_Balance: c.pendingBalance || 0,
-      NFC_Card: c.nfcCardId || '',
-      Fingerprint_ID: c.fingerprintId || ''
+      Status: isOverdue(c.nextDueDate) ? 'Overdue' : 'Active',
+      WhatsApp_Active: c.waActive ? 'Yes' : 'No',
+      NFC_Card_ID: c.nfcCardId || 'None',
+      Fingerprint_ID: c.fingerprintId ? `#${c.fingerprintId}` : 'None'
     }));
-    exportToCSV(dataToExport, 'Gym_Members.csv');
+    exportToCSV(exportData, `Gym_Members_${getLocalTodayDateString()}.csv`);
   };
 
-  const exportIndividualMember = (memberId: string) => {
+  const exportMembersPDF = () => {
+    const head = [['Member ID', 'Name', 'Phone', 'Plan', 'Fee', 'Due Date', 'Balance', 'Status']];
+    const body = filteredCustomers.map(c => [
+      c.memberId || '-',
+      c.name,
+      c.phone,
+      c.planType,
+      `Rs ${c.feeAmount}`,
+      formatDateDDMMYYYY(c.nextDueDate),
+      c.pendingBalance ? `Rs ${c.pendingBalance}` : 'Rs 0',
+      isOverdue(c.nextDueDate) ? 'OVERDUE' : 'ACTIVE'
+    ]);
+
+    exportToPDF({
+      gymName,
+      title: 'Gym Members Directory Report',
+      subtitle: `Filter: ${statusFilter.toUpperCase()} | Total Members: ${filteredCustomers.length} | Generated On: ${formatDateDDMMYYYY(getLocalTodayDateString())}`,
+      filename: `Gym_Members_${getLocalTodayDateString()}.pdf`,
+      head,
+      body,
+      orientation: 'landscape',
+      summaryBoxes: [
+        { label: 'Total Members', value: String(customers.length) },
+        { label: 'Filtered Count', value: String(filteredCustomers.length) },
+        { label: 'Overdue Dues', value: `${customers.filter(c => isOverdue(c.nextDueDate)).length} members` }
+      ]
+    });
+  };
+
+  const exportIndividualMember = (memberId: string, format: 'csv' | 'pdf' = 'csv') => {
     const cust = customers.find(c => c.id === memberId);
     if (!cust) return;
-    const dataToExport = [{
-      ID: cust.memberId || '',
-      Name: cust.name,
-      Phone: cust.phone,
-      Status: isOverdue(cust.nextDueDate) ? 'Overdue' : 'Active',
-      Plan: cust.planType,
-      Joined: cust.joinedDate,
-      Renewal_Due: cust.nextDueDate,
-      Pending_Balance: cust.pendingBalance || 0,
-      NFC_Card: cust.nfcCardId || '',
-      Fingerprint_ID: cust.fingerprintId || ''
-    }];
-    exportToCSV(dataToExport, `${cust.name}_Data.csv`);
+
+    if (format === 'csv') {
+      const dataToExport = [{
+        Member_ID: cust.memberId || '',
+        Name: cust.name,
+        Phone: cust.phone,
+        Status: isOverdue(cust.nextDueDate) ? 'Overdue' : 'Active',
+        Plan: cust.planType,
+        Fee_Amount: cust.feeAmount,
+        Joined_Date: formatDateDDMMYYYY(cust.joinedDate),
+        Next_Due_Date: formatDateDDMMYYYY(cust.nextDueDate),
+        Pending_Balance: cust.pendingBalance || 0,
+        WhatsApp_Active: cust.waActive ? 'Yes' : 'No',
+        NFC_Card: cust.nfcCardId || '',
+        Fingerprint_ID: cust.fingerprintId || ''
+      }];
+      exportToCSV(dataToExport, `Member_${cust.name.replace(/\s+/g, '_')}_${getLocalTodayDateString()}.csv`);
+    } else {
+      const memberTxs = transactions.filter(t => t.customerId === memberId);
+      const memberAtts = attendance.filter(a => a.customerId === memberId);
+
+      const head = [['Date', 'Transaction / Attendance Activity', 'Amount / Duration', 'Status']];
+      const body: (string | number)[][] = [
+        ['Profile Info', `Plan: ${cust.planType} | Phone: ${cust.phone} | Joined: ${formatDateDDMMYYYY(cust.joinedDate)}`, `Fee: Rs ${cust.feeAmount}`, isOverdue(cust.nextDueDate) ? 'OVERDUE' : 'ACTIVE']
+      ];
+
+      memberTxs.slice(0, 15).forEach(t => {
+        body.push([
+          formatDateDDMMYYYY(t.date),
+          `Payment: ${t.category} (${t.paymentMethod || 'CASH'})`,
+          `Rs ${t.amount}`,
+          'Completed'
+        ]);
+      });
+
+      memberAtts.slice(0, 15).forEach(a => {
+        body.push([
+          formatDateDDMMYYYY(a.dateStr),
+          `Attendance: In ${new Date(a.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}${a.checkOutTime ? ` - Out ${new Date(a.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}`,
+          a.durationMinutes ? `${Math.floor(a.durationMinutes / 60)}h ${a.durationMinutes % 60}m` : 'In Progress',
+          a.checkOutTime ? 'Completed' : 'Active'
+        ]);
+      });
+
+      exportToPDF({
+        gymName,
+        title: `Member Profile & Activity Report: ${cust.name}`,
+        subtitle: `Phone: ${cust.phone} | Plan: ${cust.planType} | Next Due: ${formatDateDDMMYYYY(cust.nextDueDate)}`,
+        filename: `Member_${cust.name.replace(/\s+/g, '_')}_${getLocalTodayDateString()}.pdf`,
+        head,
+        body,
+        orientation: 'portrait',
+        summaryBoxes: [
+          { label: 'Plan Fee', value: `Rs ${cust.feeAmount}` },
+          { label: 'Due Date', value: formatDateDDMMYYYY(cust.nextDueDate) },
+          { label: 'Pending Due', value: `Rs ${cust.pendingBalance || 0}` }
+        ]
+      });
+    }
   };
 
   // -----------------------------------------------------
@@ -724,35 +803,44 @@ export default function MemberManagementPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setIsEditingMember(false);
-            setEditingMemberId(null);
-            setName('');
-            setPhone('');
-            setNfcCardId('');
-            setNfcCardId2('');
-            setShowSecondaryNfc(false);
-            setFingerprintId('');
-            setFeeAmount(2500);
-            setPaidAmount(2500);
-            setInfoMsg('');
-            setErrorMsg('');
-            setShowAddModal(true);
-          }}
-          className="px-4 py-2.5 bg-blue-900 hover:bg-blue-950 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex items-center space-x-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Member</span>
-        </button>
-        <button 
-          onClick={exportAllMembers}
-          className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex items-center space-x-2 border border-slate-300"
-        >
-          <Download className="w-4 h-4" />
-          <span>Export Members</span>
-        </button>
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => {
+                setIsEditingMember(false);
+                setEditingMemberId(null);
+                setName('');
+                setPhone('');
+                setNfcCardId('');
+                setNfcCardId2('');
+                setShowSecondaryNfc(false);
+                setFingerprintId('');
+                setFeeAmount(2500);
+                setPaidAmount(2500);
+                setInfoMsg('');
+                setErrorMsg('');
+                setShowAddModal(true);
+              }}
+              className="px-4 py-2.5 bg-blue-900 hover:bg-blue-950 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex items-center space-x-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Member</span>
+            </button>
+            <button 
+              onClick={exportMembersCSV}
+              className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-all shadow-xs flex items-center space-x-1.5 border border-slate-200"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              <span>CSV</span>
+            </button>
+            <button 
+              onClick={exportMembersPDF}
+              className="px-3.5 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl font-bold text-xs transition-all shadow-xs flex items-center space-x-1.5 border border-blue-200"
+            >
+              <FileText className="w-3.5 h-3.5 text-blue-600" />
+              <span>PDF</span>
+            </button>
+          </div>
+        </div>
 
       {/* Absentee Warning Banner */}
       {absentTrackingEnabled && customers.some(c => isAbsent(c.id)) && (
@@ -779,20 +867,20 @@ export default function MemberManagementPage() {
         </div>
       )}
 
-      {/* Filter & Search Controls Bar */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col lg:flex-row gap-3 justify-between items-stretch lg:items-center min-w-0 max-w-full overflow-hidden">
+      {/* Filter & Search Controls Bar - Compact & Mobile Neat */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 shadow-sm flex flex-col lg:flex-row gap-2.5 sm:gap-3 justify-between items-stretch lg:items-center min-w-0 max-w-full overflow-hidden">
         <div className="relative w-full lg:w-72 shrink-0">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
             placeholder="Search by Name, Phone, or NFC ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-blue-800 outline-none"
+            className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-blue-800 outline-none"
           />
         </div>
 
-        <div className="flex items-center space-x-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 w-full lg:w-auto min-w-0 flex-1">
           {(['all', 'new', 'active', 'due_soon', 'overdue', 'has_due', ...(absentTrackingEnabled ? ['absent'] : [])] as Array<'active' | 'due_soon' | 'overdue' | 'all' | 'new' | 'absent' | 'has_due'>).map((st) => (
             <button
               key={st}
@@ -800,9 +888,9 @@ export default function MemberManagementPage() {
                 setStatusFilter(st);
                 setWaFilter('all');
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors whitespace-nowrap ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold capitalize transition-all whitespace-nowrap shrink-0 ${
                 statusFilter === st && waFilter === 'all'
-                  ? 'bg-blue-900 text-white shadow-sm'
+                  ? 'bg-blue-900 text-white shadow-2xs'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -811,7 +899,7 @@ export default function MemberManagementPage() {
           ))}
 
           {/* WhatsApp Activated / Non-Activated Scrolling Filters */}
-          <div className="flex items-center space-x-1.5 pl-1 border-l border-slate-200 shrink-0">
+          <div className="flex items-center gap-1.5 pl-1.5 border-l border-slate-200 shrink-0">
             <button
               onClick={() => {
                 if (waFilter === 'activated') {
@@ -821,15 +909,15 @@ export default function MemberManagementPage() {
                   setStatusFilter('all');
                 }
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 shrink-0 ${
                 waFilter === 'activated'
-                  ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600 ring-offset-1'
+                  ? 'bg-emerald-600 text-white shadow-2xs ring-1 ring-emerald-600'
                   : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
               }`}
             >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>WhatsApp: Activated</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${waFilter === 'activated' ? 'bg-white/20 text-white' : 'bg-emerald-200/70 text-emerald-900'}`}>
+              <Smartphone className="w-3 h-3" />
+              <span>WhatsApp: Active</span>
+              <span className={`text-[9.5px] px-1.5 py-0.2 rounded-full font-bold ${waFilter === 'activated' ? 'bg-white/20 text-white' : 'bg-emerald-200/70 text-emerald-900'}`}>
                 {customers.filter(c => c.waActive).length}
               </span>
             </button>
@@ -843,17 +931,14 @@ export default function MemberManagementPage() {
                   setStatusFilter('all');
                 }
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 shrink-0 ${
                 waFilter === 'not_activated'
-                  ? 'bg-slate-700 text-white shadow-sm ring-2 ring-slate-700 ring-offset-1'
+                  ? 'bg-slate-700 text-white shadow-2xs ring-1 ring-slate-700'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'
               }`}
             >
-              <Smartphone className="w-3.5 h-3.5 text-slate-400" />
-              <span>WhatsApp: Non-Activated</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${waFilter === 'not_activated' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
-                {customers.filter(c => !c.waActive).length}
-              </span>
+              <Smartphone className="w-3 h-3 text-slate-400" />
+              <span>Not Active</span>
             </button>
           </div>
           
@@ -1138,9 +1223,14 @@ export default function MemberManagementPage() {
               </h3>
               <div className="flex items-center gap-3">
                 {isEditingMember && editingMemberId && (
-                  <button type="button" onClick={() => exportIndividualMember(editingMemberId)} className="text-xs flex items-center gap-1 font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md hover:bg-blue-100">
-                    <Download className="w-3.5 h-3.5" /> Export Data
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button type="button" onClick={() => exportIndividualMember(editingMemberId, 'csv')} className="text-xs flex items-center gap-1 font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-md hover:bg-slate-200" title="Download Member CSV">
+                      <FileSpreadsheet className="w-3 h-3 text-emerald-600" /> CSV
+                    </button>
+                    <button type="button" onClick={() => exportIndividualMember(editingMemberId, 'pdf')} className="text-xs flex items-center gap-1 font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-md hover:bg-blue-100" title="Download Member PDF">
+                      <FileText className="w-3 h-3 text-blue-600" /> PDF
+                    </button>
+                  </div>
                 )}
                 <button onClick={() => {
                   setShowAddModal(false);

@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, ShoppingCart, Trash2, Edit2, X, Check, AlertTriangle, TrendingUp, Search, Banknote, Smartphone, CreditCard, ArrowLeftRight, Phone } from 'lucide-react';
-import { getProducts, addProduct, updateProduct, deleteProduct, recordProductSale, getProductSales, getCustomers, getGymSettings } from '@/lib/actions';
-import { formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
+import { Package, Plus, ShoppingCart, Trash2, Edit2, X, Check, AlertTriangle, TrendingUp, Search, Banknote, Smartphone, CreditCard, ArrowLeftRight, Phone, FileText, FileSpreadsheet } from 'lucide-react';
+import { getProducts, addProduct, updateProduct, deleteProduct, recordProductSale, getProductSales, getCustomers, getGymSettings, getGyms } from '@/lib/actions';
+import { formatDateDDMMYYYY, getLocalTodayDateString, exportToCSV } from '@/lib/utils';
 import { getTemplate, compileTemplate } from '@/lib/templates';
+import { exportToPDF } from '@/lib/exportPdf';
 
 const CATEGORIES = ['Supplement', 'Accessory', 'Drink', 'Snack', 'Apparel', 'Equipment', 'Other'];
 const UNITS = ['unit', 'kg', 'litre', 'pack', 'bottle', 'scoop'];
@@ -20,6 +21,7 @@ type CartItem = {
 
 export default function ProductsPage() {
   const [gymId, setGymId] = useState('gym_1');
+  const [gymName, setGymName] = useState('Our Gym');
   const [activeTab, setActiveTab] = useState<'catalog' | 'pos' | 'sales'>('pos');
   const [products, setProducts] = useState<any[]>([]);
   const [productSales, setProductSales] = useState<any[]>([]);
@@ -80,16 +82,58 @@ export default function ProductsPage() {
   }, []);
 
   const loadAll = async (id: string) => {
-    const [prods, sales, custs, settings] = await Promise.all([
+    const [prods, sales, custs, settings, loadedGyms] = await Promise.all([
       getProducts(id),
       getProductSales(id),
       getCustomers(id),
-      getGymSettings(id)
+      getGymSettings(id),
+      getGyms()
     ]);
     setProducts(prods);
     setProductSales(sales);
     setCustomers(custs);
     setGymSettings(settings);
+    const matched = loadedGyms?.find((g: any) => g.id === id);
+    if (matched) setGymName(matched.name);
+  };
+
+  // ─── DUAL EXPORT HANDLERS (CSV & PDF) ───
+  const exportSalesCSV = () => {
+    const exportData = productSales.map(s => ({
+      Date: formatDateDDMMYYYY(s.date),
+      Customer: s.customerName || 'Walk-in Customer',
+      Payment_Method: s.paymentMethod,
+      Items: (s.items || []).map((i: any) => `${i.productName} (x${i.quantity})`).join(', '),
+      Total_Amount: s.totalAmount
+    }));
+    exportToCSV(exportData, `Product_Sales_${getLocalTodayDateString()}.csv`);
+  };
+
+  const exportSalesPDF = () => {
+    const head = [['Date', 'Customer', 'Items Purchased', 'Payment Mode', 'Total Amount']];
+    const body = productSales.map(s => [
+      formatDateDDMMYYYY(s.date),
+      s.customerName || 'Walk-in',
+      (s.items || []).map((i: any) => `${i.productName} × ${i.quantity}`).join(', '),
+      s.paymentMethod,
+      `Rs ${s.totalAmount.toLocaleString('en-IN')}`
+    ]);
+
+    const totalRevenue = productSales.reduce((acc, s) => acc + (s.totalAmount || 0), 0);
+
+    exportToPDF({
+      gymName,
+      title: 'Store & POS Sales History Report',
+      subtitle: `Total Orders: ${productSales.length} | Total Revenue: Rs ${totalRevenue.toLocaleString('en-IN')}`,
+      filename: `Store_Sales_${getLocalTodayDateString()}.pdf`,
+      head,
+      body,
+      orientation: 'portrait',
+      summaryBoxes: [
+        { label: 'Total Orders', value: String(productSales.length) },
+        { label: 'Total Revenue', value: `Rs ${totalRevenue.toLocaleString('en-IN')}` }
+      ]
+    });
   };
 
   const openAddModal = () => {
@@ -248,39 +292,40 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - Compact & Mobile Friendly */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="flex border-b border-slate-100">
+        <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar bg-slate-50/70 p-1 sm:p-1.5 gap-1 sm:gap-1.5">
           {[
-            { key: 'pos', icon: <ShoppingCart className="w-4 h-4" />, label: 'Point of Sale', count: cart.length > 0 ? cart.length : undefined },
-            { key: 'catalog', icon: <Package className="w-4 h-4" />, label: 'Product Catalog', count: products.length },
-            { key: 'sales', icon: <TrendingUp className="w-4 h-4" />, label: 'Sales History', count: productSales.length },
+            { key: 'pos', icon: <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, label: 'Point of Sale', count: cart.length > 0 ? cart.length : undefined },
+            { key: 'catalog', icon: <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, label: 'Product Catalog', count: products.length },
+            { key: 'sales', icon: <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />, label: 'Sales History', count: productSales.length },
           ].map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
-              className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold whitespace-nowrap border-b-2 -mb-px transition-colors ${activeTab === tab.key ? 'border-slate-900 text-slate-900 bg-slate-50' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+              className={`flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold whitespace-nowrap rounded-xl transition-all shrink-0 ${activeTab === tab.key ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80' : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'}`}
             >
-              {tab.icon}{tab.label}
-              {tab.count !== undefined && <span className="bg-slate-200 text-slate-700 text-xs font-bold px-1.5 py-0.5 rounded-full">{tab.count}</span>}
+              {tab.icon}
+              <span>{tab.label}</span>
+              {tab.count !== undefined && <span className="bg-slate-100 text-slate-700 text-[9.5px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-slate-200/60">{tab.count}</span>}
             </button>
           ))}
         </div>
 
-        <div className="p-5">
+        <div className="p-4 sm:p-5">
           {/* ── CATALOG TAB ── */}
           {activeTab === 'catalog' && (
             <div>
-              <div className="flex flex-col sm:flex-row gap-3 mb-5">
+              <div className="flex flex-col sm:flex-row gap-2.5 mb-4">
                 <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                  <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search products..." className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-800 outline-none" />
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                  <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search products..." className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-slate-800 outline-none" />
                 </div>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                   {['All', ...CATEGORIES].map(cat => (
-                    <button key={cat} onClick={() => setCategoryFilter(cat)} className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors ${categoryFilter === cat ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{cat}</button>
+                    <button key={cat} onClick={() => setCategoryFilter(cat)} className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors ${categoryFilter === cat ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{cat}</button>
                   ))}
                 </div>
-                <button onClick={openAddModal} className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-lg whitespace-nowrap">
-                  <Plus className="w-4 h-4" /> Add Product
+                <button onClick={openAddModal} className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xs">
+                  <Plus className="w-3.5 h-3.5" /> Add Product
                 </button>
               </div>
 
@@ -502,7 +547,38 @@ export default function ProductsPage() {
 
           {/* ── SALES HISTORY TAB ── */}
           {activeTab === 'sales' && (
-            <div>
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-emerald-600" />
+                    <span>POS Store Sales ({productSales.length} orders)</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Itemized transaction records for supplement, drink, and accessory sales</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={exportSalesCSV}
+                    disabled={productSales.length === 0}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>CSV</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={exportSalesPDF}
+                    disabled={productSales.length === 0}
+                    className="px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-40 text-emerald-900 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>PDF</span>
+                  </button>
+                </div>
+              </div>
+
               {productSales.length === 0 ? (
                 <div className="text-center py-12 text-slate-400">
                   <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-40" />

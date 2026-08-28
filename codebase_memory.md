@@ -113,12 +113,46 @@
    - Both `toggleCheckIn` and `toggleStaffCheckIn` emit `attendance_updated` custom events.
    - `/dashboard/checkin` and `/dashboard/staffs` listen for updates and poll at 1.5s interval to ensure real-time UI synchronization across tabs without needing page refresh.
 
+9. **Strict Hardware Attendance Mode Enforcement**:
+   - When `GymSettings.attendanceMode` is set to `NFC`, `FINGERPRINT`, or `BOTH`, manual punch in/out buttons on staff status cards and team lists are hidden across `/dashboard/checkin` and `/dashboard/staffs`.
+   - Punches are exclusively logged via NFC card scan or biometric fingerprint touch.
+   - The Add/Edit Employee modal automatically filters and restricts punch method selectors to the active hardware mode.
+
+10. **Staff Page Subpages Architecture (`app/dashboard/staffs/page.tsx`)**:
+    - Segmented tab navigation dividing staff management into two dedicated subpages:
+      - **Subpage 1: 👥 Team & Live Shifts**: KPI metrics (Total staff, On Duty Now with pulsating indicators, Today Punches, Avg Shift Duration), Active Staff Shift Status Grid (matching member card aesthetics with live minutes on duty), and Team Members Directory.
+      - **Subpage 2: 📋 Attendance & Shift Logs**: Shift records table, search & filtering by employee and date presets (`All Time`, `Today`, `This Week`, `This Month`, `Custom Range`), cumulative shift hours calculator, and real-time auto-sync.
+
+11. **Universal Dual Export Architecture (Both CSV & PDF)**:
+    - Powered by reusable PDF engine `lib/exportPdf.ts` (`jsPDF` + `jspdf-autotable`) and CSV generator `exportToCSV` in `lib/utils.ts`.
+    - Every download across the entire SaaS offers **both Download CSV and Download PDF**:
+      1. **Staff Shift Logs & Filtered Attendance** (`/dashboard/staffs`): Bulk CSV & PDF with summary KPI boxes.
+      2. **Staff Team Directory** (`/dashboard/staffs`): Employee contact, designation, and hardware ID list.
+      3. **Individual Staff Shift Logs** (`/dashboard/staffs`): Shift-by-shift breakdown and cumulative hours worked.
+      4. **Today's Member Visit Log** (`/dashboard/checkin`): Daily workout check-in/out records.
+      5. **Today's Staff Shift Log** (`/dashboard/checkin`): Daily employee shift punches.
+      6. **Member Directory & Filtered Lists** (`/dashboard/members`): Member contact, plans, fee, dues, and status.
+      7. **Individual Member Profile & Activity** (`/dashboard/members`): Member info, payment transactions, and check-in history.
+      8. **Revenue Hub & Financial Statements** (`/dashboard/revenue`): Income, expenses, net profit, and payment modes.
+      9. **POS Store Sales History** (`/dashboard/products`): Itemized sales orders, products sold, and payment methods.
+12. **Mobile Tab Hierarchy & Responsive Compact Layout**:
+    - All tab switchers and navigation pills across the SaaS adhere to a compact, neat mobile standard:
+      - **Mobile Bottom Navigation (`app/dashboard/layout.tsx`)**: Height `h-14`, compact `w-4 h-4` icons, `text-[9.5px]` labels, `no-scrollbar` smooth horizontal touch scrolling, active pill background `bg-blue-50 text-blue-900 border border-blue-200/60`.
+      - **Check-in Terminal (`checkin/page.tsx`)**: Compact segmented switcher `py-1.5 px-2 sm:py-2.5 sm:px-4 text-[11px] sm:text-xs`, `w-3.5 h-3.5` icons, small count badge `text-[9.5px]`.
+      - **Staff Management (`staffs/page.tsx`)**: Full-width mobile segmented switcher `py-1.5 px-2 sm:py-2 sm:px-3.5 text-[11px] sm:text-xs`.
+      - **Settings Hub (`settings/page.tsx`)**: Compact scrollable tab strip `px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm`, `no-scrollbar` touch container.
+      - **Store & POS (`products/page.tsx`)**: Compact store tabs `px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm`, category pills `px-2.5 py-1 text-[11px]`.
+      - **Member Directory (`members/page.tsx`)**: Compact filter pills `px-2.5 py-1 text-[11px] sm:text-xs`, horizontal scroll with `gap-1.5`.
+      - **Revenue Hub (`revenue/page.tsx`)**: Date & transaction filter pills `px-2.5 py-1 text-[11px] sm:text-xs`.
+      - **WhatsApp Broadcast (`broadcast/page.tsx`)**: Target audience tabs `py-1.5 text-xs`.
+
 ---
 
 ## 6. 📂 Key Files Reference Map
 
 - **Actions & Database Operations**: `lib/actions.ts`
 - **Prisma Client Instance**: `lib/db.ts`
+- **PDF Export Engine**: `lib/exportPdf.ts`
 - **WhatsApp Web Service**: `lib/whatsapp.ts`
 - **WhatsApp Templates**: `lib/templates.ts`
 - **Type Definitions**: `lib/types.ts`
@@ -133,4 +167,3 @@ Whenever any change is made to the codebase (e.g. adding a setting, changing a r
 1. **Always update `codebase_memory.md` immediately** after completing the change.
 2. Ensure the Route Map, Database Models, and Business Rules reflect the latest implementation state.
 3. This ensures all future assistant turns and developer sessions operate on 100% accurate, up-to-date architectural knowledge.
-
