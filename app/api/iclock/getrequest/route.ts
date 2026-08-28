@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import prisma from '@/lib/db';
 
 export async function GET(req: Request) {
   try {
@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     }
 
     // Find the device
-    const device = await db.biometricDevice.findUnique({
+    const device = await prisma.biometricDevice.findUnique({
       where: { serialNumber }
     });
 
@@ -21,13 +21,13 @@ export async function GET(req: Request) {
     }
 
     // Update last active time
-    await db.biometricDevice.update({
+    await prisma.biometricDevice.update({
       where: { id: device.id },
       data: { lastActive: new Date(), status: 'online' }
     });
 
     // Check for pending commands
-    const pendingCommand = await db.biometricCommand.findFirst({
+    const pendingCommand = await prisma.biometricCommand.findFirst({
       where: { 
         deviceId: device.id,
         status: 'PENDING'
@@ -49,7 +49,7 @@ export async function GET(req: Request) {
     const commandPayload = `C:${shortId}:${pendingCommand.commandString}`;
 
     // Mark the command as SENT
-    await db.biometricCommand.update({
+    await prisma.biometricCommand.update({
       where: { id: pendingCommand.id },
       data: { status: 'SENT', sentAt: new Date() }
     });

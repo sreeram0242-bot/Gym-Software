@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import prisma from '@/lib/db';
 
 export async function POST(req: Request) {
   try {
@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     }
 
     // Find the first registered online biometric device for this gym
-    const device = await db.biometricDevice.findFirst({
+    const device = await prisma.biometricDevice.findFirst({
       where: { 
         gymId,
         // Optional: only check for online devices
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     // ZKTeco syntax: ENROLL_FP PIN={USER_ID} FID=0 RETRY=3 OVERWRITE=1
     const commandString = `ENROLL_FP PIN=${nfcCardId} FID=0 RETRY=3 OVERWRITE=1`;
 
-    const command = await db.biometricCommand.create({
+    const command = await prisma.biometricCommand.create({
       data: {
         deviceId: device.id,
         commandString,

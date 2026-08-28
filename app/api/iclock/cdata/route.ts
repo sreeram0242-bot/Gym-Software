@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import prisma from '@/lib/db';
 
 export async function POST(req: Request) {
   try {
@@ -12,14 +12,14 @@ export async function POST(req: Request) {
 
     // Auto-register the device if it's the first time we see this serial number
     if (serialNumber) {
-      const existingDevice = await db.biometricDevice.findUnique({
+      const existingDevice = await prisma.biometricDevice.findUnique({
         where: { serialNumber }
       });
       if (!existingDevice) {
         // Find the active gym (defaulting to the first gym for single-gym systems)
-        const gym = await db.gym.findFirst();
+        const gym = await prisma.gym.findFirst();
         if (gym) {
-          await db.biometricDevice.create({
+          await prisma.biometricDevice.create({
             data: {
               gymId: gym.id,
               serialNumber,

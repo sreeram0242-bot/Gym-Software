@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import prisma from '@/lib/db';
 
 export async function POST(req: Request) {
   try {
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
       if (commandId) {
         // Find the command in DB by its short ID
-        const command = await db.biometricCommand.findFirst({
+        const command = await prisma.biometricCommand.findFirst({
           where: {
             id: {
               startsWith: commandId
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
           // Return=0 usually means SUCCESS in ZKTeco protocol
           const finalStatus = returnCode === '0' ? 'COMPLETED' : 'FAILED';
           
-          await db.biometricCommand.update({
+          await prisma.biometricCommand.update({
             where: { id: command.id },
             data: { 
               status: finalStatus,
