@@ -719,6 +719,7 @@ export default function MemberManagementPage() {
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const filteredCustomers = useMemo(() => {
+    if (!customers || !Array.isArray(customers)) return [];
     return customers.filter((c) => {
       const searchLower = deferredSearchQuery.toLowerCase().trim();
       const phoneQuery = deferredSearchQuery.replace(/\D/g, '');
