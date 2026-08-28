@@ -334,12 +334,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 
       {/* Global WA Disconnected Warning */}
-      {waStatus !== 'connected' && (
+      {(waStatus === 'disconnected' || waStatus === 'scan_qr') && (
         <div className={`fixed top-0 left-0 right-0 z-[90] px-4 py-2 flex items-center justify-center text-xs font-bold bg-rose-600 text-white shadow-md animate-in slide-in-from-top-2`}>
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4" />
-            <span>WhatsApp Disconnected: Payment reminders and notifications are paused.</span>
-            <Link href="/dashboard/settings?tab=whatsapp" className="ml-2 underline hover:text-rose-100">Reconnect</Link>
+            <span>
+              {waStatus === 'scan_qr' 
+                ? 'WhatsApp Setup: Scan the QR code in Settings to connect your number.'
+                : 'WhatsApp Disconnected: Payment reminders and notifications are paused.'}
+            </span>
+            <Link href="/dashboard/settings?tab=whatsapp" className="ml-2 underline hover:text-rose-100">
+              {waStatus === 'scan_qr' ? 'Setup Now' : 'Reconnect'}
+            </Link>
           </div>
         </div>
       )}
@@ -356,7 +362,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* DESKTOP SIDEBAR */}
-      <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky z-30 shadow-sm ${waStatus !== 'connected' ? 'top-8 h-[calc(100vh-2rem)]' : 'top-0 h-screen'}`}>
+      <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky z-30 shadow-sm ${(waStatus === 'disconnected' || waStatus === 'scan_qr') ? 'top-8 h-[calc(100vh-2rem)]' : 'top-0 h-screen'}`}>
         {/* Brand */}
         <div className="h-14 px-4 border-b border-slate-200 flex items-center justify-between bg-white text-slate-900 shrink-0">
           <div className="flex items-center space-x-3">
@@ -446,13 +452,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-colors ${
                 waStatus === 'connected'
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                  : waStatus === 'initializing'
+                  ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'
                   : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
               }`}
               title="Click to manage WhatsApp bot connection"
             >
-              <span className={`w-2 h-2 rounded-full ${waStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span className={`w-2 h-2 rounded-full ${
+                waStatus === 'connected' ? 'bg-emerald-500 animate-pulse' 
+                : waStatus === 'initializing' ? 'bg-blue-500 animate-pulse' 
+                : 'bg-amber-500'
+              }`} />
               <Smartphone className="w-3.5 h-3.5" />
-              <span>{waStatus === 'connected' ? 'WhatsApp Connected' : 'WhatsApp Offline'}</span>
+              <span>{
+                waStatus === 'connected' ? 'WhatsApp Connected' 
+                : waStatus === 'initializing' ? 'Connecting...' 
+                : waStatus === 'scan_qr' ? 'Needs QR Scan' 
+                : 'WhatsApp Offline'
+              }</span>
             </Link>
 
             {/* Live NFC Terminal Badge */}
@@ -484,11 +501,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link
               href="/dashboard/settings?tab=whatsapp"
               className={`p-1.5 rounded-lg flex items-center gap-1 text-[11px] font-bold ${
-                waStatus === 'connected' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                waStatus === 'connected' 
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                  : waStatus === 'initializing'
+                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                  : 'bg-amber-50 text-amber-700 border border-amber-200'
               }`}
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${waStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              <span>{waStatus === 'connected' ? 'WA' : 'Off'}</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                waStatus === 'connected' ? 'bg-emerald-500' 
+                : waStatus === 'initializing' ? 'bg-blue-500 animate-pulse' 
+                : 'bg-amber-500'
+              }`} />
+              <span>{
+                waStatus === 'connected' ? 'WA' 
+                : waStatus === 'initializing' ? '...' 
+                : 'Off'
+              }</span>
             </Link>
 
             <button 
@@ -511,7 +540,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* MAIN VIEW */}
-        <main key={pathname} className="flex-1 min-w-0 px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-6 md:px-8 md:pt-6 md:pb-8 max-w-7xl mx-auto w-full">
+        <main key={pathname} className="flex-1 min-w-0 px-3 pt-3 pb-20 sm:px-5 sm:pt-4 sm:pb-6 md:px-8 md:pt-6 md:pb-8 max-w-7xl mx-auto w-full">
           {children}
         </main>
       </div>
