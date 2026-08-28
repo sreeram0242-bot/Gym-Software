@@ -329,7 +329,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className={`absolute inset-0 !m-0 !p-0 pb-20 md:pb-0 bg-slate-50 text-slate-900 flex flex-col font-sans md:flex-row max-w-full overflow-x-hidden overflow-y-auto ${!animationsEnabled ? 'animations-disabled' : ''}`}>
+    <div className={`fixed inset-0 !m-0 !p-0 pb-20 md:pb-0 bg-slate-50 text-slate-900 flex flex-col font-sans md:flex-row max-w-full overflow-x-hidden overflow-y-auto ${!animationsEnabled ? 'animations-disabled' : ''}`}>
       
 
 
