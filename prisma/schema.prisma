@@ -29,6 +29,7 @@ model Gym {
   productSales      ProductSale[]
   staff             Staff[]
   staffAttendance   StaffAttendanceRecord[]
+  biometricDevices  BiometricDevice[]
 }
 
 model Customer {
@@ -252,4 +253,34 @@ model StaffAttendanceRecord {
   @@index([gymId])
   @@index([staffId])
   @@index([dateStr])
+}
+
+model BiometricDevice {
+  id              String   @id @default(uuid())
+  gymId           String
+  gym             Gym      @relation(fields: [gymId], references: [id])
+  serialNumber    String   @unique
+  name            String?
+  lastActive      DateTime @default(now())
+  status          String   @default("offline") // online, offline
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  commands        BiometricCommand[]
+
+  @@index([gymId])
+}
+
+model BiometricCommand {
+  id              String   @id @default(uuid())
+  deviceId        String
+  device          BiometricDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  commandString   String   // e.g. "DATA UPDATE USERINFO PIN=105 Name=John..."
+  status          String   @default("PENDING") // PENDING, SENT, COMPLETED, FAILED
+  createdAt       DateTime @default(now())
+  sentAt          DateTime?
+  completedAt     DateTime?
+  
+  @@index([deviceId])
+  @@index([status])
 }

@@ -102,6 +102,28 @@ export default function MemberManagementPage() {
     setShowAddModal(true);
   };
 
+  const handleEnrollFingerprint = async (cust: Customer) => {
+    try {
+      showToast('Sending command to scanner...', 'success');
+      const res = await fetch('/api/biometrics/enroll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gymId: gymId,
+          memberId: cust.id,
+          nfcCardId: cust.nfcCardId // Using this as the ADMS PIN
+        })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error || 'Failed to send command');
+      
+      showToast('Scanner activated! Please place finger on the machine.', 'success');
+    } catch (e: any) {
+      showToast(e.message || 'Enrollment error', 'error');
+    }
+  };
+
   const handleDeleteMember = (id: string) => {
     setConfirmDialog({
       title: 'Delete Member',
@@ -1654,26 +1676,24 @@ export default function MemberManagementPage() {
       {/* MODAL / DRAWER: MEMBER DETAILS PROFILE */}
       {selectedMember && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200">
-            <div className="flex justify-between items-start pb-4 border-b border-slate-200 mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-blue-900 text-white text-xl font-black flex items-center justify-center">
-                  {selectedMember.name.charAt(0)}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-black text-slate-900 text-lg">{selectedMember.name}</h3>
-                    {selectedMember.memberId && (
-                      <span className="text-xs font-mono font-bold bg-blue-100 text-blue-900 border border-blue-200 px-2 py-0.5 rounded-md">
-                        {selectedMember.memberId}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-slate-500 font-mono flex items-center gap-1"><Phone className="w-3 h-3" /> {selectedMember.phone}</div>
-                </div>
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 p-4 bg-slate-50">
+              <div>
+                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                  {selectedMember.name}
+                  {selectedMember.nfcCardId && (
+                    <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-semibold flex items-center">
+                      <Tag className="w-3 h-3 mr-1" /> ID: {selectedMember.nfcCardId}
+                    </span>
+                  )}
+                </h3>
+                <p className="text-sm text-slate-500 font-medium">Joined {formatDateDDMMYYYY(selectedMember.joinedDate)}</p>
               </div>
-
               <div className="flex items-center space-x-2">
+                <button onClick={() => handleEnrollFingerprint(selectedMember)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg flex items-center gap-1 px-2 border border-transparent hover:border-emerald-200" title="Enroll Fingerprint on Wall Machine">
+                  <Fingerprint className="w-4 h-4" />
+                  <span className="text-xs font-bold hidden sm:inline">Enroll Finger</span>
+                </button>
                 <button onClick={() => handleEditInit(selectedMember)} className="p-1.5 text-blue-900 hover:bg-blue-50 rounded-lg" title="Edit Member">
                   <Edit className="w-5 h-5" />
                 </button>
