@@ -1003,7 +1003,7 @@ export default function StaffPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
-                  {filteredAttendance.map(record => {
+                  {filteredAttendance.slice(0, 50).map(record => {
                     const staffObj = staffs.find(s => s.id === record.staffId);
                     const isActive = !record.checkOutTime;
                     const inDate = new Date(record.checkInTime);

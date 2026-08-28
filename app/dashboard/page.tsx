@@ -242,7 +242,7 @@ export default function DashboardOverview() {
 
           <div className="divide-y divide-slate-100 max-h-[380px] overflow-y-auto">
             {todayAttendance.length > 0 ? (
-              todayAttendance.map((rec) => {
+              todayAttendance.slice(0, 50).map((rec) => {
                 const isCurrentlyInside = !rec.checkOutTime;
                 const checkInDate = new Date(rec.checkInTime);
                 const elapsedMinutes = Math.floor((Date.now() - checkInDate.getTime()) / 60000);

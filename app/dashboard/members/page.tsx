@@ -16,6 +16,7 @@ export default function MemberManagementPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
+  const [displayLimit, setDisplayLimit] = useState<number>(30);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'active' | 'due_soon' | 'overdue' | 'all' | 'new' | 'absent' | 'has_due'>('all');
@@ -788,6 +789,10 @@ export default function MemberManagementPage() {
     });
   }, [customers, deferredSearchQuery, statusFilter, timeFilter, planFilter, waFilter, absentTrackingEnabled, absentThresholdDays, attendance]);
 
+  const displayedCustomers = useMemo(() => {
+    return filteredCustomers.slice(0, displayLimit);
+  }, [filteredCustomers, displayLimit]);
+
 
   return (
     <div className="pt-0 mt-0">
@@ -974,7 +979,7 @@ export default function MemberManagementPage() {
 
       {/* Members Grid View (Responsive Cards + Table) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredCustomers.map((cust) => {
+        {displayedCustomers.map((cust) => {
           const avgHours = getAvg(cust.id);
           return (
             <div
@@ -1136,6 +1141,18 @@ export default function MemberManagementPage() {
           );
         })}
       </div>
+
+      {/* Load More Button */}
+      {filteredCustomers.length > displayedCustomers.length && (
+        <div className="flex justify-center mt-6 mb-12">
+          <button
+            onClick={() => setDisplayLimit(prev => prev + 30)}
+            className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold text-sm rounded-xl shadow-sm hover:bg-slate-50 transition-colors"
+          >
+            Load More Members ({filteredCustomers.length - displayedCustomers.length} remaining)
+          </button>
+        </div>
+      )}
 
       {/* Empty State Component */}
       {filteredCustomers.length === 0 && (
