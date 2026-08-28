@@ -329,7 +329,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className={`min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans md:flex-row pb-20 md:pb-0 max-w-full overflow-x-clip ${!animationsEnabled ? 'animations-disabled' : ''}`}>
+    <div className={`min-h-[100dvh] bg-slate-50 text-slate-900 flex flex-col font-sans md:flex-row pb-20 md:pb-0 max-w-full ${!animationsEnabled ? 'animations-disabled' : ''}`}>
       
 
 
