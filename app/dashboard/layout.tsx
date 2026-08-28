@@ -362,11 +362,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* DESKTOP SIDEBAR */}
-      <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky z-30 shadow-sm ${(waStatus === 'disconnected' || waStatus === 'scan_qr') ? 'top-8 h-[calc(100vh-2rem)]' : 'top-0 h-screen'}`}>
+      <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky z-30 shadow-sm top-0 h-screen`}>
         {/* Brand */}
-        <div className="h-14 px-4 border-b border-slate-200 flex items-center justify-between bg-white text-slate-900 shrink-0">
+        <div className="h-12 px-4 border-b border-slate-200 flex items-center justify-between bg-white text-slate-900 shrink-0">
           <div className="flex items-center space-x-3">
-            <img src="/logo.png" alt="Gym Logo" className="w-8 h-8 object-contain rounded-xl shadow-sm border border-slate-200 bg-white p-0.5" />
+            <img src="/logo.png" alt="Gym Logo" className="w-7 h-7 object-contain rounded-xl shadow-sm border border-slate-200 bg-white p-0.5" />
             <div className="flex flex-col justify-center">
               <span className="font-extrabold text-slate-900 text-sm tracking-tight leading-tight">GymFlow</span>
               <span className="block text-[10px] font-semibold text-slate-500 leading-tight">Gym Admin</span>
@@ -436,7 +436,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* DESKTOP TOP BAR */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="hidden md:flex bg-white border-b border-slate-200 sticky top-0 z-20 px-8 h-14 items-center justify-between shadow-xs">
+        <header className="hidden md:flex bg-white border-b border-slate-200 sticky top-0 z-20 px-8 h-12 items-center justify-between shadow-xs">
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-2">
               <span className="text-xs font-black text-slate-800 tracking-tight">{currentGym?.name}</span>
@@ -488,9 +488,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* MOBILE TOP BAR */}
-        <header className="md:hidden bg-white border-b border-slate-200 sticky top-0 z-40 px-4 h-14 flex items-center justify-between shadow-sm">
-          <div className="flex items-center space-x-2.5">
-            <img src="/logo.png" alt="Gym Logo" className="w-8 h-8 object-contain rounded-lg" />
+        <header className="md:hidden bg-white border-b border-slate-200 sticky top-0 z-40 px-4 h-12 flex items-center justify-between shadow-sm">
+          <div className="flex items-center space-x-2">
+            <img src="/logo.png" alt="Gym Logo" className="w-7 h-7 object-contain rounded-lg shadow-sm border border-slate-200" />
             <div>
               <h1 className="font-bold text-slate-900 text-sm leading-tight">{currentGym?.name || 'Gym Portal'}</h1>
               <p className="text-xs text-blue-900 font-semibold">{currentGym?.ownerName}</p>
@@ -540,7 +540,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* MAIN VIEW */}
-        <main key={pathname} className="flex-1 min-w-0 px-3 pt-3 pb-20 sm:px-5 sm:pt-4 sm:pb-6 md:px-8 md:pt-6 md:pb-8 max-w-7xl mx-auto w-full">
+        <main key={pathname} className="flex-1 min-w-0 px-3 pt-0 pb-20 sm:px-5 sm:pt-0 sm:pb-6 md:px-8 md:pt-0 md:pb-8 max-w-7xl mx-auto w-full">
           {children}
         </main>
       </div>

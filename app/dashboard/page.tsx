@@ -74,7 +74,7 @@ export default function DashboardOverview() {
     .reduce((acc, cur) => acc + cur.amount, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* WhatsApp Disconnected Banner */}
       {(waStatus === 'disconnected' || waStatus === 'scan_qr') && (
         <Link 
@@ -97,7 +97,7 @@ export default function DashboardOverview() {
       )}
 
       {/* Top Banner Greeting */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-5 pointer-events-none">
           <img src="/logo.png" alt="Background Logo" className="w-64 h-64 object-contain" />
         </div>

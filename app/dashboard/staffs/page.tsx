@@ -464,10 +464,10 @@ export default function StaffPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       
       {/* ─── PAGE HEADER & SUBPAGE TAB SWITCHER ─── */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <div className="w-9 h-9 rounded-xl bg-blue-900 text-white flex items-center justify-center font-black">
@@ -535,7 +535,7 @@ export default function StaffPage() {
       {/* SUBPAGE 1: TEAM & LIVE SHIFTS (DIRECTORY & STATUS)                         */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {staffSubTab === 'directory' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           
           {/* KPI Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -871,7 +871,7 @@ export default function StaffPage() {
       {/* SUBPAGE 2: ATTENDANCE & SHIFT LOGS                                         */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {staffSubTab === 'attendance' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           
           {/* Header & Controls Toolbar */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
