@@ -362,7 +362,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* DESKTOP SIDEBAR */}
-      <aside className={`hidden md:flex md:w-64 bg-white border-r border-slate-200 flex-col sticky z-30 shadow-sm top-0 h-screen`}>
+      <aside className={`hidden md:flex w-64 bg-white border-r border-slate-200 flex-col fixed z-30 shadow-sm top-0 left-0 bottom-0`}>
         {/* Brand */}
         <div className="h-12 px-4 border-b border-slate-200 flex items-center justify-between bg-white text-slate-900 shrink-0">
           <div className="flex items-center space-x-3">
@@ -390,49 +390,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            {/* Live WhatsApp Status Pill */}
-            <Link
-              href="/dashboard/settings?tab=whatsapp"
-              className={`inline-flex items-center justify-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                waStatus === 'connected'
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                  : waStatus === 'initializing'
-                  ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'
-                  : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
-              }`}
-              title="Click to manage WhatsApp bot connection"
-            >
-              <span className={`w-2 h-2 rounded-full ${
-                waStatus === 'connected' ? 'bg-emerald-500 animate-pulse' 
-                : waStatus === 'initializing' ? 'bg-blue-500 animate-pulse' 
-                : 'bg-amber-500'
-              }`} />
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>{
-                waStatus === 'connected' ? 'WhatsApp Connected' 
-                : waStatus === 'initializing' ? 'Connecting...' 
-                : waStatus === 'scan_qr' ? 'Needs QR Scan' 
-                : 'WhatsApp Offline'
-              }</span>
-            </Link>
 
-            {/* Live NFC Terminal Badge */}
-            <Link
-              href="/dashboard/checkin"
-              className="inline-flex items-center justify-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
-            >
-              <div className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-              </div>
-              <span>NFC Terminal Active</span>
-            </Link>
-          </div>
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -477,7 +439,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* MAIN VIEW */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 md:pl-64">
         {/* MOBILE TOP BAR */}
         <header className="md:hidden bg-white border-b border-slate-200 sticky top-0 z-40 px-4 h-12 flex items-center justify-between shadow-sm">
           <div className="flex items-center space-x-2">

@@ -790,16 +790,19 @@ export default function MemberManagementPage() {
 
 
   return (
-    <div className="space-y-3">
+    <div className="pt-0 mt-0">
       {/* Header Banner */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-950 text-xs font-bold mb-2">
-            <Users className="w-3.5 h-3.5 text-blue-900" />
-            <span>Member Directory</span>
+      <div className="bg-white border border-slate-200 rounded-b-2xl px-4 pb-4 pt-0 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-0">
+        <div className="pt-0 mt-0">
+          <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-950 text-xs font-bold mb-2 mt-0">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+            </span>
+            <span>Master Directory</span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Gym Members ({customers.length})</h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none mt-0 pt-0">Gym Members ({customers.length})</h1>
+          <p className="text-sm text-slate-500 font-medium mt-1">
             Manage member details, phone numbers, NFC cards, and payment renewal due dates.
           </p>
         </div>
