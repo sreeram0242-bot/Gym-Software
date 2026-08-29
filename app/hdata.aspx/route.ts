@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     // Auto-register or update device status
     await prisma.biometricDevice.upsert({
       where: { serialNumber: devId },
-      update: { lastPing: new Date(), status: "ONLINE" },
+      update: { lastActive: new Date(), status: "ONLINE" },
       create: {
         serialNumber: devId,
         name: jsonData?.fk_name || "Biomax Device",
