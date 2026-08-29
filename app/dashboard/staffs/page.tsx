@@ -1403,14 +1403,14 @@ export default function StaffPage() {
                 {attendanceMode === 'BIOMAX_WALL' && (
                   <div className="bg-blue-50/60 border border-blue-100 p-3 rounded-xl space-y-1.5">
                     <label className="block font-bold text-blue-900 uppercase">Biomax Device User ID</label>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
+                    <div className="space-y-2">
+                      <div className="relative">
                         <Shield className="absolute left-3 top-2.5 w-3.5 h-3.5 text-blue-600" />
                         <input 
                           type="text" 
                           value={fingerprintId}
                           onChange={e => setFingerprintId(e.target.value)}
-                          placeholder="Enter Staff ID from Biomax Device..." 
+                          placeholder="Enter ID (e.g. 101)" 
                           className="w-full pl-9 pr-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none text-xs font-mono font-bold bg-white" 
                         />
                       </div>
@@ -1418,7 +1418,7 @@ export default function StaffPage() {
                         type="button"
                         onClick={async () => {
                           try {
-                            if (!fingerprintId) return alert('Please enter a User ID first.');
+                            if (!fingerprintId) return alert('Please enter a User ID first. (e.g. 101)');
                             const res = await fetch('/api/biometrics/enroll', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -1436,7 +1436,7 @@ export default function StaffPage() {
                             alert('Network error while triggering enrollment.');
                           }
                         }}
-                        className="px-3 py-2 rounded-lg text-xs font-bold shrink-0 transition-colors bg-blue-100 text-blue-900 hover:bg-blue-200"
+                        className="w-full px-3 py-2 rounded-lg text-xs font-bold transition-colors bg-blue-100 text-blue-900 hover:bg-blue-200"
                       >
                         Remote Enroll
                       </button>
@@ -1447,14 +1447,14 @@ export default function StaffPage() {
                 {attendanceMode === 'ESSL_WALL' && (
                   <div className="bg-emerald-50/60 border border-emerald-100 p-3 rounded-xl space-y-1.5">
                     <label className="block font-bold text-emerald-900 uppercase">ZKTeco Device User ID</label>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
+                    <div className="space-y-2">
+                      <div className="relative">
                         <Shield className="absolute left-3 top-2.5 w-3.5 h-3.5 text-emerald-600" />
                         <input 
                           type="text" 
                           value={fingerprintId}
                           onChange={e => setFingerprintId(e.target.value)}
-                          placeholder="Device User ID..." 
+                          placeholder="Enter ID (e.g. 101)" 
                           className="w-full pl-9 pr-3 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-600 outline-none text-xs font-mono font-bold bg-white" 
                         />
                       </div>
@@ -1462,7 +1462,7 @@ export default function StaffPage() {
                         type="button"
                         onClick={async () => {
                           try {
-                            if (!fingerprintId) return alert('Please enter a User ID first.');
+                            if (!fingerprintId) return alert('Please enter a User ID first. (e.g. 101)');
                             const res = await fetch('/api/biometrics/enroll', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -1480,7 +1480,7 @@ export default function StaffPage() {
                             alert('Network error while triggering enrollment.');
                           }
                         }}
-                        className="px-3 py-2 rounded-lg text-xs font-bold shrink-0 transition-colors bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
+                        className="w-full px-3 py-2 rounded-lg text-xs font-bold transition-colors bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
                       >
                         Remote Enroll
                       </button>

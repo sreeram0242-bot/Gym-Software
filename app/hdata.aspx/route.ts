@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const devId = headers["dev_id"] || url.searchParams.get("dev_id");
 
   if (!devId) {
-    return new NextResponse("OK", { status: 200 });
+    return new NextResponse("result=OK", { status: 200 });
   }
 
   // Extract JSON by finding the first '{' and the last '}'
@@ -144,18 +144,18 @@ export async function POST(req: Request) {
       }
     }
     
-    const res = "OK";
+    const res = "result=OK";
     return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
   // 3. Handle Fingerprint Enrollment Data
   if (cmdId === "RTEnrollDataAction" && jsonData) {
     console.log(`[BIOMETRIC] Fingerprint enrolled for User ${jsonData.user_id}`);
-    const res = "OK";
+    const res = "result=OK";
     return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
   // Catch-all response
-  const res = "OK";
+  const res = "result=OK";
   return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
 }
