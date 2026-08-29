@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import fs from 'fs';
 import prisma from "@/lib/db";
 
 export async function POST(req: Request) {
@@ -37,18 +38,27 @@ export async function POST(req: Request) {
       data: { lastActive: new Date(), status: "ONLINE" }
     });
 
-    const g = globalThis as any;
-    if (g.testEnrollUser) {
-      console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${g.testEnrollUser}`);
+    // HACKER QUEUE: Check if we have a pending remote enrollment test
+    const hackFile = '/tmp/enroll_hack.txt';
+    let testEnrollUser: string | null = null;
+    
+    try {
+      if (fs.existsSync(hackFile)) {
+        testEnrollUser = fs.readFileSync(hackFile, 'utf8').trim();
+        fs.unlinkSync(hackFile); // Delete it so we don't spam the machine
+      }
+    } catch (e) {
+      console.error("Hack file read error", e);
+    }
+
+    if (testEnrollUser) {
+      console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${testEnrollUser}`);
       
       const cmdResponse = {
         cmd_id: "enroll",
-        user_id: String(g.testEnrollUser),
+        user_id: testEnrollUser,
         enroll_data: "FP"
       };
-      
-      // Clear the queue so we don't spam the machine
-      g.testEnrollUser = null;
       
       return new NextResponse(JSON.stringify(cmdResponse), { status: 200 });
     }
