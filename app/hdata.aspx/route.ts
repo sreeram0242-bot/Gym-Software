@@ -146,18 +146,23 @@ export async function POST(req: Request) {
       }
     }
     
-    const res = "result=OK";
+    const res = "OK\n";
     return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
   // 3. Handle Fingerprint Enrollment Data
   if (cmdId === "RTEnrollDataAction" && jsonData) {
     console.log(`[BIOMETRIC] Fingerprint enrolled for User ${jsonData.user_id}`);
-    const res = "result=OK";
+    const res = "OK\n";
     return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
-  // Catch-all response
-  const res = "result=OK";
+  // Catch-all response for unknown actions (like command execution reports)
+  console.log(`[BIOMAX] Unhandled action: ${cmdId}`);
+  if (text) {
+    console.log(`[BIOMAX] Payload: ${text}`);
+  }
+  
+  const res = "OK\n";
   return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
 }
