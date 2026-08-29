@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       return new NextResponse(JSON.stringify(cmdResponse), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
-    return new NextResponse("OK", { status: 200 });
+    return new NextResponse(JSON.stringify({ cmd_code: "OK" }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
 
   // 2. Handle Attendance Punch (Check-in / Check-out)
@@ -119,15 +119,15 @@ export async function POST(req: Request) {
       }
     }
     
-    return new NextResponse("OK", { status: 200 });
+    return new NextResponse(JSON.stringify({ cmd_code: "OK" }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
 
   // 3. Handle Fingerprint Enrollment Data
   if (cmdId === "RTEnrollDataAction" && jsonData) {
     console.log(`[BIOMETRIC] Fingerprint enrolled for User ${jsonData.user_id}`);
-    return new NextResponse("OK", { status: 200 });
+    return new NextResponse(JSON.stringify({ cmd_code: "OK" }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
 
   // Catch-all response
-  return new NextResponse("OK", { status: 200 });
+  return new NextResponse(JSON.stringify({ cmd_code: "OK" }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
