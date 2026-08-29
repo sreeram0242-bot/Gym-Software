@@ -186,7 +186,7 @@ export default function StaffPage() {
   const handleManualPunch = async (staffId: string) => {
     setPunchLoading(staffId);
     try {
-      const staffRes = await toggleStaffCheckIn(staffId);
+      const staffRes = await toggleStaffCheckIn(staffId, true); // isManual = true
       const staffObj = staffs.find(s => s.id === staffId);
       if (staffObj && typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('staff_punch_event', {
@@ -200,8 +200,8 @@ export default function StaffPage() {
         }));
       }
       await loadData();
-    } catch (err) {
-      console.error('Punch error:', err);
+    } catch (err: any) {
+      alert(err?.message || 'Punch failed');
     } finally {
       setPunchLoading(null);
     }

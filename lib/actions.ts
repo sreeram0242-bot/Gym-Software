@@ -784,7 +784,7 @@ export async function getAttendance(gymId?: string) {
   }
 }
 
-export async function toggleCheckIn(customerId: string) {
+export async function toggleCheckIn(customerId: string, isManual: boolean = false) {
   let customer: any;
   try {
     customer = await prisma.customer.findUnique({ where: { id: customerId } });
@@ -799,6 +799,15 @@ export async function toggleCheckIn(customerId: string) {
   try {
     // Get gym cutoff timer setting
     const gymSettings = await prisma.gymSettings.findUnique({ where: { gymId: customer.gymId } });
+
+    // ── NFC/Fingerprint Enforcement ─────────────────────────────────────
+    // If the gym has set a hardware-only attendance mode, block manual punches.
+    if (isManual) {
+      const mode = gymSettings?.attendanceMode ?? 'NFC';
+      if (mode === 'NFC' || mode === 'FINGERPRINT' || mode === 'BOTH') {
+        throw new Error(`Manual punch-in is disabled. Please use the ${mode === 'NFC' ? 'NFC card' : 'fingerprint'} terminal.`);
+      }
+    }
     const cutoffHours = gymSettings?.memberCutoffHours || 4;
 
     // Find latest active session without checkout time
@@ -1621,7 +1630,7 @@ export async function getStaffAttendance(gymId: string) {
   }
 }
 
-export async function toggleStaffCheckIn(staffId: string) {
+export async function toggleStaffCheckIn(staffId: string, isManual: boolean = false) {
   try {
     const staff = await prisma.staff.findUnique({ where: { id: staffId } });
     if (!staff) throw new Error('Staff not found');
@@ -1632,6 +1641,14 @@ export async function toggleStaffCheckIn(staffId: string) {
     // Get gym staff cutoff timer setting
     const gymSettings = await prisma.gymSettings.findUnique({ where: { gymId: staff.gymId } });
     const cutoffHours = gymSettings?.staffCutoffHours || 12;
+
+    // ── NFC/Fingerprint Enforcement ─────────────────────────────────────
+    if (isManual) {
+      const mode = gymSettings?.attendanceMode ?? 'NFC';
+      if (mode === 'NFC' || mode === 'FINGERPRINT' || mode === 'BOTH') {
+        throw new Error(`Manual punch-in is disabled. Please use the ${mode === 'NFC' ? 'NFC card' : 'fingerprint'} terminal.`);
+      }
+    }
 
     const activeRecord = await prisma.staffAttendanceRecord.findFirst({
       where: {

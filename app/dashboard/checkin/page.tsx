@@ -303,37 +303,41 @@ export default function CheckInTerminal() {
   };
 
   // Shared member check-in logic
-  const handleCheckInToggle = async (matched: any, currentGymId: string) => {
-    const { record, action } = await toggleCheckIn(matched.id);
-    await loadData();
+  const handleCheckInToggle = async (matched: any, currentGymId: string, isManual: boolean = false) => {
+    try {
+      const { record, action } = await toggleCheckIn(matched.id, isManual);
+      await loadData();
 
-    const gymSettings = await getGymSettings(currentGymId);
-    if (gymSettings?.waAttendanceMessages && matched.phone) {
-      const templateName = action === 'checkin' ? 'checkin' : 'checkout';
-      const rawTemplate = getTemplate(gymSettings, templateName);
-      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const duration = record.durationMinutes || 0;
-      const message = compileTemplate(rawTemplate, {
-        name: matched.name,
-        time: nowTime,
-        duration: duration.toString()
-      });
-      fetch('/api/whatsapp/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gymId: currentGymId, phone: matched.phone, message })
-      }).catch(() => {});
+      const gymSettings = await getGymSettings(currentGymId);
+      if (gymSettings?.waAttendanceMessages && matched.phone) {
+        const templateName = action === 'checkin' ? 'checkin' : 'checkout';
+        const rawTemplate = getTemplate(gymSettings, templateName);
+        const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const duration = record.durationMinutes || 0;
+        const message = compileTemplate(rawTemplate, {
+          name: matched.name,
+          time: nowTime,
+          duration: duration.toString()
+        });
+        fetch('/api/whatsapp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gymId: currentGymId, phone: matched.phone, message })
+        }).catch(() => {});
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Check-in failed');
     }
   };
 
   const handleManualCheckIn = async (customer: any) => {
-    await handleCheckInToggle(customer, gymId);
+    await handleCheckInToggle(customer, gymId, true);
   };
 
   const handleManualStaffPunch = async (staffId: string) => {
     setPunchLoading(staffId);
     try {
-      const staffRes = await toggleStaffCheckIn(staffId);
+      const staffRes = await toggleStaffCheckIn(staffId, true); // isManual = true
       const staffObj = staffs.find(s => s.id === staffId);
       if (staffObj && typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('staff_punch_event', {
@@ -347,6 +351,8 @@ export default function CheckInTerminal() {
         }));
       }
       await loadData();
+    } catch (err: any) {
+      alert(err?.message || 'Punch failed');
     } finally {
       setPunchLoading(null);
     }
