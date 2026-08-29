@@ -77,8 +77,9 @@ export default function SettingsPage() {
   const [sendingTest, setSendingTest] = useState(false);
 
   // Attendance Mode & Cutoff Timers State
-  const [attendanceMode, setAttendanceMode] = useState<'MANUAL' | 'NFC' | 'FINGERPRINT' | 'BOTH'>('NFC');
+  const [attendanceMode, setAttendanceMode] = useState<'MANUAL' | 'NFC' | 'MANTRA_USB' | 'BIOMAX_WALL' | 'ESSL_WALL'>('NFC');
   const [fpPort, setFpPort] = useState(8765);
+  const [deviceIpAddress, setDeviceIpAddress] = useState('');
   const [memberCutoffHours, setMemberCutoffHours] = useState<number>(4);
   const [staffCutoffHours, setStaffCutoffHours] = useState<number>(12);
 
@@ -135,6 +136,7 @@ export default function SettingsPage() {
     setAbsentDays(data.absentThresholdDays ?? 3);
     setAttendanceMode((data.attendanceMode as any) ?? 'NFC');
     setFpPort(data.fingerprintAgentPort ?? 8765);
+    setDeviceIpAddress(data.deviceIpAddress || '');
     setMemberCutoffHours(data.memberCutoffHours ?? 4);
     setStaffCutoffHours(data.staffCutoffHours ?? 12);
     setProductsEnabled(data.productsEnabled ?? false);
@@ -334,7 +336,7 @@ export default function SettingsPage() {
     showSuccess('Template saved!');
   };
 
-  const handleAttendanceModeChange = async (mode: 'MANUAL' | 'NFC' | 'FINGERPRINT' | 'BOTH') => {
+  const handleAttendanceModeChange = async (mode: 'MANUAL' | 'NFC' | 'MANTRA_USB' | 'BIOMAX_WALL' | 'ESSL_WALL') => {
     setAttendanceMode(mode);
     await saveSetting({ attendanceMode: mode });
   };
@@ -371,9 +373,10 @@ export default function SettingsPage() {
 
   const ATTENDANCE_MODES = [
     { key: 'MANUAL', label: 'Manual Search Only', icon: <Search className="w-4 h-4" />, desc: 'Staff searches by name to check-in. No hardware required.' },
-    { key: 'NFC', label: 'NFC Card Only', icon: <Radio className="w-4 h-4" />, desc: 'Members tap their NFC card at the terminal. (Current behavior)' },
-    { key: 'FINGERPRINT', label: 'Fingerprint Only', icon: <Fingerprint className="w-4 h-4" />, desc: 'Mantra MFS100 USB fingerprint scanner. Local bridge agent required.' },
-    { key: 'BOTH', label: 'NFC + Fingerprint', icon: <Shield className="w-4 h-4" />, desc: 'Both NFC and fingerprint scanner active simultaneously.' },
+    { key: 'NFC', label: 'NFC Card', icon: <Radio className="w-4 h-4" />, desc: 'Members tap their NFC card at the terminal.' },
+    { key: 'MANTRA_USB', label: 'Mantra MFS100 (USB)', icon: <Fingerprint className="w-4 h-4" />, desc: 'Local USB fingerprint scanner. Requires bridge agent.' },
+    { key: 'BIOMAX_WALL', label: 'Biomax (Wall Device)', icon: <Shield className="w-4 h-4" />, desc: 'ADMS Push only. Enrollment via device keypad.' },
+    { key: 'ESSL_WALL', label: 'eSSL / ZKTeco (Wall Device)', icon: <ShieldCheck className="w-4 h-4" />, desc: 'ADMS Push + Full SDK for remote enrollment.' },
   ];
 
   return (
@@ -787,7 +790,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Fingerprint Config */}
-              {(attendanceMode === 'FINGERPRINT' || attendanceMode === 'BOTH') && (
+              {attendanceMode === 'MANTRA_USB' && (
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-4">
                   <div className="flex items-center gap-2 text-blue-800 font-bold">
                     <Fingerprint className="w-5 h-5" /> Mantra MFS100 Configuration
@@ -818,6 +821,39 @@ export default function SettingsPage() {
                       <li>Enroll member fingerprints by editing each member profile → set Fingerprint ID</li>
                       <li>The Check-in terminal will now detect scans automatically</li>
                     </ol>
+                  </div>
+                </div>
+              )}
+
+              {/* eSSL/ZKTeco Device IP Config */}
+              {attendanceMode === 'ESSL_WALL' && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 space-y-4">
+                  <div className="flex items-center gap-2 text-emerald-800 font-bold">
+                    <Wifi className="w-5 h-5" /> eSSL / ZKTeco Configuration
+                  </div>
+                  <p className="text-sm text-emerald-700">
+                    To enable <strong>remote fingerprint enrollment</strong> from the dashboard, you must run the <strong>ZK Bridge Agent</strong> on the gym PC and enter the IP address of your biometric device below.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 max-w-sm">
+                      <label className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1.5">Device IP Address</label>
+                      <input
+                        type="text"
+                        value={deviceIpAddress}
+                        onChange={e => setDeviceIpAddress(e.target.value)}
+                        onBlur={async () => { await saveSetting({ deviceIpAddress }); showSuccess('Device IP saved!'); }}
+                        placeholder="e.g. 192.168.1.50"
+                        className="w-full px-3.5 py-2.5 bg-white border border-emerald-200 rounded-lg text-sm font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="bg-emerald-100/60 rounded-lg p-3">
+                    <p className="text-xs text-emerald-700 font-semibold mb-2">Requirements:</p>
+                    <ul className="text-xs text-emerald-600 space-y-1 list-disc list-inside">
+                      <li>Ensure device is on the same WiFi network as the gym PC.</li>
+                      <li>Ensure the device has ZEM500, ZEM600, or ZEM800 firmware.</li>
+                      <li>Run <code>node resources/zk_agent.js</code> locally to bridge the connection.</li>
+                    </ul>
                   </div>
                 </div>
               )}

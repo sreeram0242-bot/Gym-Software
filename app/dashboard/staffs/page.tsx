@@ -1353,80 +1353,7 @@ export default function StaffPage() {
 
               {/* Hardware Punch Method Setup */}
               <div className="pt-3 border-t border-slate-100 space-y-3">
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase mb-1">Attendance Punch Method</label>
-                  <div className="flex flex-wrap gap-2">
-                    {attendanceMode === 'BOTH' && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setPunchMethod('BOTH')}
-                          className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
-                            punchMethod === 'BOTH' 
-                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
-                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          <Radio className="w-3.5 h-3.5" /> <Fingerprint className="w-3.5 h-3.5" /> NFC + Fingerprint
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPunchMethod('NFC')}
-                          className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
-                            punchMethod === 'NFC' 
-                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
-                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          <Radio className="w-3.5 h-3.5" /> NFC Badge Only
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPunchMethod('FINGERPRINT')}
-                          className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
-                            punchMethod === 'FINGERPRINT' 
-                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
-                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          <Fingerprint className="w-3.5 h-3.5" /> Fingerprint Only
-                        </button>
-                      </>
-                    )}
-
-                    {attendanceMode === 'NFC' && (
-                      <button
-                        type="button"
-                        onClick={() => setPunchMethod('NFC')}
-                        className="py-2 px-3.5 rounded-xl text-xs font-bold bg-blue-600 text-white border border-blue-600 shadow-sm flex items-center gap-1.5"
-                      >
-                        <Radio className="w-3.5 h-3.5" /> NFC Card / Badge
-                      </button>
-                    )}
-
-                    {attendanceMode === 'FINGERPRINT' && (
-                      <button
-                        type="button"
-                        onClick={() => setPunchMethod('FINGERPRINT')}
-                        className="py-2 px-3.5 rounded-xl text-xs font-bold bg-purple-600 text-white border border-purple-600 shadow-sm flex items-center gap-1.5"
-                      >
-                        <Fingerprint className="w-3.5 h-3.5" /> Fingerprint Biometric
-                      </button>
-                    )}
-
-                    {attendanceMode === 'MANUAL' && (
-                      <button
-                        type="button"
-                        onClick={() => setPunchMethod('MANUAL')}
-                        className="py-2 px-3.5 rounded-xl text-xs font-bold bg-slate-800 text-white border border-slate-800 shadow-sm flex items-center gap-1.5"
-                      >
-                        Manual Check-in
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {(punchMethod === 'NFC' || punchMethod === 'BOTH') && (
+                {attendanceMode === 'NFC' && (
                   <div className="bg-blue-50/60 border border-blue-100 p-3 rounded-xl space-y-1.5">
                     <div className="flex justify-between items-center">
                       <label className="block font-bold text-blue-900 uppercase">NFC Card ID (Employee Badge)</label>
@@ -1451,21 +1378,116 @@ export default function StaffPage() {
                   </div>
                 )}
 
-                {(punchMethod === 'FINGERPRINT' || punchMethod === 'BOTH') && (
+                {attendanceMode === 'MANTRA_USB' && (
                   <div className="bg-purple-50/60 border border-purple-100 p-3 rounded-xl space-y-1.5">
-                    <label className="block font-bold text-purple-900 uppercase">Fingerprint Machine ID</label>
-                    <div className="relative">
-                      <Fingerprint className="absolute left-3 top-2.5 w-3.5 h-3.5 text-purple-600" />
+                    <label className="block font-bold text-purple-900 uppercase">Mantra MFS100 Registration</label>
+                    <div className="flex gap-2">
                       <input 
                         type="text" 
-                        value={fingerprintId}
-                        onChange={e => setFingerprintId(e.target.value)}
-                        placeholder="Fingerprint enrollment ID (e.g. 101, 102)..." 
-                        className="w-full pl-9 pr-3 py-2 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none text-xs font-mono font-bold bg-white" 
+                        readOnly
+                        value={fingerprintId ? "Registered" : ""}
+                        placeholder="No Fingerprint" 
+                        className="w-full px-3 py-2 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none text-xs font-mono font-bold bg-white cursor-not-allowed" 
                       />
+                      <button
+                        type="button"
+                        onClick={() => alert('Connect the GymFlow Bridge Agent and scan on the MFS100 device.')}
+                        className="px-3 py-2 rounded-lg text-xs font-bold bg-purple-100 text-purple-900 hover:bg-purple-200 shrink-0"
+                      >
+                        Scan Finger
+                      </button>
                     </div>
                   </div>
                 )}
+
+                {attendanceMode === 'BIOMAX_WALL' && (
+                  <div className="bg-blue-50/60 border border-blue-100 p-3 rounded-xl space-y-1.5">
+                    <label className="block font-bold text-blue-900 uppercase">Biomax Device User ID</label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Shield className="absolute left-3 top-2.5 w-3.5 h-3.5 text-blue-600" />
+                        <input 
+                          type="text" 
+                          value={fingerprintId}
+                          onChange={e => setFingerprintId(e.target.value)}
+                          placeholder="Enter Staff ID from Biomax Device..." 
+                          className="w-full pl-9 pr-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none text-xs font-mono font-bold bg-white" 
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            if (!fingerprintId) return alert('Please enter a User ID first.');
+                            const res = await fetch('/api/biometrics/enroll', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                gymId: settings?.gymId || 'gym_1',
+                                memberId: isEditingStaff ? staffId : 'new',
+                                nfcCardId: fingerprintId
+                              })
+                            });
+                            const data = await res.json();
+                            if (res.ok) alert('Enrollment command queued! Place finger on device when it beeps.');
+                            else alert(`Error: ${data.error || 'Failed to queue command'}`);
+                          } catch (err) {
+                            console.error(err);
+                            alert('Network error while triggering enrollment.');
+                          }
+                        }}
+                        className="px-3 py-2 rounded-lg text-xs font-bold shrink-0 transition-colors bg-blue-100 text-blue-900 hover:bg-blue-200"
+                      >
+                        Remote Enroll
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {attendanceMode === 'ESSL_WALL' && (
+                  <div className="bg-emerald-50/60 border border-emerald-100 p-3 rounded-xl space-y-1.5">
+                    <label className="block font-bold text-emerald-900 uppercase">ZKTeco Device User ID</label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <ShieldCheck className="absolute left-3 top-2.5 w-3.5 h-3.5 text-emerald-600" />
+                        <input 
+                          type="text" 
+                          value={fingerprintId}
+                          onChange={e => setFingerprintId(e.target.value)}
+                          placeholder="Device User ID..." 
+                          className="w-full pl-9 pr-3 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-600 outline-none text-xs font-mono font-bold bg-white" 
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            if (!fingerprintId) return alert('Please enter a User ID first.');
+                            const res = await fetch('/api/biometrics/enroll', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                gymId: settings?.gymId || 'gym_1',
+                                memberId: isEditingStaff ? staffId : 'new',
+                                nfcCardId: fingerprintId
+                              })
+                            });
+                            const data = await res.json();
+                            if (res.ok) alert('Enrollment command queued! Place finger on device when it beeps.');
+                            else alert(`Error: ${data.error || 'Failed to queue command'}`);
+                          } catch (err) {
+                            console.error(err);
+                            alert('Network error while triggering enrollment.');
+                          }
+                        }}
+                        className="px-3 py-2 rounded-lg text-xs font-bold shrink-0 transition-colors bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
+                      >
+                        Remote Enroll
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               </div>
 
               <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">

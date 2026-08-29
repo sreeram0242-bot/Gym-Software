@@ -135,7 +135,8 @@ export interface GymSettings {
   templateCheckOut?: string;
   // Feature toggles
   productsEnabled?: boolean;
-  // Attendance hardware: MANUAL | NFC | FINGERPRINT | BOTH
+  // Attendance hardware: MANUAL | NFC | MANTRA_USB | BIOMAX_WALL | ESSL_WALL
   attendanceMode?: string;
   fingerprintAgentPort?: number;
+  deviceIpAddress?: string | null;
 }

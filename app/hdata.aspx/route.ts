@@ -59,8 +59,8 @@ export async function POST(req: Request) {
 
     if (pendingCommand) {
       console.log(`[BIOMAX] 🚀 SENDING REMOTE COMMAND: ${pendingCommand.commandString}`);
-      
-      let payload = pendingCommand.commandString;
+      const shortId = pendingCommand.id.substring(0, 8);
+      let payload = `C:${shortId}:${pendingCommand.commandString}`;
 
       // Mark command as sent
       await prisma.biometricCommand.update({

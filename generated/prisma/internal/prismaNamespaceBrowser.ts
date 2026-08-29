@@ -248,6 +248,7 @@ export const GymSettingsScalarFieldEnum = {
   showStoreInRevenue: 'showStoreInRevenue',
   attendanceMode: 'attendanceMode',
   fingerprintAgentPort: 'fingerprintAgentPort',
+  deviceIpAddress: 'deviceIpAddress',
   memberCutoffHours: 'memberCutoffHours',
   staffCutoffHours: 'staffCutoffHours'
 } as const

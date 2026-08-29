@@ -202,9 +202,10 @@ model GymSettings {
   productsEnabled       Boolean @default(false)
   showStoreInRevenue    Boolean @default(true)
 
-  // Attendance hardware mode: MANUAL | NFC | FINGERPRINT | BOTH
+  // Attendance hardware mode: MANUAL | NFC | MANTRA_USB | BIOMAX_WALL | ESSL_WALL
   attendanceMode        String  @default("NFC")
   fingerprintAgentPort  Int     @default(8765)
+  deviceIpAddress       String?
 
   // Attendance Cut-off / Auto-checkout timing (in hours)
   memberCutoffHours     Int     @default(4)

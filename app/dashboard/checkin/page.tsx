@@ -96,7 +96,7 @@ export default function CheckInTerminal() {
     if (matched) setGymName(matched.name);
 
     // Connect fingerprint WebSocket if needed
-    if ((mode === 'FINGERPRINT' || mode === 'BOTH') && !fpWsRef.current) {
+    if (mode === 'MANTRA_USB' && !fpWsRef.current) {
       connectFingerprintBridge(savedId, port);
     }
   };
@@ -428,8 +428,8 @@ export default function CheckInTerminal() {
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-950 text-xs font-bold mb-2">
-            {attendanceMode === 'FINGERPRINT' ? <Fingerprint className="w-3.5 h-3.5 text-blue-900" /> : attendanceMode === 'MANUAL' ? <Search className="w-3.5 h-3.5 text-blue-900" /> : <Radio className="w-3.5 h-3.5 text-blue-900 animate-pulse" />}
-            <span>{attendanceMode === 'MANUAL' ? 'Manual Check-in' : attendanceMode === 'FINGERPRINT' ? 'Fingerprint Terminal' : attendanceMode === 'BOTH' ? 'NFC + Fingerprint Terminal' : 'NFC Attendance Terminal'}</span>
+            {attendanceMode === 'MANTRA_USB' ? <Fingerprint className="w-3.5 h-3.5 text-blue-900" /> : attendanceMode === 'MANUAL' ? <Search className="w-3.5 h-3.5 text-blue-900" /> : (attendanceMode === 'BIOMAX_WALL' || attendanceMode === 'ESSL_WALL') ? <Shield className="w-3.5 h-3.5 text-blue-900" /> : <Radio className="w-3.5 h-3.5 text-blue-900 animate-pulse" />}
+            <span>{attendanceMode === 'MANUAL' ? 'Manual Check-in' : attendanceMode === 'MANTRA_USB' ? 'Mantra USB Scanner' : (attendanceMode === 'BIOMAX_WALL' || attendanceMode === 'ESSL_WALL') ? 'ADMS Push Terminal' : 'NFC Attendance Terminal'}</span>
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
             {activeTab === 'members' ? 'Active Members Monitor' : 'Active Staff & Trainers Monitor'}
@@ -443,7 +443,7 @@ export default function CheckInTerminal() {
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* NFC Button */}
-          {(attendanceMode === 'NFC' || attendanceMode === 'BOTH') && nfcSupported && (
+          {attendanceMode === 'NFC' && nfcSupported && (
             <button
               onClick={startHardwareNFCScan}
               disabled={isScanning}
@@ -456,8 +456,8 @@ export default function CheckInTerminal() {
             </button>
           )}
 
-          {/* Fingerprint Status Badge */}
-          {(attendanceMode === 'FINGERPRINT' || attendanceMode === 'BOTH') && (
+          {/* Fingerprint Agent Status */}
+          {attendanceMode === 'MANTRA_USB' && (
             <div className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold border ${
               fpConnected ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'
             }`}>
