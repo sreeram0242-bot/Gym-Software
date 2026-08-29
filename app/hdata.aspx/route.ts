@@ -130,7 +130,3 @@ export async function POST(req: Request) {
   // Catch-all response
   return new NextResponse("OK", { status: 200 });
 }
-
-export async function GET(req: Request) {
-  return new NextResponse("OK", { status: 200 });
-}
