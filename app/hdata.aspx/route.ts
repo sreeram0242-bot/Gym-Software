@@ -31,13 +31,30 @@ export async function POST(req: Request) {
 
   // 1. Handle Device Heartbeat / Polling
   if (cmdId === "ReceiveCommandAction") {
-    // Auto-register or update device status
+    // Update device status
     await prisma.biometricDevice.updateMany({
       where: { serialNumber: devId },
       data: { lastActive: new Date(), status: "ONLINE" }
     });
 
-    // TODO: Send pending commands back to the device here
+    // HACKER QUEUE: Check if we have a pending remote enrollment test
+    // @ts-ignore
+    if (global.testEnrollUser) {
+      console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${global.testEnrollUser}`);
+      
+      const cmdResponse = {
+        cmd_id: "enroll",
+        user_id: String(global.testEnrollUser),
+        enroll_data: "FP"
+      };
+      
+      // Clear the queue so we don't spam the machine
+      // @ts-ignore
+      global.testEnrollUser = null;
+      
+      return new NextResponse(JSON.stringify(cmdResponse), { status: 200 });
+    }
+
     return new NextResponse("OK", { status: 200 });
   }
 
