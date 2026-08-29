@@ -37,20 +37,18 @@ export async function POST(req: Request) {
       data: { lastActive: new Date(), status: "ONLINE" }
     });
 
-    // HACKER QUEUE: Check if we have a pending remote enrollment test
-    // @ts-ignore
-    if (global.testEnrollUser) {
-      console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${global.testEnrollUser}`);
+    const g = globalThis as any;
+    if (g.testEnrollUser) {
+      console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${g.testEnrollUser}`);
       
       const cmdResponse = {
         cmd_id: "enroll",
-        user_id: String(global.testEnrollUser),
+        user_id: String(g.testEnrollUser),
         enroll_data: "FP"
       };
       
       // Clear the queue so we don't spam the machine
-      // @ts-ignore
-      global.testEnrollUser = null;
+      g.testEnrollUser = null;
       
       return new NextResponse(JSON.stringify(cmdResponse), { status: 200 });
     }
