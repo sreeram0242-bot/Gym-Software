@@ -32,14 +32,9 @@ export async function POST(req: Request) {
   // 1. Handle Device Heartbeat / Polling
   if (cmdId === "ReceiveCommandAction") {
     // Auto-register or update device status
-    await prisma.biometricDevice.upsert({
+    await prisma.biometricDevice.updateMany({
       where: { serialNumber: devId },
-      update: { lastActive: new Date(), status: "ONLINE" },
-      create: {
-        serialNumber: devId,
-        name: jsonData?.fk_name || "Biomax Device",
-        status: "ONLINE",
-      }
+      data: { lastActive: new Date(), status: "ONLINE" }
     });
 
     // TODO: Send pending commands back to the device here
