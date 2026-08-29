@@ -46,7 +46,7 @@ export async function GET(req: Request) {
     
     // ADMS requires purely numeric Command IDs
     const numericId = Math.floor(Math.random() * 100000000);
-    const commandPayload = `C:${numericId}:${pendingCommand.commandString}`;
+    const commandPayload = `C:${numericId}:${pendingCommand.commandString}\n`;
 
     // Mark the command as SENT
     await prisma.biometricCommand.update({

@@ -23,8 +23,8 @@ export async function POST(req: Request) {
     }
 
     // We will use nfcCardId as the biometric PIN/ID 
-    // ZKTeco/Biomax syntax: ENROLL_FP:PIN={USER_ID}:FID=0:RETRY=3:OVERWRITE=1
-    const commandString = `ENROLL_FP:PIN=${nfcCardId}:FID=0:RETRY=3:OVERWRITE=1`;
+    // ZKTeco/Biomax syntax: ENROLL_FP PIN={USER_ID} FID=0 RETRY=3 OVERWRITE=1
+    const commandString = `ENROLL_FP PIN=${nfcCardId} FID=0 RETRY=3 OVERWRITE=1`;
 
     const command = await prisma.biometricCommand.create({
       data: {
