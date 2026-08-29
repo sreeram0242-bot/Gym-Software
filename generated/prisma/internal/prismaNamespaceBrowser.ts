@@ -63,7 +63,9 @@ export const ModelName = {
   GymSettings: 'GymSettings',
   Announcement: 'Announcement',
   Staff: 'Staff',
-  StaffAttendanceRecord: 'StaffAttendanceRecord'
+  StaffAttendanceRecord: 'StaffAttendanceRecord',
+  BiometricDevice: 'BiometricDevice',
+  BiometricCommand: 'BiometricCommand'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -293,6 +295,33 @@ export const StaffAttendanceRecordScalarFieldEnum = {
 } as const
 
 export type StaffAttendanceRecordScalarFieldEnum = (typeof StaffAttendanceRecordScalarFieldEnum)[keyof typeof StaffAttendanceRecordScalarFieldEnum]
+
+
+export const BiometricDeviceScalarFieldEnum = {
+  id: 'id',
+  gymId: 'gymId',
+  serialNumber: 'serialNumber',
+  name: 'name',
+  lastActive: 'lastActive',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BiometricDeviceScalarFieldEnum = (typeof BiometricDeviceScalarFieldEnum)[keyof typeof BiometricDeviceScalarFieldEnum]
+
+
+export const BiometricCommandScalarFieldEnum = {
+  id: 'id',
+  deviceId: 'deviceId',
+  commandString: 'commandString',
+  status: 'status',
+  createdAt: 'createdAt',
+  sentAt: 'sentAt',
+  completedAt: 'completedAt'
+} as const
+
+export type BiometricCommandScalarFieldEnum = (typeof BiometricCommandScalarFieldEnum)[keyof typeof BiometricCommandScalarFieldEnum]
 
 
 export const SortOrder = {

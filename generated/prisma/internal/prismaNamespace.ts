@@ -409,7 +409,9 @@ export const ModelName = {
   GymSettings: 'GymSettings',
   Announcement: 'Announcement',
   Staff: 'Staff',
-  StaffAttendanceRecord: 'StaffAttendanceRecord'
+  StaffAttendanceRecord: 'StaffAttendanceRecord',
+  BiometricDevice: 'BiometricDevice',
+  BiometricCommand: 'BiometricCommand'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -425,7 +427,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "gym" | "customer" | "attendanceRecord" | "transaction" | "subscriptionPlan" | "whatsAppSession" | "product" | "productSale" | "productSaleItem" | "gymSettings" | "announcement" | "staff" | "staffAttendanceRecord"
+    modelProps: "gym" | "customer" | "attendanceRecord" | "transaction" | "subscriptionPlan" | "whatsAppSession" | "product" | "productSale" | "productSaleItem" | "gymSettings" | "announcement" | "staff" | "staffAttendanceRecord" | "biometricDevice" | "biometricCommand"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1391,6 +1393,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    BiometricDevice: {
+      payload: Prisma.$BiometricDevicePayload<ExtArgs>
+      fields: Prisma.BiometricDeviceFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BiometricDeviceFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricDevicePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BiometricDeviceFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricDevicePayload>
+        }
+        findFirst: {
+          args: Prisma.BiometricDeviceFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricDevicePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BiometricDeviceFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricDevicePayload>
+        }
+        findMany: {
+          args: Prisma.BiometricDeviceFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricDevicePayload>[]
+        }
+        create: {
+          args: Prisma.BiometricDeviceCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricDevicePayload>
+        }
+        createMany: {
+          args: Prisma.BiometricDeviceCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BiometricDeviceCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricDevicePayload>[]
+        }
+        delete: {
+          args: Prisma.BiometricDeviceDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricDevicePayload>
+        }
+        update: {
+          args: Prisma.BiometricDeviceUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricDevicePayload>
+        }
+        deleteMany: {
+          args: Prisma.BiometricDeviceDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BiometricDeviceUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BiometricDeviceUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricDevicePayload>[]
+        }
+        upsert: {
+          args: Prisma.BiometricDeviceUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricDevicePayload>
+        }
+        aggregate: {
+          args: Prisma.BiometricDeviceAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBiometricDevice>
+        }
+        groupBy: {
+          args: Prisma.BiometricDeviceGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BiometricDeviceGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BiometricDeviceCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BiometricDeviceCountAggregateOutputType> | number
+        }
+      }
+    }
+    BiometricCommand: {
+      payload: Prisma.$BiometricCommandPayload<ExtArgs>
+      fields: Prisma.BiometricCommandFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BiometricCommandFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricCommandPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BiometricCommandFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricCommandPayload>
+        }
+        findFirst: {
+          args: Prisma.BiometricCommandFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricCommandPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BiometricCommandFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricCommandPayload>
+        }
+        findMany: {
+          args: Prisma.BiometricCommandFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricCommandPayload>[]
+        }
+        create: {
+          args: Prisma.BiometricCommandCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricCommandPayload>
+        }
+        createMany: {
+          args: Prisma.BiometricCommandCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BiometricCommandCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricCommandPayload>[]
+        }
+        delete: {
+          args: Prisma.BiometricCommandDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricCommandPayload>
+        }
+        update: {
+          args: Prisma.BiometricCommandUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricCommandPayload>
+        }
+        deleteMany: {
+          args: Prisma.BiometricCommandDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BiometricCommandUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BiometricCommandUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricCommandPayload>[]
+        }
+        upsert: {
+          args: Prisma.BiometricCommandUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BiometricCommandPayload>
+        }
+        aggregate: {
+          args: Prisma.BiometricCommandAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBiometricCommand>
+        }
+        groupBy: {
+          args: Prisma.BiometricCommandGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BiometricCommandGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BiometricCommandCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BiometricCommandCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1643,6 +1793,33 @@ export const StaffAttendanceRecordScalarFieldEnum = {
 export type StaffAttendanceRecordScalarFieldEnum = (typeof StaffAttendanceRecordScalarFieldEnum)[keyof typeof StaffAttendanceRecordScalarFieldEnum]
 
 
+export const BiometricDeviceScalarFieldEnum = {
+  id: 'id',
+  gymId: 'gymId',
+  serialNumber: 'serialNumber',
+  name: 'name',
+  lastActive: 'lastActive',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BiometricDeviceScalarFieldEnum = (typeof BiometricDeviceScalarFieldEnum)[keyof typeof BiometricDeviceScalarFieldEnum]
+
+
+export const BiometricCommandScalarFieldEnum = {
+  id: 'id',
+  deviceId: 'deviceId',
+  commandString: 'commandString',
+  status: 'status',
+  createdAt: 'createdAt',
+  sentAt: 'sentAt',
+  completedAt: 'completedAt'
+} as const
+
+export type BiometricCommandScalarFieldEnum = (typeof BiometricCommandScalarFieldEnum)[keyof typeof BiometricCommandScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1705,6 +1882,20 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
  * Reference to a field of type 'Boolean'
  */
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime'
+ */
+export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime[]'
+ */
+export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
     
 
 
@@ -1885,6 +2076,8 @@ export type GlobalOmitConfig = {
   announcement?: Prisma.AnnouncementOmit
   staff?: Prisma.StaffOmit
   staffAttendanceRecord?: Prisma.StaffAttendanceRecordOmit
+  biometricDevice?: Prisma.BiometricDeviceOmit
+  biometricCommand?: Prisma.BiometricCommandOmit
 }
 
 /* Types for Logging */

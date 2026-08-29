@@ -266,6 +266,7 @@ export type GymWhereInput = {
   productSales?: Prisma.ProductSaleListRelationFilter
   staff?: Prisma.StaffListRelationFilter
   staffAttendance?: Prisma.StaffAttendanceRecordListRelationFilter
+  biometricDevices?: Prisma.BiometricDeviceListRelationFilter
 }
 
 export type GymOrderByWithRelationInput = {
@@ -289,6 +290,7 @@ export type GymOrderByWithRelationInput = {
   productSales?: Prisma.ProductSaleOrderByRelationAggregateInput
   staff?: Prisma.StaffOrderByRelationAggregateInput
   staffAttendance?: Prisma.StaffAttendanceRecordOrderByRelationAggregateInput
+  biometricDevices?: Prisma.BiometricDeviceOrderByRelationAggregateInput
 }
 
 export type GymWhereUniqueInput = Prisma.AtLeast<{
@@ -315,6 +317,7 @@ export type GymWhereUniqueInput = Prisma.AtLeast<{
   productSales?: Prisma.ProductSaleListRelationFilter
   staff?: Prisma.StaffListRelationFilter
   staffAttendance?: Prisma.StaffAttendanceRecordListRelationFilter
+  biometricDevices?: Prisma.BiometricDeviceListRelationFilter
 }, "id" | "userId">
 
 export type GymOrderByWithAggregationInput = {
@@ -372,6 +375,7 @@ export type GymCreateInput = {
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateInput = {
@@ -395,6 +399,7 @@ export type GymUncheckedCreateInput = {
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymUpdateInput = {
@@ -418,6 +423,7 @@ export type GymUpdateInput = {
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateInput = {
@@ -441,6 +447,7 @@ export type GymUncheckedUpdateInput = {
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateManyInput = {
@@ -686,6 +693,20 @@ export type GymUpdateOneRequiredWithoutStaffAttendanceNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.GymUpdateToOneWithWhereWithoutStaffAttendanceInput, Prisma.GymUpdateWithoutStaffAttendanceInput>, Prisma.GymUncheckedUpdateWithoutStaffAttendanceInput>
 }
 
+export type GymCreateNestedOneWithoutBiometricDevicesInput = {
+  create?: Prisma.XOR<Prisma.GymCreateWithoutBiometricDevicesInput, Prisma.GymUncheckedCreateWithoutBiometricDevicesInput>
+  connectOrCreate?: Prisma.GymCreateOrConnectWithoutBiometricDevicesInput
+  connect?: Prisma.GymWhereUniqueInput
+}
+
+export type GymUpdateOneRequiredWithoutBiometricDevicesNestedInput = {
+  create?: Prisma.XOR<Prisma.GymCreateWithoutBiometricDevicesInput, Prisma.GymUncheckedCreateWithoutBiometricDevicesInput>
+  connectOrCreate?: Prisma.GymCreateOrConnectWithoutBiometricDevicesInput
+  upsert?: Prisma.GymUpsertWithoutBiometricDevicesInput
+  connect?: Prisma.GymWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.GymUpdateToOneWithWhereWithoutBiometricDevicesInput, Prisma.GymUpdateWithoutBiometricDevicesInput>, Prisma.GymUncheckedUpdateWithoutBiometricDevicesInput>
+}
+
 export type GymCreateWithoutCustomersInput = {
   id?: string
   name: string
@@ -706,6 +727,7 @@ export type GymCreateWithoutCustomersInput = {
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutCustomersInput = {
@@ -728,6 +750,7 @@ export type GymUncheckedCreateWithoutCustomersInput = {
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutCustomersInput = {
@@ -766,6 +789,7 @@ export type GymUpdateWithoutCustomersInput = {
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutCustomersInput = {
@@ -788,6 +812,7 @@ export type GymUncheckedUpdateWithoutCustomersInput = {
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutAttendanceInput = {
@@ -810,6 +835,7 @@ export type GymCreateWithoutAttendanceInput = {
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutAttendanceInput = {
@@ -832,6 +858,7 @@ export type GymUncheckedCreateWithoutAttendanceInput = {
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutAttendanceInput = {
@@ -870,6 +897,7 @@ export type GymUpdateWithoutAttendanceInput = {
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutAttendanceInput = {
@@ -892,6 +920,7 @@ export type GymUncheckedUpdateWithoutAttendanceInput = {
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutTransactionsInput = {
@@ -914,6 +943,7 @@ export type GymCreateWithoutTransactionsInput = {
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutTransactionsInput = {
@@ -936,6 +966,7 @@ export type GymUncheckedCreateWithoutTransactionsInput = {
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutTransactionsInput = {
@@ -974,6 +1005,7 @@ export type GymUpdateWithoutTransactionsInput = {
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutTransactionsInput = {
@@ -996,6 +1028,7 @@ export type GymUncheckedUpdateWithoutTransactionsInput = {
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutSubscriptionPlansInput = {
@@ -1018,6 +1051,7 @@ export type GymCreateWithoutSubscriptionPlansInput = {
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutSubscriptionPlansInput = {
@@ -1040,6 +1074,7 @@ export type GymUncheckedCreateWithoutSubscriptionPlansInput = {
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutSubscriptionPlansInput = {
@@ -1078,6 +1113,7 @@ export type GymUpdateWithoutSubscriptionPlansInput = {
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutSubscriptionPlansInput = {
@@ -1100,6 +1136,7 @@ export type GymUncheckedUpdateWithoutSubscriptionPlansInput = {
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutWhatsappSessionsInput = {
@@ -1122,6 +1159,7 @@ export type GymCreateWithoutWhatsappSessionsInput = {
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutWhatsappSessionsInput = {
@@ -1144,6 +1182,7 @@ export type GymUncheckedCreateWithoutWhatsappSessionsInput = {
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutWhatsappSessionsInput = {
@@ -1182,6 +1221,7 @@ export type GymUpdateWithoutWhatsappSessionsInput = {
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutWhatsappSessionsInput = {
@@ -1204,6 +1244,7 @@ export type GymUncheckedUpdateWithoutWhatsappSessionsInput = {
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutProductsInput = {
@@ -1226,6 +1267,7 @@ export type GymCreateWithoutProductsInput = {
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutProductsInput = {
@@ -1248,6 +1290,7 @@ export type GymUncheckedCreateWithoutProductsInput = {
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutProductsInput = {
@@ -1286,6 +1329,7 @@ export type GymUpdateWithoutProductsInput = {
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutProductsInput = {
@@ -1308,6 +1352,7 @@ export type GymUncheckedUpdateWithoutProductsInput = {
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutProductSalesInput = {
@@ -1330,6 +1375,7 @@ export type GymCreateWithoutProductSalesInput = {
   products?: Prisma.ProductCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutProductSalesInput = {
@@ -1352,6 +1398,7 @@ export type GymUncheckedCreateWithoutProductSalesInput = {
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutProductSalesInput = {
@@ -1390,6 +1437,7 @@ export type GymUpdateWithoutProductSalesInput = {
   products?: Prisma.ProductUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutProductSalesInput = {
@@ -1412,6 +1460,7 @@ export type GymUncheckedUpdateWithoutProductSalesInput = {
   products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutGymSettingsInput = {
@@ -1434,6 +1483,7 @@ export type GymCreateWithoutGymSettingsInput = {
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutGymSettingsInput = {
@@ -1456,6 +1506,7 @@ export type GymUncheckedCreateWithoutGymSettingsInput = {
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutGymSettingsInput = {
@@ -1494,6 +1545,7 @@ export type GymUpdateWithoutGymSettingsInput = {
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutGymSettingsInput = {
@@ -1516,6 +1568,7 @@ export type GymUncheckedUpdateWithoutGymSettingsInput = {
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutStaffInput = {
@@ -1538,6 +1591,7 @@ export type GymCreateWithoutStaffInput = {
   products?: Prisma.ProductCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutStaffInput = {
@@ -1560,6 +1614,7 @@ export type GymUncheckedCreateWithoutStaffInput = {
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutStaffInput = {
@@ -1598,6 +1653,7 @@ export type GymUpdateWithoutStaffInput = {
   products?: Prisma.ProductUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutStaffInput = {
@@ -1620,6 +1676,7 @@ export type GymUncheckedUpdateWithoutStaffInput = {
   products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
   staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedUpdateManyWithoutGymNestedInput
 }
 
 export type GymCreateWithoutStaffAttendanceInput = {
@@ -1642,6 +1699,7 @@ export type GymCreateWithoutStaffAttendanceInput = {
   products?: Prisma.ProductCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceCreateNestedManyWithoutGymInput
 }
 
 export type GymUncheckedCreateWithoutStaffAttendanceInput = {
@@ -1664,6 +1722,7 @@ export type GymUncheckedCreateWithoutStaffAttendanceInput = {
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedCreateNestedManyWithoutGymInput
 }
 
 export type GymCreateOrConnectWithoutStaffAttendanceInput = {
@@ -1702,6 +1761,7 @@ export type GymUpdateWithoutStaffAttendanceInput = {
   products?: Prisma.ProductUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUpdateManyWithoutGymNestedInput
 }
 
 export type GymUncheckedUpdateWithoutStaffAttendanceInput = {
@@ -1724,6 +1784,115 @@ export type GymUncheckedUpdateWithoutStaffAttendanceInput = {
   products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
+  biometricDevices?: Prisma.BiometricDeviceUncheckedUpdateManyWithoutGymNestedInput
+}
+
+export type GymCreateWithoutBiometricDevicesInput = {
+  id?: string
+  name: string
+  ownerName: string
+  email: string
+  phone: string
+  userId: string
+  passwordHash: string
+  status?: string
+  createdAt: string
+  memberCount?: number
+  customers?: Prisma.CustomerCreateNestedManyWithoutGymInput
+  attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutGymInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutGymInput
+  subscriptionPlans?: Prisma.SubscriptionPlanCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionCreateNestedManyWithoutGymInput
+  gymSettings?: Prisma.GymSettingsCreateNestedOneWithoutGymInput
+  products?: Prisma.ProductCreateNestedManyWithoutGymInput
+  productSales?: Prisma.ProductSaleCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutGymInput
+}
+
+export type GymUncheckedCreateWithoutBiometricDevicesInput = {
+  id?: string
+  name: string
+  ownerName: string
+  email: string
+  phone: string
+  userId: string
+  passwordHash: string
+  status?: string
+  createdAt: string
+  memberCount?: number
+  customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutGymInput
+  attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutGymInput
+  subscriptionPlans?: Prisma.SubscriptionPlanUncheckedCreateNestedManyWithoutGymInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedCreateNestedManyWithoutGymInput
+  gymSettings?: Prisma.GymSettingsUncheckedCreateNestedOneWithoutGymInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutGymInput
+  productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutGymInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutGymInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutGymInput
+}
+
+export type GymCreateOrConnectWithoutBiometricDevicesInput = {
+  where: Prisma.GymWhereUniqueInput
+  create: Prisma.XOR<Prisma.GymCreateWithoutBiometricDevicesInput, Prisma.GymUncheckedCreateWithoutBiometricDevicesInput>
+}
+
+export type GymUpsertWithoutBiometricDevicesInput = {
+  update: Prisma.XOR<Prisma.GymUpdateWithoutBiometricDevicesInput, Prisma.GymUncheckedUpdateWithoutBiometricDevicesInput>
+  create: Prisma.XOR<Prisma.GymCreateWithoutBiometricDevicesInput, Prisma.GymUncheckedCreateWithoutBiometricDevicesInput>
+  where?: Prisma.GymWhereInput
+}
+
+export type GymUpdateToOneWithWhereWithoutBiometricDevicesInput = {
+  where?: Prisma.GymWhereInput
+  data: Prisma.XOR<Prisma.GymUpdateWithoutBiometricDevicesInput, Prisma.GymUncheckedUpdateWithoutBiometricDevicesInput>
+}
+
+export type GymUpdateWithoutBiometricDevicesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
+  memberCount?: Prisma.IntFieldUpdateOperationsInput | number
+  customers?: Prisma.CustomerUpdateManyWithoutGymNestedInput
+  attendance?: Prisma.AttendanceRecordUpdateManyWithoutGymNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutGymNestedInput
+  subscriptionPlans?: Prisma.SubscriptionPlanUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUpdateManyWithoutGymNestedInput
+  gymSettings?: Prisma.GymSettingsUpdateOneWithoutGymNestedInput
+  products?: Prisma.ProductUpdateManyWithoutGymNestedInput
+  productSales?: Prisma.ProductSaleUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutGymNestedInput
+}
+
+export type GymUncheckedUpdateWithoutBiometricDevicesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.StringFieldUpdateOperationsInput | string
+  memberCount?: Prisma.IntFieldUpdateOperationsInput | number
+  customers?: Prisma.CustomerUncheckedUpdateManyWithoutGymNestedInput
+  attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutGymNestedInput
+  subscriptionPlans?: Prisma.SubscriptionPlanUncheckedUpdateManyWithoutGymNestedInput
+  whatsappSessions?: Prisma.WhatsAppSessionUncheckedUpdateManyWithoutGymNestedInput
+  gymSettings?: Prisma.GymSettingsUncheckedUpdateOneWithoutGymNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutGymNestedInput
+  productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutGymNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutGymNestedInput
+  staffAttendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutGymNestedInput
 }
 
 
@@ -1741,6 +1910,7 @@ export type GymCountOutputType = {
   productSales: number
   staff: number
   staffAttendance: number
+  biometricDevices: number
 }
 
 export type GymCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1753,6 +1923,7 @@ export type GymCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.In
   productSales?: boolean | GymCountOutputTypeCountProductSalesArgs
   staff?: boolean | GymCountOutputTypeCountStaffArgs
   staffAttendance?: boolean | GymCountOutputTypeCountStaffAttendanceArgs
+  biometricDevices?: boolean | GymCountOutputTypeCountBiometricDevicesArgs
 }
 
 /**
@@ -1828,6 +1999,13 @@ export type GymCountOutputTypeCountStaffAttendanceArgs<ExtArgs extends runtime.T
   where?: Prisma.StaffAttendanceRecordWhereInput
 }
 
+/**
+ * GymCountOutputType without action
+ */
+export type GymCountOutputTypeCountBiometricDevicesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.BiometricDeviceWhereInput
+}
+
 
 export type GymSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1850,6 +2028,7 @@ export type GymSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   productSales?: boolean | Prisma.Gym$productSalesArgs<ExtArgs>
   staff?: boolean | Prisma.Gym$staffArgs<ExtArgs>
   staffAttendance?: boolean | Prisma.Gym$staffAttendanceArgs<ExtArgs>
+  biometricDevices?: boolean | Prisma.Gym$biometricDevicesArgs<ExtArgs>
   _count?: boolean | Prisma.GymCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["gym"]>
 
@@ -1904,6 +2083,7 @@ export type GymInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   productSales?: boolean | Prisma.Gym$productSalesArgs<ExtArgs>
   staff?: boolean | Prisma.Gym$staffArgs<ExtArgs>
   staffAttendance?: boolean | Prisma.Gym$staffAttendanceArgs<ExtArgs>
+  biometricDevices?: boolean | Prisma.Gym$biometricDevicesArgs<ExtArgs>
   _count?: boolean | Prisma.GymCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type GymIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1922,6 +2102,7 @@ export type $GymPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     productSales: Prisma.$ProductSalePayload<ExtArgs>[]
     staff: Prisma.$StaffPayload<ExtArgs>[]
     staffAttendance: Prisma.$StaffAttendanceRecordPayload<ExtArgs>[]
+    biometricDevices: Prisma.$BiometricDevicePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2338,6 +2519,7 @@ export interface Prisma__GymClient<T, Null = never, ExtArgs extends runtime.Type
   productSales<T extends Prisma.Gym$productSalesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Gym$productSalesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductSalePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   staff<T extends Prisma.Gym$staffArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Gym$staffArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StaffPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   staffAttendance<T extends Prisma.Gym$staffAttendanceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Gym$staffAttendanceArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StaffAttendanceRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  biometricDevices<T extends Prisma.Gym$biometricDevicesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Gym$biometricDevicesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BiometricDevicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3002,6 +3184,30 @@ export type Gym$staffAttendanceArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   distinct?: Prisma.StaffAttendanceRecordScalarFieldEnum | Prisma.StaffAttendanceRecordScalarFieldEnum[]
+}
+
+/**
+ * Gym.biometricDevices
+ */
+export type Gym$biometricDevicesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the BiometricDevice
+   */
+  select?: Prisma.BiometricDeviceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the BiometricDevice
+   */
+  omit?: Prisma.BiometricDeviceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BiometricDeviceInclude<ExtArgs> | null
+  where?: Prisma.BiometricDeviceWhereInput
+  orderBy?: Prisma.BiometricDeviceOrderByWithRelationInput | Prisma.BiometricDeviceOrderByWithRelationInput[]
+  cursor?: Prisma.BiometricDeviceWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.BiometricDeviceScalarFieldEnum | Prisma.BiometricDeviceScalarFieldEnum[]
 }
 
 /**

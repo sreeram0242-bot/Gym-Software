@@ -61,11 +61,7 @@ export async function POST(req: Request) {
       const targetUserId = pendingCommand.commandString.split(":")[1];
       console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${targetUserId}`);
       
-      const commandPayload = JSON.stringify({
-        cmd_code: "enroll",
-        user_id: targetUserId,
-        enroll_data: "FP"
-      });
+      const commandString = `ENROLL_FP 99`; // Let's try simple ADMS
       
       // Mark command as sent
       await prisma.biometricCommand.update({
@@ -73,21 +69,21 @@ export async function POST(req: Request) {
         data: { status: "SENT" }
       });
       
-      return new NextResponse(commandPayload, { 
+      return new NextResponse(commandString, { 
         status: 200, 
         headers: { 
-          'Content-Type': 'application/json', 
+          'Content-Type': 'text/plain', 
           'Connection': 'close',
-          'Content-Length': commandPayload.length.toString()
+          'Content-Length': commandString.length.toString()
         } 
       });
     }
 
-    const okResponse = JSON.stringify({ ret: "OK", result: "OK" });
+    const okResponse = "OK";
     return new NextResponse(okResponse, { 
       status: 200, 
       headers: { 
-        'Content-Type': 'application/json',
+        'Content-Type': 'text/plain',
         'Connection': 'close',
         'Content-Length': okResponse.length.toString()
       } 
@@ -134,18 +130,18 @@ export async function POST(req: Request) {
       }
     }
     
-    const res = JSON.stringify({ ret: "OK", result: "OK" });
-    return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'application/json', 'Connection': 'close', 'Content-Length': res.length.toString() } });
+    const res = "result=OK";
+    return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
   // 3. Handle Fingerprint Enrollment Data
   if (cmdId === "RTEnrollDataAction" && jsonData) {
     console.log(`[BIOMETRIC] Fingerprint enrolled for User ${jsonData.user_id}`);
-    const res = JSON.stringify({ ret: "OK", result: "OK" });
-    return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'application/json', 'Connection': 'close', 'Content-Length': res.length.toString() } });
+    const res = "result=OK";
+    return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
   // Catch-all response
-  const res = JSON.stringify({ ret: "OK", result: "OK" });
-  return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'application/json', 'Connection': 'close', 'Content-Length': res.length.toString() } });
+  const res = "result=OK";
+  return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
 }

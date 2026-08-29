@@ -106,3 +106,13 @@ export type Staff = Prisma.StaffModel
  * 
  */
 export type StaffAttendanceRecord = Prisma.StaffAttendanceRecordModel
+/**
+ * Model BiometricDevice
+ * 
+ */
+export type BiometricDevice = Prisma.BiometricDeviceModel
+/**
+ * Model BiometricCommand
+ * 
+ */
+export type BiometricCommand = Prisma.BiometricCommandModel
