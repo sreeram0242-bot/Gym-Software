@@ -4,8 +4,11 @@ export async function POST(req: Request) {
   const url = new URL(req.url);
   const text = await req.text();
   
+  const headers = Object.fromEntries(req.headers.entries());
+
   console.log("=======================================");
   console.log("🟢 BIOMAX HIT: /hdata.aspx");
+  console.log("Headers:", JSON.stringify(headers, null, 2));
   console.log("Query Params:", Object.fromEntries(url.searchParams.entries()));
   console.log("Body:", text);
   console.log("=======================================");
