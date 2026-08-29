@@ -57,21 +57,25 @@ export async function POST(req: Request) {
 
       console.log(`[BIOMETRIC] Punch received for User ${userIdStr} at ${punchTime.toISOString()}`);
 
-      // Find the member in our database
-      const member = await prisma.member.findFirst({
-        where: { biometricId: userIdStr }
+      // Find the customer in our database
+      const customer = await prisma.customer.findFirst({
+        where: { fingerprintId: userIdStr }
       });
 
-      if (member) {
+      if (customer) {
         // Record the attendance
+        const dateStr = punchTime.toISOString().split('T')[0];
         await prisma.attendanceRecord.create({
           data: {
-            memberId: member.id,
-            checkIn: punchTime,
-            status: "PRESENT"
+            gymId: customer.gymId,
+            customerId: customer.id,
+            customerName: customer.name,
+            customerPhone: customer.phone,
+            checkInTime: punchTime.toISOString(),
+            dateStr: dateStr,
           }
         });
-        console.log(`[BIOMETRIC] Successfully saved attendance for ${member.name}`);
+        console.log(`[BIOMETRIC] Successfully saved attendance for ${customer.name}`);
       } else {
         console.log(`[BIOMETRIC] Warning: Unregistered User ID ${userIdStr} punched.`);
       }
