@@ -61,7 +61,12 @@ export async function POST(req: Request) {
       const targetUserId = pendingCommand.commandString.split(":")[1];
       console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${targetUserId}`);
       
-      const commandString = `C:123:ENROLL_FP PIN=${targetUserId}\n`;
+      const commandPayload = JSON.stringify([
+        {
+          cmd_code: "enroll",
+          user_id: targetUserId
+        }
+      ]);
       
       // Mark command as sent
       await prisma.biometricCommand.update({
@@ -69,12 +74,12 @@ export async function POST(req: Request) {
         data: { status: "SENT" }
       });
       
-      return new NextResponse(commandString, { 
+      return new NextResponse(commandPayload, { 
         status: 200, 
         headers: { 
-          'Content-Type': 'text/plain', 
+          'Content-Type': 'application/json', 
           'Connection': 'close',
-          'Content-Length': commandString.length.toString()
+          'Content-Length': commandPayload.length.toString()
         } 
       });
     }
