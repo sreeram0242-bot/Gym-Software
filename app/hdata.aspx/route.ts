@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   // 1. Handle Device Heartbeat / Polling
   if (cmdId === "ReceiveCommandAction") {
     // Update device status and get the device object
-    await prisma.biometricDevice.upsert({
+    const device = await prisma.biometricDevice.upsert({
       where: { serialNumber: devId },
       update: { lastActive: new Date(), status: "ONLINE" },
       create: {
@@ -47,6 +47,36 @@ export async function POST(req: Request) {
         gymId: "gym_1" // Fallback fallback
       }
     });
+
+    // HACKER QUEUE: Check database for pending commands
+    const pendingCommand = await prisma.biometricCommand.findFirst({
+      where: {
+        deviceId: device.id,
+        status: "PENDING"
+      },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    if (pendingCommand) {
+      console.log(`[BIOMAX] 🚀 SENDING REMOTE COMMAND: ${pendingCommand.commandString}`);
+      
+      let payload = pendingCommand.commandString;
+
+      // Mark command as sent
+      await prisma.biometricCommand.update({
+        where: { id: pendingCommand.id },
+        data: { status: "SENT" }
+      });
+      
+      return new NextResponse(payload, { 
+        status: 200, 
+        headers: { 
+          'Content-Type': payload.startsWith('{') || payload.startsWith('[') ? 'application/json' : 'text/plain', 
+          'Connection': 'close',
+          'Content-Length': payload.length.toString()
+        } 
+      });
+    }
 
     const okResponse = "OK";
     return new NextResponse(okResponse, { 

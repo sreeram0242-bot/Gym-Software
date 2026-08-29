@@ -26,7 +26,6 @@ export async function GET(req: Request) {
       await prisma.biometricCommand.create({
         data: {
           deviceId: device.id,
-          commandType: "ENROLL",
           commandString: commandToQueue,
           status: "PENDING"
         }
