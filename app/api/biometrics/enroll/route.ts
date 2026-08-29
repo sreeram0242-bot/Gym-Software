@@ -22,14 +22,20 @@ export async function POST(req: Request) {
       return new NextResponse(JSON.stringify({ error: 'No biometric devices registered or active for this gym.' }), { status: 404 });
     }
 
-    // We will use nfcCardId as the biometric PIN/ID 
-    // ZKTeco/Biomax syntax: ENROLL_FP PIN={USER_ID} FID=0 RETRY=3 OVERWRITE=1
-    const commandString = `ENROLL_FP PIN=${nfcCardId} FID=0 RETRY=3 OVERWRITE=1`;
+    // First, ensure the user exists on the device
+    await prisma.biometricCommand.create({
+      data: {
+        deviceId: device.id,
+        commandString: `DATA UPDATE USERINFO PIN=${nfcCardId}`,
+        status: 'PENDING'
+      }
+    });
 
+    // Then trigger enrollment (using FID=1 and removing OVERWRITE as older firmware might reject it)
     const command = await prisma.biometricCommand.create({
       data: {
         deviceId: device.id,
-        commandString,
+        commandString: `ENROLL_FP PIN=${nfcCardId} FID=1 RETRY=3`,
         status: 'PENDING'
       }
     });
