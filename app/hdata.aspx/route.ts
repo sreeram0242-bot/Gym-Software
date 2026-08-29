@@ -69,10 +69,25 @@ export async function POST(req: Request) {
         data: { status: "SENT" }
       });
       
-      return new NextResponse(commandString, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close' } });
+      return new NextResponse(commandString, { 
+        status: 200, 
+        headers: { 
+          'Content-Type': 'text/plain', 
+          'Connection': 'close',
+          'Content-Length': commandString.length.toString()
+        } 
+      });
     }
 
-    return new NextResponse("OK", { status: 200, headers: { 'Connection': 'close' } });
+    const okResponse = "OK";
+    return new NextResponse(okResponse, { 
+      status: 200, 
+      headers: { 
+        'Content-Type': 'text/plain',
+        'Connection': 'close',
+        'Content-Length': okResponse.length.toString()
+      } 
+    });
   }
 
   // 2. Handle Attendance Punch (Check-in / Check-out)
@@ -115,15 +130,18 @@ export async function POST(req: Request) {
       }
     }
     
-    return new NextResponse("result=OK", { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close' } });
+    const res = "result=OK";
+    return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
   // 3. Handle Fingerprint Enrollment Data
   if (cmdId === "RTEnrollDataAction" && jsonData) {
     console.log(`[BIOMETRIC] Fingerprint enrolled for User ${jsonData.user_id}`);
-    return new NextResponse("result=OK", { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close' } });
+    const res = "result=OK";
+    return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
   // Catch-all response
-  return new NextResponse("result=OK", { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close' } });
+  const res = "result=OK";
+  return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
 }
