@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       // ADMS requires purely numeric Command IDs
       // Using a quick hash or just a timestamp modulo
       const numericId = Math.floor(Math.random() * 100000000);
-      let payload = `C:${numericId}:${pendingCommand.commandString}\n`;
+      let payload = `C:${numericId}:${pendingCommand.commandString}`;
 
       // Mark command as sent
       await prisma.biometricCommand.update({
