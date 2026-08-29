@@ -2,13 +2,17 @@ import { NextResponse } from "next/server";
 import fs from 'fs';
 import prisma from "@/lib/db";
 
+export async function GET(req: Request) {
+  return POST(req);
+}
+
 export async function POST(req: Request) {
   const url = new URL(req.url);
   const text = await req.text();
   const headers = Object.fromEntries(req.headers.entries());
 
-  const cmdId = headers["cmd_id"];
-  const devId = headers["dev_id"];
+  const cmdId = headers["cmd_id"] || url.searchParams.get("cmd_id");
+  const devId = headers["dev_id"] || url.searchParams.get("dev_id");
 
   if (!devId) {
     return new NextResponse("OK", { status: 200 });
@@ -28,37 +32,45 @@ export async function POST(req: Request) {
     }
   }
 
-  console.log(`[BIOMAX] Received ${cmdId} from ${devId}`);
+  console.log(`[BIOMAX] Received ${cmdId} from ${devId} (via ${req.method})`);
 
   // 1. Handle Device Heartbeat / Polling
   if (cmdId === "ReceiveCommandAction") {
-    // Update device status
-    await prisma.biometricDevice.updateMany({
+    // Update device status and get the device object
+    const device = await prisma.biometricDevice.upsert({
       where: { serialNumber: devId },
-      data: { lastActive: new Date(), status: "ONLINE" }
+      update: { lastActive: new Date(), status: "ONLINE" },
+      create: {
+        serialNumber: devId,
+        name: "Biomax Main",
+        status: "ONLINE",
+        gymId: "gym_1" // Fallback fallback
+      }
     });
 
-    // HACKER QUEUE: Check if we have a pending remote enrollment test
-    const hackFile = '/tmp/enroll_hack.txt';
-    let testEnrollUser: string | null = null;
-    
-    try {
-      if (fs.existsSync(hackFile)) {
-        testEnrollUser = fs.readFileSync(hackFile, 'utf8').trim();
-        fs.unlinkSync(hackFile); // Delete it so we don't spam the machine
-      }
-    } catch (e) {
-      console.error("Hack file read error", e);
-    }
+    // HACKER QUEUE: Check database for pending commands
+    const pendingCommand = await prisma.biometricCommand.findFirst({
+      where: {
+        deviceId: device.id,
+        status: "PENDING"
+      },
+      orderBy: { createdAt: 'asc' }
+    });
 
-    if (testEnrollUser) {
-      console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${testEnrollUser}`);
+    if (pendingCommand) {
+      console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${pendingCommand.userId}`);
       
       const cmdResponse = {
         cmd_id: "enroll",
-        user_id: testEnrollUser,
+        user_id: pendingCommand.userId,
         enroll_data: "FP"
       };
+
+      // Mark command as sent
+      await prisma.biometricCommand.update({
+        where: { id: pendingCommand.id },
+        data: { status: "SENT" }
+      });
       
       return new NextResponse(JSON.stringify(cmdResponse), { status: 200 });
     }
