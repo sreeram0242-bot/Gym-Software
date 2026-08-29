@@ -8,7 +8,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const url = new URL(req.url);
-  const text = await req.text();
+  let text = '';
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    text = await req.text();
+  }
+  
   const headers = Object.fromEntries(req.headers.entries());
 
   const cmdId = headers["cmd_id"] || url.searchParams.get("cmd_id");

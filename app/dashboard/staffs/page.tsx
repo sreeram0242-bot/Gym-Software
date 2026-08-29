@@ -1423,8 +1423,8 @@ export default function StaffPage() {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
-                                gymId: settings?.gymId || 'gym_1',
-                                memberId: isEditingStaff ? staffId : 'new',
+                                gymId: gymId,
+                                memberId: isEditingStaff ? editingStaffId : 'new',
                                 nfcCardId: fingerprintId
                               })
                             });
@@ -1449,7 +1449,7 @@ export default function StaffPage() {
                     <label className="block font-bold text-emerald-900 uppercase">ZKTeco Device User ID</label>
                     <div className="flex gap-2">
                       <div className="relative flex-1">
-                        <ShieldCheck className="absolute left-3 top-2.5 w-3.5 h-3.5 text-emerald-600" />
+                        <Shield className="absolute left-3 top-2.5 w-3.5 h-3.5 text-emerald-600" />
                         <input 
                           type="text" 
                           value={fingerprintId}
@@ -1467,8 +1467,8 @@ export default function StaffPage() {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
-                                gymId: settings?.gymId || 'gym_1',
-                                memberId: isEditingStaff ? staffId : 'new',
+                                gymId: gymId,
+                                memberId: isEditingStaff ? editingStaffId : 'new',
                                 nfcCardId: fingerprintId
                               })
                             });
@@ -1487,7 +1487,6 @@ export default function StaffPage() {
                     </div>
                   </div>
                 )}
-              </div>
               </div>
 
               <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">

@@ -1456,7 +1456,7 @@ export default function MemberManagementPage() {
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
                                 gymId: settings?.gymId || 'gym_1',
-                                memberId: isEditingMember ? memberId : 'new',
+                                memberId: isEditingMember ? editingMemberId : 'new',
                                 nfcCardId: fingerprintId
                               })
                             });
@@ -1479,7 +1479,7 @@ export default function MemberManagementPage() {
                 {settings?.attendanceMode === 'ESSL_WALL' && (
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-emerald-700" /> ZKTeco Device ID
+                      <Shield className="w-3 h-3 text-emerald-700" /> ZKTeco Device ID
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -1499,7 +1499,7 @@ export default function MemberManagementPage() {
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
                                 gymId: settings?.gymId || 'gym_1',
-                                memberId: isEditingMember ? memberId : 'new',
+                                memberId: isEditingMember ? editingMemberId : 'new',
                                 nfcCardId: fingerprintId
                               })
                             });
