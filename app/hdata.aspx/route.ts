@@ -62,7 +62,7 @@ export async function POST(req: Request) {
       console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${targetUserId}`);
       
       const cmdResponse = {
-        cmd_id: "enroll",
+        trans_id: "RemoteEnroll",
         user_id: targetUserId,
         enroll_data: "FP"
       };
