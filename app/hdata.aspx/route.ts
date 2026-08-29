@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   // 1. Handle Device Heartbeat / Polling
   if (cmdId === "ReceiveCommandAction") {
     // Update device status and get the device object
-    const device = await prisma.biometricDevice.upsert({
+    await prisma.biometricDevice.upsert({
       where: { serialNumber: devId },
       update: { lastActive: new Date(), status: "ONLINE" },
       create: {
@@ -47,42 +47,6 @@ export async function POST(req: Request) {
         gymId: "gym_1" // Fallback fallback
       }
     });
-
-    // HACKER QUEUE: Check database for pending commands
-    const pendingCommand = await prisma.biometricCommand.findFirst({
-      where: {
-        deviceId: device.id,
-        status: "PENDING"
-      },
-      orderBy: { createdAt: 'asc' }
-    });
-
-    if (pendingCommand && pendingCommand.commandString.startsWith("ENROLL:")) {
-      const targetUserId = pendingCommand.commandString.split(":")[1];
-      console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${targetUserId}`);
-      
-      const commandPayload = JSON.stringify([
-        {
-          cmd_code: "enroll",
-          user_id: targetUserId
-        }
-      ]);
-      
-      // Mark command as sent
-      await prisma.biometricCommand.update({
-        where: { id: pendingCommand.id },
-        data: { status: "SENT" }
-      });
-      
-      return new NextResponse(commandPayload, { 
-        status: 200, 
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Connection': 'close',
-          'Content-Length': commandPayload.length.toString()
-        } 
-      });
-    }
 
     const okResponse = "OK";
     return new NextResponse(okResponse, { 
@@ -119,34 +83,45 @@ export async function POST(req: Request) {
       if (customer) {
         // Record the attendance
         const dateStr = punchTime.toISOString().split('T')[0];
-        await prisma.attendanceRecord.create({
-          data: {
-            gymId: customer.gymId,
+        
+        // Prevent duplicate logs
+        const existingLog = await prisma.attendanceRecord.findFirst({
+          where: {
             customerId: customer.id,
-            customerName: customer.name,
-            customerPhone: customer.phone,
-            checkInTime: punchTime.toISOString(),
-            dateStr: dateStr,
+            checkInTime: punchTime.toISOString()
           }
         });
-        console.log(`[BIOMETRIC] Successfully saved attendance for ${customer.name}`);
+
+        if (!existingLog) {
+          await prisma.attendanceRecord.create({
+            data: {
+              gymId: customer.gymId,
+              customerId: customer.id,
+              customerName: customer.name,
+              customerPhone: customer.phone,
+              checkInTime: punchTime.toISOString(),
+              dateStr: dateStr,
+            }
+          });
+          console.log(`[BIOMETRIC] Successfully saved attendance for ${customer.name}`);
+        }
       } else {
         console.log(`[BIOMETRIC] Warning: Unregistered User ID ${userIdStr} punched.`);
       }
     }
     
-    const res = "result=OK";
+    const res = "OK";
     return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
   // 3. Handle Fingerprint Enrollment Data
   if (cmdId === "RTEnrollDataAction" && jsonData) {
     console.log(`[BIOMETRIC] Fingerprint enrolled for User ${jsonData.user_id}`);
-    const res = "result=OK";
+    const res = "OK";
     return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
   // Catch-all response
-  const res = "result=OK";
+  const res = "OK";
   return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
 }
