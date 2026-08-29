@@ -63,8 +63,10 @@ export async function POST(req: Request) {
 
     if (pendingCommand) {
       console.log(`[BIOMAX] 🚀 SENDING REMOTE COMMAND: ${pendingCommand.commandString}`);
-      const shortId = pendingCommand.id.substring(0, 8);
-      let payload = `C:${shortId}:${pendingCommand.commandString}`;
+      // ADMS requires purely numeric Command IDs
+      // Using a quick hash or just a timestamp modulo
+      const numericId = Math.floor(Math.random() * 100000000);
+      let payload = `C:${numericId}:${pendingCommand.commandString}`;
 
       // Mark command as sent
       await prisma.biometricCommand.update({

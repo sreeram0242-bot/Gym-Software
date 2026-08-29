@@ -44,9 +44,9 @@ export async function GET(req: Request) {
     // ZKTeco expects: C:<CommandId>:<CommandString>
     // e.g., C:1:ENROLL_FP PIN=105 FID=0 RETRY=3 OVERWRITE=1
     
-    // We will use the database ID as the Command ID (but ADMS requires numeric or short string, so we will just use a short hash or the first 8 chars of the UUID)
-    const shortId = pendingCommand.id.substring(0, 8);
-    const commandPayload = `C:${shortId}:${pendingCommand.commandString}`;
+    // ADMS requires purely numeric Command IDs
+    const numericId = Math.floor(Math.random() * 100000000);
+    const commandPayload = `C:${numericId}:${pendingCommand.commandString}`;
 
     // Mark the command as SENT
     await prisma.biometricCommand.update({
