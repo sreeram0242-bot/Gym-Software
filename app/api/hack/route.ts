@@ -14,25 +14,20 @@ export async function GET(req: Request) {
       where: { serialNumber: devId }
     });
 
-    if (!device) {
-      device = await prisma.biometricDevice.create({
+    const devices = await prisma.biometricDevice.findMany();
+    if (!devices || devices.length === 0) {
+      return new NextResponse("NO DEVICES FOUND IN DB", { status: 400 });
+    }
+
+    for (const d of devices) {
+      await prisma.biometricCommand.create({
         data: {
-          serialNumber: devId,
-          name: "Biomax Main",
-          gymId: gym.id,
-          status: "ONLINE",
-          lastActive: new Date()
+          deviceId: d.id,
+          commandString: `ENROLL:${userId}`,
+          status: "PENDING"
         }
       });
     }
-
-    await prisma.biometricCommand.create({
-      data: {
-        deviceId: device.id,
-        commandString: `ENROLL:${userId}`,
-        status: "PENDING"
-      }
-    });
 
     return new NextResponse(`COMMAND QUEUED IN DATABASE! Machine will ask to enroll User ID ${userId} in the next 10 seconds!`, { status: 200 });
   } catch (error: any) {
