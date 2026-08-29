@@ -61,7 +61,7 @@ export async function POST(req: Request) {
       const targetUserId = pendingCommand.commandString.split(":")[1];
       console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${targetUserId}`);
       
-      const commandString = `ENROLL_FP 99`; // Let's try simple ADMS
+      const commandString = `C:123:ENROLL_FP PIN=${targetUserId}\n`;
       
       // Mark command as sent
       await prisma.biometricCommand.update({
