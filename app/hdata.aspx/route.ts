@@ -57,12 +57,13 @@ export async function POST(req: Request) {
       orderBy: { createdAt: 'asc' }
     });
 
-    if (pendingCommand) {
-      console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${pendingCommand.userId}`);
+    if (pendingCommand && pendingCommand.commandString.startsWith("ENROLL:")) {
+      const targetUserId = pendingCommand.commandString.split(":")[1];
+      console.log(`[BIOMAX] 🚀 SENDING REMOTE ENROLL COMMAND FOR USER ${targetUserId}`);
       
       const cmdResponse = {
         cmd_id: "enroll",
-        user_id: pendingCommand.userId,
+        user_id: targetUserId,
         enroll_data: "FP"
       };
 
