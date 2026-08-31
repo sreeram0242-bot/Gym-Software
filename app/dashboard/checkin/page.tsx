@@ -25,8 +25,11 @@ export default function CheckInTerminal() {
   const [staffs, setStaffs] = useState<any[]>([]);
   const [staffAttendance, setStaffAttendance] = useState<any[]>([]);
 
-  // Attendance Mode from Settings
-  const [attendanceMode, setAttendanceMode] = useState<string>('NFC');
+  // Attendance Modes from Settings
+  const [attendanceManualEnabled, setAttendanceManualEnabled] = useState<boolean>(true);
+  const [attendanceNfcEnabled, setAttendanceNfcEnabled] = useState<boolean>(true);
+  const [attendanceMantraEnabled, setAttendanceMantraEnabled] = useState<boolean>(false);
+  const [attendanceWallMountEnabled, setAttendanceWallMountEnabled] = useState<boolean>(false);
   const [fpPort, setFpPort] = useState<number>(8765);
 
   // Web NFC State
@@ -88,15 +91,22 @@ export default function CheckInTerminal() {
     setStaffs(stfs || []);
     setStaffAttendance(stfAtts || []);
 
-    const mode = gymSettings?.attendanceMode || 'NFC';
+    const manualEnabled = gymSettings?.attendanceManualEnabled ?? true;
+    const nfcEnabled = gymSettings?.attendanceNfcEnabled ?? true;
+    const mantraEnabled = gymSettings?.attendanceMantraEnabled ?? false;
+    const wallMountEnabled = gymSettings?.attendanceWallMountEnabled ?? false;
     const port = gymSettings?.fingerprintAgentPort || 8765;
-    setAttendanceMode(mode);
+    
+    setAttendanceManualEnabled(manualEnabled);
+    setAttendanceNfcEnabled(nfcEnabled);
+    setAttendanceMantraEnabled(mantraEnabled);
+    setAttendanceWallMountEnabled(wallMountEnabled);
     setFpPort(port);
     const matched = loadedGyms?.find((g: any) => g.id === savedId);
     if (matched) setGymName(matched.name);
 
     // Connect fingerprint WebSocket if needed
-    if (mode === 'MANTRA_USB' && !fpWsRef.current) {
+    if (mantraEnabled && !fpWsRef.current) {
       connectFingerprintBridge(savedId, port);
     }
   };
@@ -427,9 +437,27 @@ export default function CheckInTerminal() {
       {/* Header Banner */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-950 text-xs font-bold mb-2">
-            {attendanceMode === 'MANTRA_USB' ? <Fingerprint className="w-3.5 h-3.5 text-blue-900" /> : attendanceMode === 'MANUAL' ? <Search className="w-3.5 h-3.5 text-blue-900" /> : (attendanceMode === 'BIOMAX_WALL' || attendanceMode === 'ESSL_WALL') ? <Shield className="w-3.5 h-3.5 text-blue-900" /> : <Radio className="w-3.5 h-3.5 text-blue-900 animate-pulse" />}
-            <span>{attendanceMode === 'MANUAL' ? 'Manual Check-in' : attendanceMode === 'MANTRA_USB' ? 'Mantra USB Scanner' : (attendanceMode === 'BIOMAX_WALL' || attendanceMode === 'ESSL_WALL') ? 'ADMS Push Terminal' : 'NFC Attendance Terminal'}</span>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {attendanceManualEnabled && (
+              <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
+                <Search className="w-3.5 h-3.5 text-slate-600" /><span>Manual</span>
+              </div>
+            )}
+            {attendanceNfcEnabled && (
+              <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 text-xs font-bold">
+                <Radio className="w-3.5 h-3.5 text-blue-600 animate-pulse" /><span>NFC Reader</span>
+              </div>
+            )}
+            {attendanceMantraEnabled && (
+              <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 text-xs font-bold">
+                <Fingerprint className="w-3.5 h-3.5 text-blue-600" /><span>Mantra USB</span>
+              </div>
+            )}
+            {attendanceWallMountEnabled && (
+              <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold">
+                <Shield className="w-3.5 h-3.5 text-emerald-600" /><span>ADMS Push</span>
+              </div>
+            )}
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
             {activeTab === 'members' ? 'Active Members Monitor' : 'Active Staff & Trainers Monitor'}
@@ -443,7 +471,7 @@ export default function CheckInTerminal() {
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* NFC Button */}
-          {attendanceMode === 'NFC' && nfcSupported && (
+          {attendanceNfcEnabled && nfcSupported && (
             <button
               onClick={startHardwareNFCScan}
               disabled={isScanning}
@@ -457,7 +485,7 @@ export default function CheckInTerminal() {
           )}
 
           {/* Fingerprint Agent Status */}
-          {attendanceMode === 'MANTRA_USB' && (
+          {attendanceMantraEnabled && (
             <div className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold border ${
               fpConnected ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'
             }`}>
@@ -522,8 +550,8 @@ export default function CheckInTerminal() {
       {/* ========================================================================= */}
       {activeTab === 'members' && (
         <>
-          {/* Manual Search Bar — shown in MANUAL mode */}
-          {attendanceMode === 'MANUAL' && (
+          {/* Manual Search Bar — shown if manual enabled */}
+          {attendanceManualEnabled && (
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
                 <Search className="w-4 h-4 text-blue-600" /> Search &amp; Check-in Member
@@ -762,8 +790,8 @@ export default function CheckInTerminal() {
       {/* ========================================================================= */}
       {activeTab === 'staff' && (
         <>
-          {/* Manual Search Bar for Staff */}
-          {attendanceMode === 'MANUAL' && (
+          {/* Manual Search Bar */}
+          {attendanceManualEnabled && (
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
                 <Search className="w-4 h-4 text-blue-600" /> Search &amp; Punch Staff Shift
@@ -899,8 +927,8 @@ export default function CheckInTerminal() {
                           </span>
                         </div>
 
-                        {/* Manual Punch Button only when attendanceMode is MANUAL */}
-                        {attendanceMode === 'MANUAL' && (
+                        {/* Manual Punch Button only when manual is enabled */}
+                        {attendanceManualEnabled && (
                           <div className="pt-2">
                             <button
                               onClick={() => handleManualStaffPunch(session.staffId)}

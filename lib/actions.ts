@@ -4,6 +4,8 @@ import prisma from './db';
 import { getLocalTodayDateString, formatDateDDMMYYYY } from './utils';
 import { getTemplate, compileTemplate } from './templates';
 import { WhatsAppManager } from './whatsapp';
+import bcrypt from 'bcryptjs';
+import { cookies } from 'next/headers';
 
 // Global in-memory fallback store for offline development and testing
 const globalAny: any = global;
@@ -158,7 +160,10 @@ if (!globalAny.mockStore) {
         absentTrackingEnabled: false,
         absentThresholdDays: 3,
         productsEnabled: false,
-        attendanceMode: 'NFC',
+        attendanceManualEnabled: true,
+        attendanceNfcEnabled: true,
+        attendanceMantraEnabled: false,
+        attendanceWallMountEnabled: false,
         fingerprintAgentPort: 8765
       }
     },
@@ -271,7 +276,10 @@ export async function getGymSettings(gymId: string) {
         absentThresholdDays: 3,
         productsEnabled: false,
         showStoreInRevenue: true,
-        attendanceMode: 'NFC',
+        attendanceManualEnabled: true,
+        attendanceNfcEnabled: true,
+        attendanceMantraEnabled: false,
+        attendanceWallMountEnabled: false,
         fingerprintAgentPort: 8765
       };
     }
@@ -337,7 +345,7 @@ export async function addGym(gym: any) {
         email: gym.email,
         phone: gym.phone,
         userId: gym.userId,
-        passwordHash: gym.passwordHash,
+        passwordHash: await bcrypt.hash(gym.passwordHash, 10),
         status: 'active',
         createdAt: getLocalTodayDateString(),
         memberCount: 0
@@ -383,8 +391,10 @@ export async function changeGymPassword(gymId: string, currentPassword: string, 
   try {
     const gym = await prisma.gym.findUnique({ where: { id: gymId } });
     if (!gym) return { success: false, error: 'Gym not found' };
-    if (gym.passwordHash !== currentPassword) return { success: false, error: 'Current password is incorrect' };
-    await prisma.gym.update({ where: { id: gymId }, data: { passwordHash: newPassword } });
+    const isValid = await bcrypt.compare(currentPassword, gym.passwordHash);
+    if (!isValid) return { success: false, error: 'Current password is incorrect' };
+    const hashedNew = await bcrypt.hash(newPassword, 10);
+    await prisma.gym.update({ where: { id: gymId }, data: { passwordHash: hashedNew } });
     return { success: true };
   } catch (e) {
     const gym = store.gyms.find((g: any) => g.id === gymId);
@@ -397,14 +407,13 @@ export async function changeGymPassword(gymId: string, currentPassword: string, 
 
 // --- CUSTOMERS ---
 export async function getCustomers(gymId?: string) {
+  if (!gymId) return [];
   try {
-    if (!gymId) return await prisma.customer.findMany({ orderBy: { joinedDate: 'desc' } });
     return await prisma.customer.findMany({
       where: { gymId },
       orderBy: { joinedDate: 'desc' }
     });
   } catch (e) {
-    if (!gymId) return store.customers;
     return store.customers.filter((c: any) => c.gymId === gymId);
   }
 }
@@ -540,17 +549,14 @@ export async function findStaffByFingerprint(gymId: string, fingerprintId: strin
 }
 
 export async function updateCustomer(id: string, data: any) {
+  const callerGymId = cookies().get('active_gym_id')?.value;
+  if (!callerGymId) throw new Error("Unauthorized");
   try {
-    return await prisma.customer.update({
-      where: { id },
+    return await prisma.customer.updateMany({
+      where: { id, gymId: callerGymId },
       data
     });
   } catch (e) {
-    const idx = store.customers.findIndex((c: any) => c.id === id);
-    if (idx !== -1) {
-      store.customers[idx] = { ...store.customers[idx], ...data };
-      return store.customers[idx];
-    }
     return null;
   }
 }
@@ -572,15 +578,12 @@ export async function toggleCustomerWaStatus(id: string, waActive: boolean) {
 }
 
 export async function deleteCustomer(id: string) {
+  const callerGymId = cookies().get('active_gym_id')?.value;
+  if (!callerGymId) throw new Error("Unauthorized");
   try {
-    await prisma.customer.delete({ where: { id } });
+    await prisma.customer.deleteMany({ where: { id, gymId: callerGymId } });
     return true;
   } catch {
-    const idx = store.customers.findIndex((c: any) => c.id === id);
-    if (idx !== -1) {
-      store.customers.splice(idx, 1);
-      return true;
-    }
     return false;
   }
 }
@@ -752,6 +755,7 @@ export async function collectPendingBalance(
 
 // --- ATTENDANCE ---
 export async function getAttendance(gymId?: string) {
+  if (!gymId) return [];
   try {
     if (gymId) {
       // Auto-expire orphan member sessions exceeding cutoff hours
@@ -773,13 +777,11 @@ export async function getAttendance(gymId?: string) {
       }
     }
 
-    if (!gymId) return await prisma.attendanceRecord.findMany({ orderBy: { checkInTime: 'desc' } });
     return await prisma.attendanceRecord.findMany({
       where: { gymId },
       orderBy: { checkInTime: 'desc' }
     });
   } catch (e) {
-    if (!gymId) return store.attendance;
     return store.attendance.filter((a: any) => a.gymId === gymId);
   }
 }
@@ -803,9 +805,9 @@ export async function toggleCheckIn(customerId: string, isManual: boolean = fals
     // ── NFC/Fingerprint Enforcement ─────────────────────────────────────
     // If the gym has set a hardware-only attendance mode, block manual punches.
     if (isManual) {
-      const mode = gymSettings?.attendanceMode ?? 'NFC';
-      if (mode === 'NFC' || mode === 'FINGERPRINT' || mode === 'BOTH') {
-        throw new Error(`Manual punch-in is disabled. Please use the ${mode === 'NFC' ? 'NFC card' : 'fingerprint'} terminal.`);
+      const manualEnabled = gymSettings?.attendanceManualEnabled ?? true;
+      if (!manualEnabled) {
+        throw new Error(`Manual punch-in is disabled by gym admin.`);
       }
     }
     const cutoffHours = gymSettings?.memberCutoffHours || 4;
@@ -904,14 +906,13 @@ export async function getMemberMonthlyAvgHours(customerId: string) {
 
 // --- TRANSACTIONS ---
 export async function getTransactions(gymId?: string) {
+  if (!gymId) return [];
   try {
-    if (!gymId) return await prisma.transaction.findMany({ orderBy: { date: 'desc' } });
     return await prisma.transaction.findMany({
       where: { gymId },
       orderBy: { date: 'desc' }
     });
   } catch (e) {
-    if (!gymId) return store.transactions;
     return store.transactions.filter((t: any) => t.gymId === gymId);
   }
 }
@@ -964,6 +965,8 @@ export async function addTransaction(tx: any) {
 }
 
 export async function updateTransaction(id: string, data: any) {
+  const callerGymId = cookies().get('active_gym_id')?.value;
+  if (!callerGymId) throw new Error("Unauthorized");
   try {
     const updateData: any = {};
     if (data.amount !== undefined) updateData.amount = Number(data.amount);
@@ -979,41 +982,32 @@ export async function updateTransaction(id: string, data: any) {
       updateData.splitDetails = typeof data.splitDetails === 'string' ? data.splitDetails : JSON.stringify(data.splitDetails);
     }
 
-    return await prisma.transaction.update({
-      where: { id },
+    return await prisma.transaction.updateMany({
+      where: { id, gymId: callerGymId },
       data: updateData
     });
   } catch (e) {
-    const tx = store.transactions.find((t: any) => t.id === id);
-    if (tx) {
-      Object.assign(tx, data);
-      return tx;
-    }
     return null;
   }
 }
 
 export async function deleteTransaction(id: string) {
+  const callerGymId = cookies().get('active_gym_id')?.value;
+  if (!callerGymId) throw new Error("Unauthorized");
   try {
-    await prisma.transaction.delete({ where: { id } });
+    await prisma.transaction.deleteMany({ where: { id, gymId: callerGymId } });
     return true;
   } catch (e) {
-    const idx = store.transactions.findIndex((t: any) => t.id === id);
-    if (idx !== -1) {
-      store.transactions.splice(idx, 1);
-      return true;
-    }
     return false;
   }
 }
 
 // --- SUBSCRIPTION PLANS ---
 export async function getSubscriptionPlans(gymId?: string) {
+  if (!gymId) return [];
   try {
-    if (!gymId) return await prisma.subscriptionPlan.findMany();
     return await prisma.subscriptionPlan.findMany({ where: { gymId } });
   } catch (e) {
-    if (!gymId) return store.plans;
     return store.plans.filter((p: any) => p.gymId === gymId);
   }
 }
@@ -1115,22 +1109,22 @@ export async function addProduct(data: any) {
 }
 
 export async function updateProduct(id: string, data: any) {
+  const callerGymId = cookies().get('active_gym_id')?.value;
+  if (!callerGymId) throw new Error("Unauthorized");
   try {
-    return await prisma.product.update({ where: { id }, data });
+    return await prisma.product.updateMany({ where: { id, gymId: callerGymId }, data });
   } catch (e) {
-    const p = store.products.find((p: any) => p.id === id);
-    if (p) { Object.assign(p, data); return p; }
     return null;
   }
 }
 
 export async function deleteProduct(id: string) {
+  const callerGymId = cookies().get('active_gym_id')?.value;
+  if (!callerGymId) throw new Error("Unauthorized");
   try {
-    await prisma.product.update({ where: { id }, data: { active: false } });
+    await prisma.product.updateMany({ where: { id, gymId: callerGymId }, data: { active: false } });
     return true;
   } catch {
-    const idx = store.products.findIndex((p: any) => p.id === id);
-    if (idx !== -1) { store.products[idx].active = false; return true; }
     return false;
   }
 }
@@ -1378,7 +1372,7 @@ function resetFailedAttempts(userId: string) {
   loginAttempts.delete(userId);
 }
 
-export async function authenticateGym(userId: string, passwordHash: string) {
+export async function authenticateGym(userId: string, password: string) {
   try {
     const rateLimit = checkRateLimit(userId);
     if (!rateLimit.allowed) return { success: false, error: rateLimit.message };
@@ -1386,8 +1380,10 @@ export async function authenticateGym(userId: string, passwordHash: string) {
     const gym = await prisma.gym.findUnique({
       where: { userId }
     });
+    
+    const isValid = gym ? await bcrypt.compare(password, gym.passwordHash) : false;
 
-    if (!gym || gym.passwordHash !== passwordHash) {
+    if (!gym || !isValid) {
       const record = loginAttempts.get(userId) || { attempts: 0, lockUntil: 0 };
       record.attempts += 1;
       
@@ -1416,6 +1412,7 @@ export async function authenticateGym(userId: string, passwordHash: string) {
     }
 
     resetFailedAttempts(userId);
+    cookies().set('active_gym_id', gym.id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
     return { success: true, gym: { id: gym.id, userId: gym.userId } };
   } catch (e) {
     // Fallback to mock store
@@ -1424,7 +1421,8 @@ export async function authenticateGym(userId: string, passwordHash: string) {
     
     const gym = store.gyms.find((g: any) => g.userId === userId);
     
-    if (!gym || gym.passwordHash !== passwordHash) {
+    const isValid = gym ? await bcrypt.compare(password, gym.passwordHash) : false;
+    if (!gym || !isValid) {
       const record = loginAttempts.get(userId) || { attempts: 0, lockUntil: 0 };
       record.attempts += 1;
       
@@ -1535,9 +1533,11 @@ export async function addStaff(data: any) {
 }
 
 export async function updateStaff(id: string, data: any) {
+  const callerGymId = cookies().get('active_gym_id')?.value;
+  if (!callerGymId) throw new Error("Unauthorized");
   try {
     const current = await prisma.staff.findUnique({ where: { id } });
-    if (!current) throw new Error('Staff member not found');
+    if (!current || current.gymId !== callerGymId) throw new Error('Staff member not found');
 
     const cleanPhone = data.phone !== undefined ? String(data.phone).trim() : current.phone;
     const cleanNfc = data.nfcCardId !== undefined ? (data.nfcCardId ? String(data.nfcCardId).trim() : null) : current.nfcCardId;
@@ -1593,7 +1593,11 @@ export async function updateStaff(id: string, data: any) {
 }
 
 export async function deleteStaff(id: string) {
+  const callerGymId = cookies().get('active_gym_id')?.value;
+  if (!callerGymId) throw new Error("Unauthorized");
   try {
+    const current = await prisma.staff.findUnique({ where: { id } });
+    if (!current || current.gymId !== callerGymId) throw new Error('Staff member not found');
     await prisma.staffAttendanceRecord.deleteMany({ where: { staffId: id } });
     return await prisma.staff.delete({ where: { id } });
   } catch (e) {
@@ -1644,9 +1648,9 @@ export async function toggleStaffCheckIn(staffId: string, isManual: boolean = fa
 
     // ── NFC/Fingerprint Enforcement ─────────────────────────────────────
     if (isManual) {
-      const mode = gymSettings?.attendanceMode ?? 'NFC';
-      if (mode === 'NFC' || mode === 'FINGERPRINT' || mode === 'BOTH') {
-        throw new Error(`Manual punch-in is disabled. Please use the ${mode === 'NFC' ? 'NFC card' : 'fingerprint'} terminal.`);
+      const manualEnabled = gymSettings?.attendanceManualEnabled ?? true;
+      if (!manualEnabled) {
+        throw new Error(`Manual punch-in is disabled by gym admin.`);
       }
     }
 

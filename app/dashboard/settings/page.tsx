@@ -76,8 +76,11 @@ export default function SettingsPage() {
   const [testPhone, setTestPhone] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
 
-  // Attendance Mode & Cutoff Timers State
-  const [attendanceMode, setAttendanceMode] = useState<'MANUAL' | 'NFC' | 'MANTRA_USB' | 'BIOMAX_WALL' | 'ESSL_WALL'>('NFC');
+  // Attendance Hardware Combinations & Cutoff Timers State
+  const [attendanceManualEnabled, setAttendanceManualEnabled] = useState(true);
+  const [attendanceNfcEnabled, setAttendanceNfcEnabled] = useState(true);
+  const [attendanceMantraEnabled, setAttendanceMantraEnabled] = useState(false);
+  const [attendanceWallMountEnabled, setAttendanceWallMountEnabled] = useState(false);
   const [fpPort, setFpPort] = useState(8765);
   const [deviceIpAddress, setDeviceIpAddress] = useState('');
   const [memberCutoffHours, setMemberCutoffHours] = useState<number>(4);
@@ -134,7 +137,10 @@ export default function SettingsPage() {
     setReminderDays(data.waReminderWindowDays ?? 3);
     setAbsentTracking(data.absentTrackingEnabled ?? false);
     setAbsentDays(data.absentThresholdDays ?? 3);
-    setAttendanceMode((data.attendanceMode as any) ?? 'NFC');
+    setAttendanceManualEnabled(data.attendanceManualEnabled ?? true);
+    setAttendanceNfcEnabled(data.attendanceNfcEnabled ?? true);
+    setAttendanceMantraEnabled(data.attendanceMantraEnabled ?? false);
+    setAttendanceWallMountEnabled(data.attendanceWallMountEnabled ?? false);
     setFpPort(data.fingerprintAgentPort ?? 8765);
     setDeviceIpAddress(data.deviceIpAddress || '');
     setMemberCutoffHours(data.memberCutoffHours ?? 4);
@@ -334,11 +340,6 @@ export default function SettingsPage() {
     const newSettings = await updateGymSettings(gymId, { [key[selectedTemplate]]: templateContent });
     setSettings(newSettings);
     showSuccess('Template saved!');
-  };
-
-  const handleAttendanceModeChange = async (mode: 'MANUAL' | 'NFC' | 'MANTRA_USB' | 'BIOMAX_WALL' | 'ESSL_WALL') => {
-    setAttendanceMode(mode);
-    await saveSetting({ attendanceMode: mode });
   };
 
   const handleProductsToggle = async (enabled: boolean) => {
@@ -771,26 +772,39 @@ export default function SettingsPage() {
           {activeTab === 'attendance' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-base font-bold text-slate-800 mb-1">Attendance Mode</h3>
-                <p className="text-sm text-slate-500 mb-4">Choose how members check-in at the gym. This controls what hardware and UI the Check-in terminal uses.</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {ATTENDANCE_MODES.map(mode => (
-                    <button key={mode.key} onClick={() => handleAttendanceModeChange(mode.key as any)}
-                      className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${attendanceMode === mode.key ? 'border-slate-900 bg-slate-50 shadow-sm' : 'border-slate-200 hover:border-slate-400'}`}
-                    >
-                      {mode.icon}
-                      <div>
-                        <p className={`text-sm font-bold ${attendanceMode === mode.key ? 'text-slate-900' : 'text-slate-700'}`}>{mode.label}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{mode.desc}</p>
-                      </div>
-                      {attendanceMode === mode.key && <CheckCircle2 className="w-5 h-5 text-slate-900 ml-auto flex-shrink-0" />}
-                    </button>
-                  ))}
+                <h3 className="text-base font-bold text-slate-800 mb-1">Hardware & Check-in Modes</h3>
+                <p className="text-sm text-slate-500 mb-4">Enable any combination of check-in methods you want your gym to support simultaneously.</p>
+                
+                <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
+                  <Toggle 
+                    enabled={attendanceManualEnabled} 
+                    label="Manual Name Search" 
+                    desc="Allow receptionist to type a member's name to check them in manually" 
+                    onChange={async (v) => { setAttendanceManualEnabled(v); await saveSetting({ attendanceManualEnabled: v }); }} 
+                  />
+                  <Toggle 
+                    enabled={attendanceNfcEnabled} 
+                    label="NFC Card Reader" 
+                    desc="Members tap NFC cards on a connected USB reader" 
+                    onChange={async (v) => { setAttendanceNfcEnabled(v); await saveSetting({ attendanceNfcEnabled: v }); }} 
+                  />
+                  <Toggle 
+                    enabled={attendanceMantraEnabled} 
+                    label="Mantra MFS100 (USB)" 
+                    desc="Members scan their fingerprint on a USB Mantra scanner at the desk" 
+                    onChange={async (v) => { setAttendanceMantraEnabled(v); await saveSetting({ attendanceMantraEnabled: v }); }} 
+                  />
+                  <Toggle 
+                    enabled={attendanceWallMountEnabled} 
+                    label="ZKTeco / eSSL Wall Terminal" 
+                    desc="Members scan their fingerprint/card on a wall-mounted ADMS terminal" 
+                    onChange={async (v) => { setAttendanceWallMountEnabled(v); await saveSetting({ attendanceWallMountEnabled: v }); }} 
+                  />
                 </div>
               </div>
 
               {/* Fingerprint Config */}
-              {attendanceMode === 'MANTRA_USB' && (
+              {attendanceMantraEnabled && (
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-4">
                   <div className="flex items-center gap-2 text-blue-800 font-bold">
                     <Fingerprint className="w-5 h-5" /> Mantra MFS100 Configuration
@@ -826,7 +840,7 @@ export default function SettingsPage() {
               )}
 
               {/* eSSL/ZKTeco Device IP Config */}
-              {attendanceMode === 'ESSL_WALL' && (
+              {attendanceWallMountEnabled && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 space-y-4">
                   <div className="flex items-center gap-2 text-emerald-800 font-bold">
                     <Wifi className="w-5 h-5" /> eSSL / ZKTeco Configuration
@@ -945,7 +959,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {attendanceMode === 'NFC' && (
+              {attendanceNfcEnabled && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
                   <Radio className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                   <div>

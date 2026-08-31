@@ -35,7 +35,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [waStatus, setWaStatus] = useState<string>('connected');
   const [globalToast, setGlobalToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
   const [productsEnabled, setProductsEnabled] = useState<boolean>(false);
-  const [attendanceMode, setAttendanceMode] = useState<string>('NFC');
   const [animationsEnabled, setAnimationsEnabled] = useState<boolean>(true);
   
   // Track if we are in Master Admin impersonation mode
@@ -66,7 +65,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const { getGymSettings: fetchSettings } = await import('@/lib/actions');
         const gymSettings = await fetchSettings(matched.id);
         setProductsEnabled(gymSettings?.productsEnabled ?? false);
-        setAttendanceMode(gymSettings?.attendanceMode ?? 'NFC');
         if (typeof window !== 'undefined') {
           localStorage.setItem('products_enabled', String(gymSettings?.productsEnabled ?? false));
         }
@@ -278,7 +276,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navItems = [
     { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-    { label: attendanceMode === 'FINGERPRINT' ? 'Fingerprint' : attendanceMode === 'BOTH' ? 'Check-in' : attendanceMode === 'MANUAL' ? 'Check-in' : 'NFC Terminal', href: '/dashboard/checkin', icon: Smartphone },
+    { label: 'Check-in Terminal', href: '/dashboard/checkin', icon: Smartphone },
     { label: 'Members', href: '/dashboard/members', icon: Users },
     { label: 'Staffs', href: '/dashboard/staffs', icon: Briefcase },
     { label: 'Reminders', href: '/dashboard/reminders', icon: Bell },

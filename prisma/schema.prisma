@@ -202,8 +202,12 @@ model GymSettings {
   productsEnabled       Boolean @default(false)
   showStoreInRevenue    Boolean @default(true)
 
-  // Attendance hardware mode: MANUAL | NFC | MANTRA_USB | BIOMAX_WALL | ESSL_WALL
-  attendanceMode        String  @default("NFC")
+  // Attendance hardware mode: Combinable settings
+  attendanceManualEnabled     Boolean @default(true)
+  attendanceNfcEnabled        Boolean @default(true)
+  attendanceMantraEnabled     Boolean @default(false)
+  attendanceWallMountEnabled  Boolean @default(false)
+
   fingerprintAgentPort  Int     @default(8765)
   deviceIpAddress       String?
 

@@ -13,7 +13,6 @@ export async function POST(req: Request) {
     const device = await prisma.biometricDevice.findFirst({
       where: { 
         gymId,
-        // Optional: only check for online devices
       },
       orderBy: { lastActive: 'desc' }
     });
@@ -26,6 +25,7 @@ export async function POST(req: Request) {
     const command = await prisma.biometricCommand.create({
       data: {
         deviceId: device.id,
+        // MUST exactly match SKILL: C:123:ENROLL_FP:PIN={userId}:FID=0:RETRY=3
         commandString: `ENROLL_FP:PIN=${nfcCardId}:FID=0:RETRY=3`,
         status: 'PENDING'
       }

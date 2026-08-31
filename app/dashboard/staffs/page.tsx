@@ -15,7 +15,11 @@ export default function StaffPage() {
   const [gymName, setGymName] = useState<string>('Our Gym');
   const [staffs, setStaffs] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
-  const [attendanceMode, setAttendanceMode] = useState<string>('NFC');
+  const [attendanceManualEnabled, setAttendanceManualEnabled] = useState<boolean>(true);
+  const [attendanceNfcEnabled, setAttendanceNfcEnabled] = useState<boolean>(true);
+  const [attendanceMantraEnabled, setAttendanceMantraEnabled] = useState<boolean>(false);
+  const [attendanceWallMountEnabled, setAttendanceWallMountEnabled] = useState<boolean>(false);
+  const [fpPort, setFpPort] = useState(8765);
   
   // Subpage Tab Switcher: 'directory' (Team & Live Shifts) vs 'attendance' (Attendance Logs)
   const [staffSubTab, setStaffSubTab] = useState<'directory' | 'attendance'>('directory');
@@ -63,7 +67,11 @@ export default function StaffPage() {
       ]);
       setStaffs(s || []);
       setAttendance(a || []);
-      setAttendanceMode(settings?.attendanceMode || 'NFC');
+      setAttendanceManualEnabled(settings?.attendanceManualEnabled ?? true);
+      setAttendanceNfcEnabled(settings?.attendanceNfcEnabled ?? true);
+      setAttendanceMantraEnabled(settings?.attendanceMantraEnabled ?? false);
+      setAttendanceWallMountEnabled(settings?.attendanceWallMountEnabled ?? false);
+      setFpPort(settings?.fingerprintAgentPort || 8765);
       const matchedGym = loadedGyms?.find((g: any) => g.id === savedId);
       if (matchedGym) setGymName(matchedGym.name);
     } catch (e) {
@@ -84,7 +92,7 @@ export default function StaffPage() {
     setStaffName('');
     setStaffPhone('');
     setStaffRole('Trainer');
-    setPunchMethod(attendanceMode === 'MANUAL' ? 'MANUAL' : attendanceMode === 'FINGERPRINT' ? 'FINGERPRINT' : attendanceMode === 'NFC' ? 'NFC' : 'BOTH');
+    setPunchMethod(attendanceManualEnabled ? 'MANUAL' : attendanceMantraEnabled ? 'FINGERPRINT' : attendanceNfcEnabled ? 'NFC' : 'BOTH');
     setNfcCardId('');
     setFingerprintId('');
     setJoinedDate(getLocalTodayDateString());
@@ -675,8 +683,8 @@ export default function StaffPage() {
                           </span>
                         </div>
 
-                        {/* Manual Punch Button only when attendanceMode is MANUAL */}
-                        {attendanceMode === 'MANUAL' && (
+                        {/* Manual Punch Button only when manual is enabled */}
+                        {attendanceManualEnabled && (
                           <div className="pt-2">
                             <button
                               onClick={() => handleManualPunch(session.staffId)}
@@ -1353,7 +1361,7 @@ export default function StaffPage() {
 
               {/* Hardware Punch Method Setup */}
               <div className="pt-3 border-t border-slate-100 space-y-3">
-                {attendanceMode === 'NFC' && (
+                {attendanceNfcEnabled && (
                   <div className="bg-blue-50/60 border border-blue-100 p-3 rounded-xl space-y-1.5">
                     <div className="flex justify-between items-center">
                       <label className="block font-bold text-blue-900 uppercase">NFC Card ID (Employee Badge)</label>
@@ -1378,7 +1386,7 @@ export default function StaffPage() {
                   </div>
                 )}
 
-                {attendanceMode === 'MANTRA_USB' && (
+                {attendanceMantraEnabled && (
                   <div className="bg-purple-50/60 border border-purple-100 p-3 rounded-xl space-y-1.5">
                     <label className="block font-bold text-purple-900 uppercase">Mantra MFS100 Registration</label>
                     <div className="flex gap-2">
@@ -1400,53 +1408,9 @@ export default function StaffPage() {
                   </div>
                 )}
 
-                {attendanceMode === 'BIOMAX_WALL' && (
-                  <div className="bg-blue-50/60 border border-blue-100 p-3 rounded-xl space-y-1.5">
-                    <label className="block font-bold text-blue-900 uppercase">Biomax Device User ID</label>
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <Shield className="absolute left-3 top-2.5 w-3.5 h-3.5 text-blue-600" />
-                        <input 
-                          type="text" 
-                          value={fingerprintId}
-                          onChange={e => setFingerprintId(e.target.value)}
-                          placeholder="Enter ID (e.g. 101)" 
-                          className="w-full pl-9 pr-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none text-xs font-mono font-bold bg-white" 
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            if (!fingerprintId) return alert('Please enter a User ID first. (e.g. 101)');
-                            const res = await fetch('/api/biometrics/enroll', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                gymId: gymId,
-                                memberId: isEditingStaff ? editingStaffId : 'new',
-                                nfcCardId: fingerprintId
-                              })
-                            });
-                            const data = await res.json();
-                            if (res.ok) alert('Enrollment command queued! Place finger on device when it beeps.');
-                            else alert(`Error: ${data.error || 'Failed to queue command'}`);
-                          } catch (err) {
-                            console.error(err);
-                            alert('Network error while triggering enrollment.');
-                          }
-                        }}
-                        className="w-full px-3 py-2 rounded-lg text-xs font-bold transition-colors bg-blue-100 text-blue-900 hover:bg-blue-200"
-                      >
-                        Remote Enroll
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {attendanceMode === 'ESSL_WALL' && (
+                {attendanceWallMountEnabled && (
                   <div className="bg-emerald-50/60 border border-emerald-100 p-3 rounded-xl space-y-1.5">
-                    <label className="block font-bold text-emerald-900 uppercase">ZKTeco Device User ID</label>
+                    <label className="block font-bold text-emerald-900 uppercase">ZKTeco / Biomax Device ID</label>
                     <div className="space-y-2">
                       <div className="relative">
                         <Shield className="absolute left-3 top-2.5 w-3.5 h-3.5 text-emerald-600" />
@@ -1458,32 +1422,6 @@ export default function StaffPage() {
                           className="w-full pl-9 pr-3 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-600 outline-none text-xs font-mono font-bold bg-white" 
                         />
                       </div>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            if (!fingerprintId) return alert('Please enter a User ID first. (e.g. 101)');
-                            const res = await fetch('/api/biometrics/enroll', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                gymId: gymId,
-                                memberId: isEditingStaff ? editingStaffId : 'new',
-                                nfcCardId: fingerprintId
-                              })
-                            });
-                            const data = await res.json();
-                            if (res.ok) alert('Enrollment command queued! Place finger on device when it beeps.');
-                            else alert(`Error: ${data.error || 'Failed to queue command'}`);
-                          } catch (err) {
-                            console.error(err);
-                            alert('Network error while triggering enrollment.');
-                          }
-                        }}
-                        className="w-full px-3 py-2 rounded-lg text-xs font-bold transition-colors bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
-                      >
-                        Remote Enroll
-                      </button>
                     </div>
                   </div>
                 )}

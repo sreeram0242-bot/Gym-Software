@@ -1,6 +1,10 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from "next/server";
 import fs from 'fs';
 import prisma from "@/lib/db";
+import { getTemplate, compileTemplate } from "@/lib/templates";
+import { WhatsAppManager } from "@/lib/whatsapp";
 
 export async function GET(req: Request) {
   return POST(req);
@@ -52,47 +56,16 @@ export async function POST(req: Request) {
       }
     });
 
-    // HACKER QUEUE: Check database for pending commands
-    const pendingCommand = await prisma.biometricCommand.findFirst({
-      where: {
-        deviceId: device.id,
-        status: "PENDING"
-      },
-      orderBy: { createdAt: 'asc' }
-    });
-
-    if (pendingCommand) {
-      console.log(`[BIOMAX] 🚀 SENDING REMOTE COMMAND: ${pendingCommand.commandString}`);
-      // ADMS requires purely numeric Command IDs
-      // Using a quick hash or just a timestamp modulo
       const numericId = Math.floor(Math.random() * 100000000);
-      let payload = `C:${numericId}:${pendingCommand.commandString}`;
-
-      // Mark command as sent
-      await prisma.biometricCommand.update({
-        where: { id: pendingCommand.id },
-        data: { status: "SENT" }
-      });
-      
+      let payload = `C:${numericId}:DATA CLEAR LOG\nC:${numericId+1}:DATA CLEAR ATTLOG\n`;
       return new NextResponse(payload, { 
         status: 200, 
         headers: { 
-          'Content-Type': payload.startsWith('{') || payload.startsWith('[') ? 'application/json' : 'text/plain', 
+          'Content-Type': 'text/plain', 
           'Connection': 'close',
           'Content-Length': payload.length.toString()
         } 
       });
-    }
-
-    const okResponse = "OK";
-    return new NextResponse(okResponse, { 
-      status: 200, 
-      headers: { 
-        'Content-Type': 'text/plain',
-        'Connection': 'close',
-        'Content-Length': okResponse.length.toString()
-      } 
-    });
   }
 
   // 2. Handle Attendance Punch (Check-in / Check-out)
@@ -111,50 +84,172 @@ export async function POST(req: Request) {
 
       console.log(`[BIOMETRIC] Punch received for User ${userIdStr} at ${punchTime.toISOString()}`);
 
-      // Find the customer in our database
-      const customer = await prisma.customer.findFirst({
-        where: { fingerprintId: userIdStr }
-      });
+      const device = await prisma.biometricDevice.findUnique({ where: { serialNumber: devId } });
+      if (!device) {
+        console.error(`[BIOMETRIC] Unknown device ${devId} attempting punch`);
+        return new NextResponse("OK", { status: 200 });
+      }
+
+      let customer = null;
+      let staff = null;
+      try {
+        customer = await prisma.customer.findFirst({
+          where: { fingerprintId: userIdStr, gymId: device.gymId }
+        });
+        staff = await prisma.staff.findFirst({
+          where: { fingerprintId: userIdStr, gymId: device.gymId }
+        });
+      } catch (e: any) {
+        console.error("[BIOMETRIC] Database query crashed:", e?.message || e);
+      }
 
       if (customer) {
-        // Record the attendance
-        const dateStr = punchTime.toISOString().split('T')[0];
-        
-        // Prevent duplicate logs
-        const existingLog = await prisma.attendanceRecord.findFirst({
-          where: {
-            customerId: customer.id,
-            checkInTime: punchTime.toISOString()
-          }
-        });
+        try {
 
-        if (!existingLog) {
-          await prisma.attendanceRecord.create({
-            data: {
-              gymId: customer.gymId,
-              customerId: customer.id,
-              customerName: customer.name,
-              customerPhone: customer.phone,
-              checkInTime: punchTime.toISOString(),
-              dateStr: dateStr,
-            }
+          // Prevent duplicate logs within 1 minute
+          const oneMinuteAgo = new Date(punchTime.getTime() - 60000);
+          const recentLog = await prisma.attendanceRecord.findFirst({
+            where: { customerId: customer.id, checkInTime: { gte: oneMinuteAgo.toISOString() } }
           });
-          console.log(`[BIOMETRIC] Successfully saved attendance for ${customer.name}`);
+
+          if (!recentLog) {
+            const gymSettings = await prisma.gymSettings.findUnique({ where: { gymId: customer.gymId } });
+            const cutoffHours = gymSettings?.memberCutoffHours || 4;
+            
+            // Check for active session
+            const activeSession = await prisma.attendanceRecord.findFirst({
+              where: { customerId: customer.id, checkOutTime: null },
+              orderBy: { checkInTime: 'desc' }
+            });
+
+            let action = 'checkin';
+            let durationMinutes = 0;
+            const nowIso = punchTime.toISOString();
+
+            if (activeSession) {
+              const checkInTime = new Date(activeSession.checkInTime);
+              const diffHours = (punchTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
+              
+              if (diffHours <= cutoffHours) {
+                 durationMinutes = Math.round((punchTime.getTime() - checkInTime.getTime()) / (1000 * 60));
+                 await prisma.attendanceRecord.update({
+                    where: { id: activeSession.id },
+                    data: { checkOutTime: nowIso, durationMinutes: durationMinutes > 0 ? durationMinutes : 1 }
+                 });
+                 action = 'checkout';
+              } else {
+                 const autoOut = new Date(checkInTime.getTime() + (cutoffHours * 60 * 60 * 1000)).toISOString();
+                 await prisma.attendanceRecord.update({
+                    where: { id: activeSession.id },
+                    data: { checkOutTime: autoOut, durationMinutes: cutoffHours * 60 }
+                 });
+                 await prisma.attendanceRecord.create({
+                   data: { gymId: customer.gymId, customerId: customer.id, customerName: customer.name, customerPhone: customer.phone, checkInTime: nowIso, dateStr: nowIso.split('T')[0] }
+                 });
+              }
+            } else {
+              await prisma.attendanceRecord.create({
+                data: { gymId: customer.gymId, customerId: customer.id, customerName: customer.name, customerPhone: customer.phone, checkInTime: nowIso, dateStr: nowIso.split('T')[0] }
+              });
+            }
+            
+            console.log(`[BIOMETRIC] Automated customer ${action} for ${customer.name}`);
+
+            if (gymSettings?.waAttendanceMessages && customer.phone) {
+              const templateName = action === 'checkin' ? 'checkin' : 'checkout';
+              const rawTemplate = getTemplate(gymSettings, templateName);
+              const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const message = compileTemplate(rawTemplate, {
+                name: customer.name,
+                time: nowTime,
+                duration: durationMinutes.toString()
+              });
+              WhatsAppManager.sendMessage(customer.gymId, customer.phone, message).catch(() => {});
+            }
+          }
+        } catch (e: any) {
+          console.error(`[BIOMETRIC] Customer check-in error for ${customer.name}:`, e?.message || e);
+        }
+      } else if (staff) {
+        try {
+          
+          const oneMinuteAgo = new Date(punchTime.getTime() - 60000);
+          const recentLog = await prisma.staffAttendanceRecord.findFirst({
+            where: { staffId: staff.id, checkInTime: { gte: oneMinuteAgo.toISOString() } }
+          });
+
+          if (!recentLog) {
+            const nowIso = punchTime.toISOString();
+            const gymSettings = await prisma.gymSettings.findUnique({ where: { gymId: staff.gymId } });
+            const cutoffHours = gymSettings?.staffCutoffHours || 12;
+
+            const activeSession = await prisma.staffAttendanceRecord.findFirst({
+              where: { staffId: staff.id, checkOutTime: null },
+              orderBy: { checkInTime: 'desc' }
+            });
+
+            let action = 'checkin';
+            if (activeSession) {
+              const checkInTime = new Date(activeSession.checkInTime);
+              const diffHours = (punchTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
+              
+              if (diffHours <= cutoffHours) {
+                 const durationMinutes = Math.round((punchTime.getTime() - checkInTime.getTime()) / (1000 * 60));
+                 await prisma.staffAttendanceRecord.update({
+                    where: { id: activeSession.id },
+                    data: { checkOutTime: nowIso, durationMinutes: durationMinutes > 0 ? durationMinutes : 1 }
+                 });
+                 action = 'checkout';
+              } else {
+                 const autoOut = new Date(checkInTime.getTime() + (cutoffHours * 60 * 60 * 1000)).toISOString();
+                 await prisma.staffAttendanceRecord.update({
+                    where: { id: activeSession.id },
+                    data: { checkOutTime: autoOut, durationMinutes: cutoffHours * 60 }
+                 });
+                 await prisma.staffAttendanceRecord.create({
+                   data: { gymId: staff.gymId, staffId: staff.id, staffName: staff.name, staffPhone: staff.phone, checkInTime: nowIso, dateStr: nowIso.split('T')[0] }
+                 });
+              }
+            } else {
+              await prisma.staffAttendanceRecord.create({
+                data: { gymId: staff.gymId, staffId: staff.id, staffName: staff.name, staffPhone: staff.phone, checkInTime: nowIso, dateStr: nowIso.split('T')[0] }
+              });
+            }
+            console.log(`[BIOMETRIC] Automated staff ${action} for ${staff.name}`);
+          }
+        } catch (e: any) {
+          console.error(`[BIOMETRIC] Staff check-in error for ${staff.name}:`, e?.message || e);
         }
       } else {
         console.log(`[BIOMETRIC] Warning: Unregistered User ID ${userIdStr} punched.`);
       }
     }
+
+    // Check if there's a DATA CLEAR command pending — send it here to break infinite loops
+    try {
+      const device = await prisma.biometricDevice.findFirst({ where: { serialNumber: devId! } });
+      if (device) {
+        const clearCmd = await prisma.biometricCommand.findFirst({
+          where: { deviceId: device.id, status: 'PENDING', commandString: { contains: 'DATA CLEAR' } },
+          orderBy: { createdAt: 'asc' }
+        });
+        if (clearCmd) {
+          const numericId = Math.floor(Math.random() * 100000000);
+          const payload = `C:${numericId}:${clearCmd.commandString}\n`;
+          console.log(`[BIOMAX] Injecting DATA CLEAR into RTLogSendAction response: ${payload.trim()}`);
+          await prisma.biometricCommand.update({ where: { id: clearCmd.id }, data: { status: 'SENT' } });
+          return new NextResponse(payload, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': Buffer.byteLength(payload).toString() } });
+        }
+      }
+    } catch(e) { /* ignore */ }
     
-    const res = "OK\n";
-    return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
+    return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
   }
 
   // 3. Handle Fingerprint Enrollment Data
   if (cmdId === "RTEnrollDataAction" && jsonData) {
     console.log(`[BIOMETRIC] Fingerprint enrolled for User ${jsonData.user_id}`);
-    const res = "OK\n";
-    return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
+    return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
   }
 
   // Catch-all response for unknown actions (like command execution reports)
@@ -163,6 +258,5 @@ export async function POST(req: Request) {
     console.log(`[BIOMAX] Payload: ${text}`);
   }
   
-  const res = "OK\n";
-  return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
+  return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
 }

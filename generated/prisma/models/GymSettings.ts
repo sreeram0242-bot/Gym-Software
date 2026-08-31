@@ -64,7 +64,10 @@ export type GymSettingsMinAggregateOutputType = {
   address: string | null
   productsEnabled: boolean | null
   showStoreInRevenue: boolean | null
-  attendanceMode: string | null
+  attendanceManualEnabled: boolean | null
+  attendanceNfcEnabled: boolean | null
+  attendanceMantraEnabled: boolean | null
+  attendanceWallMountEnabled: boolean | null
   fingerprintAgentPort: number | null
   deviceIpAddress: string | null
   memberCutoffHours: number | null
@@ -93,7 +96,10 @@ export type GymSettingsMaxAggregateOutputType = {
   address: string | null
   productsEnabled: boolean | null
   showStoreInRevenue: boolean | null
-  attendanceMode: string | null
+  attendanceManualEnabled: boolean | null
+  attendanceNfcEnabled: boolean | null
+  attendanceMantraEnabled: boolean | null
+  attendanceWallMountEnabled: boolean | null
   fingerprintAgentPort: number | null
   deviceIpAddress: string | null
   memberCutoffHours: number | null
@@ -122,7 +128,10 @@ export type GymSettingsCountAggregateOutputType = {
   address: number
   productsEnabled: number
   showStoreInRevenue: number
-  attendanceMode: number
+  attendanceManualEnabled: number
+  attendanceNfcEnabled: number
+  attendanceMantraEnabled: number
+  attendanceWallMountEnabled: number
   fingerprintAgentPort: number
   deviceIpAddress: number
   memberCutoffHours: number
@@ -169,7 +178,10 @@ export type GymSettingsMinAggregateInputType = {
   address?: true
   productsEnabled?: true
   showStoreInRevenue?: true
-  attendanceMode?: true
+  attendanceManualEnabled?: true
+  attendanceNfcEnabled?: true
+  attendanceMantraEnabled?: true
+  attendanceWallMountEnabled?: true
   fingerprintAgentPort?: true
   deviceIpAddress?: true
   memberCutoffHours?: true
@@ -198,7 +210,10 @@ export type GymSettingsMaxAggregateInputType = {
   address?: true
   productsEnabled?: true
   showStoreInRevenue?: true
-  attendanceMode?: true
+  attendanceManualEnabled?: true
+  attendanceNfcEnabled?: true
+  attendanceMantraEnabled?: true
+  attendanceWallMountEnabled?: true
   fingerprintAgentPort?: true
   deviceIpAddress?: true
   memberCutoffHours?: true
@@ -227,7 +242,10 @@ export type GymSettingsCountAggregateInputType = {
   address?: true
   productsEnabled?: true
   showStoreInRevenue?: true
-  attendanceMode?: true
+  attendanceManualEnabled?: true
+  attendanceNfcEnabled?: true
+  attendanceMantraEnabled?: true
+  attendanceWallMountEnabled?: true
   fingerprintAgentPort?: true
   deviceIpAddress?: true
   memberCutoffHours?: true
@@ -343,7 +361,10 @@ export type GymSettingsGroupByOutputType = {
   address: string | null
   productsEnabled: boolean
   showStoreInRevenue: boolean
-  attendanceMode: string
+  attendanceManualEnabled: boolean
+  attendanceNfcEnabled: boolean
+  attendanceMantraEnabled: boolean
+  attendanceWallMountEnabled: boolean
   fingerprintAgentPort: number
   deviceIpAddress: string | null
   memberCutoffHours: number
@@ -395,7 +416,10 @@ export type GymSettingsWhereInput = {
   address?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   productsEnabled?: Prisma.BoolFilter<"GymSettings"> | boolean
   showStoreInRevenue?: Prisma.BoolFilter<"GymSettings"> | boolean
-  attendanceMode?: Prisma.StringFilter<"GymSettings"> | string
+  attendanceManualEnabled?: Prisma.BoolFilter<"GymSettings"> | boolean
+  attendanceNfcEnabled?: Prisma.BoolFilter<"GymSettings"> | boolean
+  attendanceMantraEnabled?: Prisma.BoolFilter<"GymSettings"> | boolean
+  attendanceWallMountEnabled?: Prisma.BoolFilter<"GymSettings"> | boolean
   fingerprintAgentPort?: Prisma.IntFilter<"GymSettings"> | number
   deviceIpAddress?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   memberCutoffHours?: Prisma.IntFilter<"GymSettings"> | number
@@ -425,7 +449,10 @@ export type GymSettingsOrderByWithRelationInput = {
   address?: Prisma.SortOrderInput | Prisma.SortOrder
   productsEnabled?: Prisma.SortOrder
   showStoreInRevenue?: Prisma.SortOrder
-  attendanceMode?: Prisma.SortOrder
+  attendanceManualEnabled?: Prisma.SortOrder
+  attendanceNfcEnabled?: Prisma.SortOrder
+  attendanceMantraEnabled?: Prisma.SortOrder
+  attendanceWallMountEnabled?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
   deviceIpAddress?: Prisma.SortOrderInput | Prisma.SortOrder
   memberCutoffHours?: Prisma.SortOrder
@@ -458,7 +485,10 @@ export type GymSettingsWhereUniqueInput = Prisma.AtLeast<{
   address?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   productsEnabled?: Prisma.BoolFilter<"GymSettings"> | boolean
   showStoreInRevenue?: Prisma.BoolFilter<"GymSettings"> | boolean
-  attendanceMode?: Prisma.StringFilter<"GymSettings"> | string
+  attendanceManualEnabled?: Prisma.BoolFilter<"GymSettings"> | boolean
+  attendanceNfcEnabled?: Prisma.BoolFilter<"GymSettings"> | boolean
+  attendanceMantraEnabled?: Prisma.BoolFilter<"GymSettings"> | boolean
+  attendanceWallMountEnabled?: Prisma.BoolFilter<"GymSettings"> | boolean
   fingerprintAgentPort?: Prisma.IntFilter<"GymSettings"> | number
   deviceIpAddress?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   memberCutoffHours?: Prisma.IntFilter<"GymSettings"> | number
@@ -488,7 +518,10 @@ export type GymSettingsOrderByWithAggregationInput = {
   address?: Prisma.SortOrderInput | Prisma.SortOrder
   productsEnabled?: Prisma.SortOrder
   showStoreInRevenue?: Prisma.SortOrder
-  attendanceMode?: Prisma.SortOrder
+  attendanceManualEnabled?: Prisma.SortOrder
+  attendanceNfcEnabled?: Prisma.SortOrder
+  attendanceMantraEnabled?: Prisma.SortOrder
+  attendanceWallMountEnabled?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
   deviceIpAddress?: Prisma.SortOrderInput | Prisma.SortOrder
   memberCutoffHours?: Prisma.SortOrder
@@ -525,7 +558,10 @@ export type GymSettingsScalarWhereWithAggregatesInput = {
   address?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   productsEnabled?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
   showStoreInRevenue?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
-  attendanceMode?: Prisma.StringWithAggregatesFilter<"GymSettings"> | string
+  attendanceManualEnabled?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
+  attendanceNfcEnabled?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
+  attendanceMantraEnabled?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
+  attendanceWallMountEnabled?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
   fingerprintAgentPort?: Prisma.IntWithAggregatesFilter<"GymSettings"> | number
   deviceIpAddress?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   memberCutoffHours?: Prisma.IntWithAggregatesFilter<"GymSettings"> | number
@@ -553,7 +589,10 @@ export type GymSettingsCreateInput = {
   address?: string | null
   productsEnabled?: boolean
   showStoreInRevenue?: boolean
-  attendanceMode?: string
+  attendanceManualEnabled?: boolean
+  attendanceNfcEnabled?: boolean
+  attendanceMantraEnabled?: boolean
+  attendanceWallMountEnabled?: boolean
   fingerprintAgentPort?: number
   deviceIpAddress?: string | null
   memberCutoffHours?: number
@@ -583,7 +622,10 @@ export type GymSettingsUncheckedCreateInput = {
   address?: string | null
   productsEnabled?: boolean
   showStoreInRevenue?: boolean
-  attendanceMode?: string
+  attendanceManualEnabled?: boolean
+  attendanceNfcEnabled?: boolean
+  attendanceMantraEnabled?: boolean
+  attendanceWallMountEnabled?: boolean
   fingerprintAgentPort?: number
   deviceIpAddress?: string | null
   memberCutoffHours?: number
@@ -611,7 +653,10 @@ export type GymSettingsUpdateInput = {
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
+  attendanceManualEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceNfcEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceMantraEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceWallMountEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
   deviceIpAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   memberCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
@@ -641,7 +686,10 @@ export type GymSettingsUncheckedUpdateInput = {
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
+  attendanceManualEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceNfcEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceMantraEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceWallMountEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
   deviceIpAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   memberCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
@@ -670,7 +718,10 @@ export type GymSettingsCreateManyInput = {
   address?: string | null
   productsEnabled?: boolean
   showStoreInRevenue?: boolean
-  attendanceMode?: string
+  attendanceManualEnabled?: boolean
+  attendanceNfcEnabled?: boolean
+  attendanceMantraEnabled?: boolean
+  attendanceWallMountEnabled?: boolean
   fingerprintAgentPort?: number
   deviceIpAddress?: string | null
   memberCutoffHours?: number
@@ -698,7 +749,10 @@ export type GymSettingsUpdateManyMutationInput = {
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
+  attendanceManualEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceNfcEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceMantraEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceWallMountEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
   deviceIpAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   memberCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
@@ -727,7 +781,10 @@ export type GymSettingsUncheckedUpdateManyInput = {
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
+  attendanceManualEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceNfcEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceMantraEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceWallMountEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
   deviceIpAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   memberCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
@@ -761,7 +818,10 @@ export type GymSettingsCountOrderByAggregateInput = {
   address?: Prisma.SortOrder
   productsEnabled?: Prisma.SortOrder
   showStoreInRevenue?: Prisma.SortOrder
-  attendanceMode?: Prisma.SortOrder
+  attendanceManualEnabled?: Prisma.SortOrder
+  attendanceNfcEnabled?: Prisma.SortOrder
+  attendanceMantraEnabled?: Prisma.SortOrder
+  attendanceWallMountEnabled?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
   deviceIpAddress?: Prisma.SortOrder
   memberCutoffHours?: Prisma.SortOrder
@@ -798,7 +858,10 @@ export type GymSettingsMaxOrderByAggregateInput = {
   address?: Prisma.SortOrder
   productsEnabled?: Prisma.SortOrder
   showStoreInRevenue?: Prisma.SortOrder
-  attendanceMode?: Prisma.SortOrder
+  attendanceManualEnabled?: Prisma.SortOrder
+  attendanceNfcEnabled?: Prisma.SortOrder
+  attendanceMantraEnabled?: Prisma.SortOrder
+  attendanceWallMountEnabled?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
   deviceIpAddress?: Prisma.SortOrder
   memberCutoffHours?: Prisma.SortOrder
@@ -827,7 +890,10 @@ export type GymSettingsMinOrderByAggregateInput = {
   address?: Prisma.SortOrder
   productsEnabled?: Prisma.SortOrder
   showStoreInRevenue?: Prisma.SortOrder
-  attendanceMode?: Prisma.SortOrder
+  attendanceManualEnabled?: Prisma.SortOrder
+  attendanceNfcEnabled?: Prisma.SortOrder
+  attendanceMantraEnabled?: Prisma.SortOrder
+  attendanceWallMountEnabled?: Prisma.SortOrder
   fingerprintAgentPort?: Prisma.SortOrder
   deviceIpAddress?: Prisma.SortOrder
   memberCutoffHours?: Prisma.SortOrder
@@ -895,7 +961,10 @@ export type GymSettingsCreateWithoutGymInput = {
   address?: string | null
   productsEnabled?: boolean
   showStoreInRevenue?: boolean
-  attendanceMode?: string
+  attendanceManualEnabled?: boolean
+  attendanceNfcEnabled?: boolean
+  attendanceMantraEnabled?: boolean
+  attendanceWallMountEnabled?: boolean
   fingerprintAgentPort?: number
   deviceIpAddress?: string | null
   memberCutoffHours?: number
@@ -923,7 +992,10 @@ export type GymSettingsUncheckedCreateWithoutGymInput = {
   address?: string | null
   productsEnabled?: boolean
   showStoreInRevenue?: boolean
-  attendanceMode?: string
+  attendanceManualEnabled?: boolean
+  attendanceNfcEnabled?: boolean
+  attendanceMantraEnabled?: boolean
+  attendanceWallMountEnabled?: boolean
   fingerprintAgentPort?: number
   deviceIpAddress?: string | null
   memberCutoffHours?: number
@@ -967,7 +1039,10 @@ export type GymSettingsUpdateWithoutGymInput = {
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
+  attendanceManualEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceNfcEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceMantraEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceWallMountEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
   deviceIpAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   memberCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
@@ -995,7 +1070,10 @@ export type GymSettingsUncheckedUpdateWithoutGymInput = {
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   productsEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showStoreInRevenue?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  attendanceMode?: Prisma.StringFieldUpdateOperationsInput | string
+  attendanceManualEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceNfcEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceMantraEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attendanceWallMountEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   fingerprintAgentPort?: Prisma.IntFieldUpdateOperationsInput | number
   deviceIpAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   memberCutoffHours?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1026,7 +1104,10 @@ export type GymSettingsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   address?: boolean
   productsEnabled?: boolean
   showStoreInRevenue?: boolean
-  attendanceMode?: boolean
+  attendanceManualEnabled?: boolean
+  attendanceNfcEnabled?: boolean
+  attendanceMantraEnabled?: boolean
+  attendanceWallMountEnabled?: boolean
   fingerprintAgentPort?: boolean
   deviceIpAddress?: boolean
   memberCutoffHours?: boolean
@@ -1056,7 +1137,10 @@ export type GymSettingsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   address?: boolean
   productsEnabled?: boolean
   showStoreInRevenue?: boolean
-  attendanceMode?: boolean
+  attendanceManualEnabled?: boolean
+  attendanceNfcEnabled?: boolean
+  attendanceMantraEnabled?: boolean
+  attendanceWallMountEnabled?: boolean
   fingerprintAgentPort?: boolean
   deviceIpAddress?: boolean
   memberCutoffHours?: boolean
@@ -1086,7 +1170,10 @@ export type GymSettingsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   address?: boolean
   productsEnabled?: boolean
   showStoreInRevenue?: boolean
-  attendanceMode?: boolean
+  attendanceManualEnabled?: boolean
+  attendanceNfcEnabled?: boolean
+  attendanceMantraEnabled?: boolean
+  attendanceWallMountEnabled?: boolean
   fingerprintAgentPort?: boolean
   deviceIpAddress?: boolean
   memberCutoffHours?: boolean
@@ -1116,14 +1203,17 @@ export type GymSettingsSelectScalar = {
   address?: boolean
   productsEnabled?: boolean
   showStoreInRevenue?: boolean
-  attendanceMode?: boolean
+  attendanceManualEnabled?: boolean
+  attendanceNfcEnabled?: boolean
+  attendanceMantraEnabled?: boolean
+  attendanceWallMountEnabled?: boolean
   fingerprintAgentPort?: boolean
   deviceIpAddress?: boolean
   memberCutoffHours?: boolean
   staffCutoffHours?: boolean
 }
 
-export type GymSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "absentTrackingEnabled" | "absentThresholdDays" | "waAutoMessages" | "waReminderWindowDays" | "waAttendanceMessages" | "waAutoReply" | "waAutoArchive" | "templateWelcome" | "templateReceipt" | "templateStoreReceipt" | "templateReminder" | "templateAbsentee" | "templateCheckIn" | "templateCheckOut" | "upiId" | "upiName" | "address" | "productsEnabled" | "showStoreInRevenue" | "attendanceMode" | "fingerprintAgentPort" | "deviceIpAddress" | "memberCutoffHours" | "staffCutoffHours", ExtArgs["result"]["gymSettings"]>
+export type GymSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "absentTrackingEnabled" | "absentThresholdDays" | "waAutoMessages" | "waReminderWindowDays" | "waAttendanceMessages" | "waAutoReply" | "waAutoArchive" | "templateWelcome" | "templateReceipt" | "templateStoreReceipt" | "templateReminder" | "templateAbsentee" | "templateCheckIn" | "templateCheckOut" | "upiId" | "upiName" | "address" | "productsEnabled" | "showStoreInRevenue" | "attendanceManualEnabled" | "attendanceNfcEnabled" | "attendanceMantraEnabled" | "attendanceWallMountEnabled" | "fingerprintAgentPort" | "deviceIpAddress" | "memberCutoffHours" | "staffCutoffHours", ExtArgs["result"]["gymSettings"]>
 export type GymSettingsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }
@@ -1161,7 +1251,10 @@ export type $GymSettingsPayload<ExtArgs extends runtime.Types.Extensions.Interna
     address: string | null
     productsEnabled: boolean
     showStoreInRevenue: boolean
-    attendanceMode: string
+    attendanceManualEnabled: boolean
+    attendanceNfcEnabled: boolean
+    attendanceMantraEnabled: boolean
+    attendanceWallMountEnabled: boolean
     fingerprintAgentPort: number
     deviceIpAddress: string | null
     memberCutoffHours: number
@@ -1611,7 +1704,10 @@ export interface GymSettingsFieldRefs {
   readonly address: Prisma.FieldRef<"GymSettings", 'String'>
   readonly productsEnabled: Prisma.FieldRef<"GymSettings", 'Boolean'>
   readonly showStoreInRevenue: Prisma.FieldRef<"GymSettings", 'Boolean'>
-  readonly attendanceMode: Prisma.FieldRef<"GymSettings", 'String'>
+  readonly attendanceManualEnabled: Prisma.FieldRef<"GymSettings", 'Boolean'>
+  readonly attendanceNfcEnabled: Prisma.FieldRef<"GymSettings", 'Boolean'>
+  readonly attendanceMantraEnabled: Prisma.FieldRef<"GymSettings", 'Boolean'>
+  readonly attendanceWallMountEnabled: Prisma.FieldRef<"GymSettings", 'Boolean'>
   readonly fingerprintAgentPort: Prisma.FieldRef<"GymSettings", 'Int'>
   readonly deviceIpAddress: Prisma.FieldRef<"GymSettings", 'String'>
   readonly memberCutoffHours: Prisma.FieldRef<"GymSettings", 'Int'>
