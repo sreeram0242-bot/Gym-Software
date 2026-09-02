@@ -56,16 +56,33 @@ export async function POST(req: Request) {
       }
     });
 
-      const numericId = Math.floor(Math.random() * 100000000);
-      let payload = `C:${numericId}:DATA CLEAR LOG\nC:${numericId+1}:DATA CLEAR ATTLOG\n`;
-      return new NextResponse(payload, { 
-        status: 200, 
-        headers: { 
-          'Content-Type': 'text/plain', 
-          'Connection': 'close',
-          'Content-Length': payload.length.toString()
-        } 
+    // Fetch pending commands for this device
+    const pendingCommands = await prisma.biometricCommand.findMany({
+      where: { deviceId: device.id, status: 'PENDING' },
+      orderBy: { createdAt: 'asc' },
+      take: 10 // send up to 10 commands at a time
+    });
+
+    let payload = "OK\n";
+    if (pendingCommands.length > 0) {
+      payload = pendingCommands.map(cmd => `C:${cmd.id}:${cmd.commandString}`).join('\n') + '\n';
+      
+      // Mark them as sent
+      await prisma.biometricCommand.updateMany({
+        where: { id: { in: pendingCommands.map(c => c.id) } },
+        data: { status: 'SENT' }
       });
+      console.log(`[BIOMETRIC] Sent ${pendingCommands.length} commands to device ${devId}`);
+    }
+
+    return new NextResponse(payload, { 
+      status: 200, 
+      headers: { 
+        'Content-Type': 'text/plain', 
+        'Connection': 'close',
+        'Content-Length': payload.length.toString()
+      } 
+    });
   }
 
   // 2. Handle Attendance Punch (Check-in / Check-out)
