@@ -1120,6 +1120,17 @@ export default function MemberManagementPage() {
 
               <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
                 <div className="flex items-center space-x-1.5">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEnrollFingerprint(cust);
+                    }}
+                    className="text-xs font-black text-indigo-900 bg-indigo-100 hover:bg-indigo-200 px-2.5 py-1.5 rounded-lg flex items-center space-x-1 transition-colors border border-indigo-300 shadow-sm"
+                    title="Enroll Fingerprint to Device"
+                  >
+                    <Fingerprint className="w-3.5 h-3.5" />
+                    <span>Enroll FP</span>
+                  </button>
                   {(cust.pendingBalance || 0) > 0 && (
                     <button
                       onClick={(e) => {
@@ -1438,7 +1449,7 @@ export default function MemberManagementPage() {
                     <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center gap-1">
                       <Shield className="w-3 h-3 text-blue-900" /> ZKTeco / Biomax Device ID
                     </label>
-                    <div className="space-y-2">
+                    <div className="flex gap-2">
                       <input
                         type="text"
                         placeholder="Enter ID (e.g. 101)"
@@ -1446,6 +1457,29 @@ export default function MemberManagementPage() {
                         onChange={(e) => setFingerprintId(e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none"
                       />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!fingerprintId) {
+                            showToast('Please enter an ID first (e.g. 101)', 'error');
+                            return;
+                          }
+                          showToast('Sending enrollment command...', 'success');
+                          try {
+                            await fetch('/api/biometrics/enroll', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ gymId, memberId: 'temp', nfcCardId: fingerprintId })
+                            });
+                          } catch (e) {
+                            showToast('Failed to send command', 'error');
+                          }
+                        }}
+                        className="shrink-0 px-3 py-2 bg-indigo-100 text-indigo-900 hover:bg-indigo-200 border border-indigo-300 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                        title="Send Enroll Command"
+                      >
+                        <Fingerprint className="w-4 h-4" /> Enroll Now
+                      </button>
                     </div>
                   </div>
                 )}
@@ -1690,331 +1724,329 @@ export default function MemberManagementPage() {
         </div>
       )}
 
-      {/* MODAL / DRAWER: MEMBER DETAILS PROFILE */}
+      {/* MODAL: MEMBER DETAILS PROFILE (PREMIUM DESIGN) */}
       {selectedMember && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 p-4 bg-slate-50">
-              <div>
-                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                  {selectedMember.name}
-                  {selectedMember.nfcCardId && (
-                    <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-semibold flex items-center">
-                      <Tag className="w-3 h-3 mr-1" /> ID: {selectedMember.nfcCardId}
-                    </span>
-                  )}
-                </h3>
-                <p className="text-sm text-slate-500 font-medium">Joined {formatDateDDMMYYYY(selectedMember.joinedDate)}</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button onClick={() => handleEnrollFingerprint(selectedMember)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg flex items-center gap-1 px-2 border border-transparent hover:border-emerald-200" title="Enroll Fingerprint on Wall Machine">
-                  <Fingerprint className="w-4 h-4" />
-                  <span className="text-xs font-bold hidden sm:inline">Enroll Finger</span>
-                </button>
-                <button onClick={() => handleEditInit(selectedMember)} className="p-1.5 text-blue-900 hover:bg-blue-50 rounded-lg" title="Edit Member">
-                  <Edit className="w-5 h-5" />
-                </button>
-                <button onClick={() => handleDeleteMember(selectedMember.id)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg" title="Delete Member">
-                  <Trash2 className="w-5 h-5" />
-                </button>
-                <button onClick={() => setSelectedMember(null)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg" title="Close">
-                  <X className="w-5 h-5" />
-                </button>
+        <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+          <div className="bg-slate-50 rounded-[2rem] max-w-3xl w-full shadow-2xl overflow-hidden border border-white/60 flex flex-col max-h-[95vh] ring-1 ring-slate-900/5">
+            {/* Header / Banner */}
+            <div className="relative bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 p-6 shrink-0">
+              <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white opacity-5 rounded-full blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+              
+              <div className="flex justify-between items-start relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-white/10 border border-white/20 rounded-2xl flex items-center justify-center text-white text-3xl font-black shadow-inner backdrop-blur-sm">
+                    {selectedMember.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-2xl tracking-tight mb-1">{selectedMember.name}</h3>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-blue-100 text-sm font-medium">
+                      <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 opacity-80" /> {selectedMember.phone}</span>
+                      <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 opacity-80" /> Joined {formatDateDDMMYYYY(selectedMember.joinedDate)}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <button onClick={() => handleEnrollFingerprint(selectedMember)} className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-50 rounded-xl flex items-center gap-1.5 border border-emerald-500/30 backdrop-blur-sm transition-all" title="Enroll Fingerprint on Wall Machine">
+                    <Fingerprint className="w-4 h-4" />
+                    <span className="text-xs font-bold hidden sm:inline">Enroll FP</span>
+                  </button>
+                  <button onClick={() => handleEditInit(selectedMember)} className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/10 transition-all" title="Edit Profile">
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDeleteMember(selectedMember.id)} className="p-2 bg-rose-500/20 hover:bg-rose-500/40 text-rose-100 rounded-xl border border-rose-500/20 transition-all" title="Delete Profile">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => setSelectedMember(null)} className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/10 transition-all ml-2">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-4 text-xs overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <span className="text-slate-400 font-semibold block mb-0.5">NFC Card ID(s)</span>
-                  <div className="font-mono font-bold text-slate-800 space-y-0.5">
-                    <div>1: {selectedMember.nfcCardId}</div>
-                    {selectedMember.nfcCardId2 && (
-                      <div className="text-blue-900 text-[11px]">2: {selectedMember.nfcCardId2}</div>
-                    )}
+            {/* Scrollable Content Body */}
+            <div className="overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar flex-1">
+              
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center hover:shadow-md transition-shadow">
+                  <Tag className="w-6 h-6 text-indigo-400 mb-2" />
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">NFC / ID</span>
+                  <span className="font-black text-slate-800 text-sm mt-0.5">{selectedMember.nfcCardId}</span>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center hover:shadow-md transition-shadow">
+                  <Dumbbell className="w-6 h-6 text-emerald-400 mb-2" />
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Avg Workout</span>
+                  <span className="font-black text-slate-800 text-sm mt-0.5">{getAvg(selectedMember.id)} hrs/day</span>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center hover:shadow-md transition-shadow">
+                  <Banknote className="w-6 h-6 text-blue-400 mb-2" />
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Last Paid</span>
+                  <span className="font-black text-slate-800 text-sm mt-0.5">{formatDateDDMMYYYY(selectedMember.lastPaymentDate)}</span>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center hover:shadow-md transition-shadow">
+                  <Calendar className="w-6 h-6 text-amber-500 mb-2" />
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Next Due</span>
+                  <span className="font-black text-amber-600 text-sm mt-0.5">{formatDateDDMMYYYY(selectedMember.nextDueDate)}</span>
+                </div>
+              </div>
+
+              {/* Status Banners */}
+              <div className="space-y-3">
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${selectedMember.waActive ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                      <MessageCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">WhatsApp Assistant</h4>
+                      <p className="text-xs font-medium text-slate-500 mt-0.5">{selectedMember.waActive ? "Activated (Member is receiving updates)" : "Not Activated (Waiting for member to text 'start')"}</p>
+                    </div>
                   </div>
-                </div>
-
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <span className="text-slate-400 font-semibold block mb-0.5">Monthly Avg Workout</span>
-                  <span className="font-bold text-blue-950">
-                    {getAvg(selectedMember.id)} hrs / day
-                  </span>
-                </div>
-
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <span className="text-slate-400 font-semibold block mb-0.5">Last Payment</span>
-                  <span className="font-bold text-slate-800">{formatDateDDMMYYYY(selectedMember.lastPaymentDate)}</span>
-                </div>
-
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <span className="text-slate-400 font-semibold block mb-0.5">Next Due Date</span>
-                  <span className="font-bold text-amber-700">{formatDateDDMMYYYY(selectedMember.nextDueDate)}</span>
-                </div>
-
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl col-span-2 flex items-center justify-between">
-                  <div>
-                    <span className="text-slate-500 font-bold text-xs block mb-0.5">WhatsApp Bot Status</span>
-                    <span className={`font-bold text-xs flex items-center gap-1.5 ${selectedMember.waActive ? 'text-emerald-700' : 'text-slate-500'}`}>
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      {selectedMember.waActive ? "Activated (Member messaged 'start')" : "Not Activated (Waiting for member to text 'start')"}
-                    </span>
-                  </div>
-                  <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold ${
-                    selectedMember.waActive
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                      : 'bg-slate-100 text-slate-600 border border-slate-200'
+                  <span className={`text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-wider shrink-0 ${
+                    selectedMember.waActive ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
                   }`}>
-                    {selectedMember.waActive ? 'Active' : 'Pending Start'}
+                    {selectedMember.waActive ? 'Active' : 'Pending'}
                   </span>
                 </div>
 
                 {(selectedMember.pendingBalance || 0) > 0 && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl col-span-2">
-                    <div className="flex justify-between items-center">
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl"></div>
+                    <div className="relative z-10 flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 shadow-sm border border-amber-200">
+                        <AlertTriangle className="w-6 h-6" />
+                      </div>
                       <div>
-                        <span className="text-amber-800 font-bold block flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Pending Dues / Unpaid Balance</span>
-                        <span className="text-[11px] text-amber-700 font-medium">
+                        <h4 className="font-black text-amber-950 text-base">Pending Dues</h4>
+                        <p className="text-xs font-bold text-amber-700/80 mt-0.5">
                           {selectedMember.balanceDueDate ? `Due before: ${formatDateDDMMYYYY(selectedMember.balanceDueDate)}` : 'No deadline specified'}
-                        </span>
+                        </p>
                       </div>
-                      <div className="text-right">
-                        <span className="font-mono font-black text-amber-800 text-base">₹{selectedMember.pendingBalance}</span>
-                        <button
-                          onClick={() => {
-                            setCollectDueMember(selectedMember);
-                            setCollectDueAmount(selectedMember.pendingBalance);
-                            setCollectDuePaymentMethod('CASH');
-                            setShowCollectDueModal(true);
-                          }}
-                          className="block mt-1 px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] rounded-lg shadow-sm"
-                        >
-                          Collect Balance
-                        </button>
-                      </div>
+                    </div>
+                    <div className="relative z-10 text-right flex flex-col items-end">
+                      <span className="font-black text-amber-900 text-xl tracking-tight">₹{selectedMember.pendingBalance}</span>
+                      <button
+                        onClick={() => {
+                          setCollectDueMember(selectedMember);
+                          setCollectDueAmount(selectedMember.pendingBalance);
+                          setCollectDuePaymentMethod('CASH');
+                          setShowCollectDueModal(true);
+                        }}
+                        className="mt-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all"
+                      >
+                        Collect Balance
+                      </button>
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Fee Renewal Action Box */}
-              <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl space-y-3">
-                <div className="font-bold text-slate-900 text-xs flex items-center space-x-1.5">
-                  <RefreshCw className="w-4 h-4 text-blue-900" />
-                  <span>Renew Membership & Record Payment</span>
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-slate-50/80 border-b border-slate-100 p-4 sm:px-6">
+                  <h4 className="font-black text-slate-800 text-sm flex items-center gap-2 uppercase tracking-wide">
+                    <RefreshCw className="w-4 h-4 text-blue-600" />
+                    Renew Membership
+                  </h4>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Renewal Plan Period</label>
-                    <select
-                      value={renewMonths}
-                      onChange={(e) => {
-                        const m = Number(e.target.value);
-                        setRenewMonths(m);
-                        setRenewPaidAmount(selectedMember.feeAmount * m);
-                      }}
-                      className="w-full bg-white border border-slate-300 rounded-lg p-2 font-bold text-slate-800 text-xs outline-none"
-                    >
-                      <option value={1}>+1 Month (₹{selectedMember.feeAmount})</option>
-                      <option value={3}>+3 Months (₹{selectedMember.feeAmount * 3})</option>
-                      <option value={6}>+6 Months (₹{selectedMember.feeAmount * 6})</option>
-                      <option value={12}>+1 Year (₹{selectedMember.feeAmount * 12})</option>
-                    </select>
+                <div className="p-4 sm:p-6 space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Plan Period</label>
+                      <select
+                        value={renewMonths}
+                        onChange={(e) => {
+                          const m = Number(e.target.value);
+                          setRenewMonths(m);
+                          setRenewPaidAmount(selectedMember.feeAmount * m);
+                        }}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold text-slate-800 text-sm focus:ring-2 focus:ring-blue-600 outline-none transition-all"
+                      >
+                        <option value={1}>+1 Month (₹{selectedMember.feeAmount})</option>
+                        <option value={3}>+3 Months (₹{selectedMember.feeAmount * 3})</option>
+                        <option value={6}>+6 Months (₹{selectedMember.feeAmount * 6})</option>
+                        <option value={12}>+1 Year (₹{selectedMember.feeAmount * 12})</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Amount Paid (₹)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={renewPaidAmount}
+                        onChange={(e) => setRenewPaidAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-black text-emerald-600 text-sm focus:ring-2 focus:ring-emerald-600 outline-none transition-all"
+                      />
+                    </div>
                   </div>
 
+                  {Number(renewPaidAmount) < selectedMember.feeAmount * renewMonths && (
+                    <div className="p-4 bg-amber-50/50 border border-amber-200 rounded-2xl space-y-3 animate-in fade-in zoom-in duration-200">
+                      <div className="flex justify-between items-center font-bold">
+                        <span className="text-amber-900 text-sm">Remaining Unpaid:</span>
+                        <span className="text-amber-700 text-lg font-black">₹{selectedMember.feeAmount * renewMonths - Number(renewPaidAmount)}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setRenewRemainingType('BALANCE')}
+                          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                            renewRemainingType === 'BALANCE' ? 'bg-amber-500 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          <Clock className="w-4 h-4" /> Balance Due
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRenewRemainingType('DISCOUNT')}
+                          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                            renewRemainingType === 'DISCOUNT' ? 'bg-purple-600 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          <Tag className="w-4 h-4" /> Discount
+                        </button>
+                      </div>
+                      {renewRemainingType === 'BALANCE' && (
+                        <div className="pt-2">
+                          <label className="block text-[11px] font-bold text-amber-900 uppercase tracking-wider mb-1.5">Due By Date</label>
+                          <input
+                            type="date"
+                            value={renewBalanceDueDate}
+                            onChange={(e) => setRenewBalanceDueDate(e.target.value)}
+                            className="w-full p-2.5 bg-white border border-amber-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-amber-500"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Amount Paid Today (₹)</label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={renewPaidAmount}
-                      onChange={(e) => setRenewPaidAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                      className="w-full bg-white border border-slate-300 rounded-lg p-2 font-black text-emerald-700 text-xs outline-none"
-                    />
-                  </div>
-                </div>
-
-                {Number(renewPaidAmount) < selectedMember.feeAmount * renewMonths && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2 text-xs">
-                    <div className="flex justify-between font-bold text-amber-900">
-                      <span>Remaining Unpaid:</span>
-                      <span className="font-mono text-amber-700">₹{selectedMember.feeAmount * renewMonths - Number(renewPaidAmount)}</span>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Payment Mode</label>
+                    <div className="grid grid-cols-4 gap-2.5">
+                      {(['CASH', 'UPI', 'CARD', 'SPLIT'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setRenewPaymentMethod(mode)}
+                          className={`py-3 px-1 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-1.5 border ${
+                            renewPaymentMethod === mode
+                              ? 'bg-blue-900 text-white border-blue-900 shadow-md ring-2 ring-blue-900 ring-offset-1'
+                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          {mode === 'CASH' ? <Banknote className="w-5 h-5" /> : mode === 'UPI' ? <Smartphone className="w-5 h-5" /> : mode === 'CARD' ? <CreditCard className="w-5 h-5" /> : <ArrowLeftRight className="w-5 h-5" />}
+                          <span className="text-[10px] uppercase tracking-wider">{mode === 'UPI' ? 'UPI' : mode}</span>
+                        </button>
+                      ))}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setRenewRemainingType('BALANCE')}
-                        className={`py-1.5 px-2 rounded-lg text-[11px] font-bold ${
-                          renewRemainingType === 'BALANCE'
-                            ? 'bg-amber-600 text-white shadow-sm'
-                            : 'bg-white text-slate-700 border border-slate-300'
-                        }`}
-                      >
-                        <Clock className="w-3.5 h-3.5" /> Balance Due
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRenewRemainingType('DISCOUNT')}
-                        className={`py-1.5 px-2 rounded-lg text-[11px] font-bold ${
-                          renewRemainingType === 'DISCOUNT'
-                            ? 'bg-purple-600 text-white shadow-sm'
-                            : 'bg-white text-slate-700 border border-slate-300'
-                        }`}
-                      >
-                        <Tag className="w-3.5 h-3.5" /> Discount
-                      </button>
-                    </div>
-
-                    {renewRemainingType === 'BALANCE' && (
-                      <div>
-                        <label className="block text-[10px] font-bold text-amber-900 mb-0.5">Due By Date</label>
+                    {renewPaymentMethod === 'UPI' && (
+                      <div className="mt-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 animate-in fade-in duration-200">
                         <input
-                          type="date"
-                          value={renewBalanceDueDate}
-                          onChange={(e) => setRenewBalanceDueDate(e.target.value)}
-                          className="w-full px-2 py-1 bg-white border border-amber-300 rounded text-xs"
+                          type="text"
+                          placeholder="UPI ID / Transaction UTR"
+                          value={renewUpiId}
+                          onChange={(e) => setRenewUpiId(e.target.value)}
+                          className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-mono font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Sender / Payer Name"
+                          value={renewUpiSenderName}
+                          onChange={(e) => setRenewUpiSenderName(e.target.value)}
+                          className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     )}
-                  </div>
-                )}
 
-                {/* Payment Method Selector for Renewal */}
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Payment Mode</label>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {(['CASH', 'UPI', 'CARD', 'SPLIT'] as const).map((mode) => (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => setRenewPaymentMethod(mode)}
-                        className={`py-1.5 px-1 rounded-lg text-[11px] font-bold transition-all flex flex-col items-center justify-center space-y-0.5 ${
-                          renewPaymentMethod === mode
-                            ? 'bg-blue-900 text-white shadow-sm'
-                            : 'bg-white text-slate-700 border border-slate-300'
-                        }`}
-                      >
-                        {mode === 'CASH' ? <Banknote className="w-3.5 h-3.5" /> : mode === 'UPI' ? <Smartphone className="w-3.5 h-3.5" /> : mode === 'CARD' ? <CreditCard className="w-3.5 h-3.5" /> : <ArrowLeftRight className="w-3.5 h-3.5" />}
-                        <span className="text-[10px]">{mode === 'UPI' ? 'UPI' : mode}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  {renewPaymentMethod === 'UPI' && (
-                    <div className="mt-2 p-2.5 bg-blue-50/80 border border-blue-200 rounded-lg space-y-2 animate-in fade-in duration-150">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-700 mb-0.5">UPI ID / Transaction UTR</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. 402819827361 or user@upi"
-                          value={renewUpiId}
-                          onChange={(e) => setRenewUpiId(e.target.value)}
-                          className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs font-mono font-bold text-slate-900 outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-700 mb-0.5">Sender / Payer Name</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Member Name on UPI"
-                          value={renewUpiSenderName}
-                          onChange={(e) => setRenewUpiSenderName(e.target.value)}
-                          className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs font-semibold text-slate-900 outline-none"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {renewPaymentMethod === 'SPLIT' && (
-                    <div className="mt-2 p-2 bg-white border border-blue-200 rounded-lg grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 flex items-center gap-1"><Banknote className="w-3 h-3" /> Cash (Rs.)</label>
-                        <input
-                          type="number"
-                          value={renewSplitCash}
-                          onChange={(e) => setRenewSplitCash(e.target.value === '' ? '' : Number(e.target.value))}
-                          className="w-full p-1 border border-slate-300 rounded text-xs font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 flex items-center gap-1"><Smartphone className="w-3 h-3" /> UPI (Rs.)</label>
-                        <input
-                          type="number"
-                          value={renewSplitUpi}
-                          onChange={(e) => setRenewSplitUpi(e.target.value === '' ? '' : Number(e.target.value))}
-                          className="w-full p-1 border border-slate-300 rounded text-xs font-bold"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="pt-1 flex justify-end">
-                  <button
-                    onClick={() => handleRenewPayment(selectedMember)}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl transition-colors shadow-sm flex items-center justify-center space-x-1.5"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Record Renewal & Send Receipt</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Full History Section */}
-              <div className="mt-6 pt-4 border-t border-slate-200">
-                <h4 className="font-bold text-slate-900 text-sm mb-3">All Transaction History</h4>
-                <div className="space-y-2">
-                  {transactions
-                    .filter(t => t.customerId === selectedMember.id)
-                    .map(tx => (
-                      <div key={tx.id} className="bg-slate-50 p-2.5 rounded-lg flex justify-between items-center border border-slate-100">
+                    {renewPaymentMethod === 'SPLIT' && (
+                      <div className="mt-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl grid grid-cols-2 gap-4 animate-in fade-in duration-200">
                         <div>
-                          <div className="font-bold text-slate-800">{tx.description}</div>
-                          <div className="text-slate-500 font-mono text-xs">{formatDateDDMMYYYY(tx.date)}</div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Cash (₹)</label>
+                          <input
+                            type="number"
+                            value={renewSplitCash}
+                            onChange={(e) => setRenewSplitCash(e.target.value === '' ? '' : Number(e.target.value))}
+                            className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                          />
                         </div>
-                        <span className="font-black text-emerald-600">₹{tx.amount}</span>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">UPI (₹)</label>
+                          <input
+                            type="number"
+                            value={renewSplitUpi}
+                            onChange={(e) => setRenewSplitUpi(e.target.value === '' ? '' : Number(e.target.value))}
+                            className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
                       </div>
-                    ))}
-                  {transactions.filter(t => t.customerId === selectedMember.id).length === 0 && (
-                    <div className="text-slate-500 italic p-2 bg-slate-50 rounded-lg border border-slate-100 text-center">No transaction history found.</div>
-                  )}
+                    )}
+                  </div>
+                  
+                  <div className="pt-2">
+                    <button
+                      onClick={() => handleRenewPayment(selectedMember)}
+                      className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle2 className="w-5 h-5" />
+                      Record Renewal & Send Receipt
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-200">
-                <h4 className="font-bold text-slate-900 text-sm mb-3">Recent Attendance</h4>
-                <div className="space-y-2">
-                  {attendance
-                    .filter(a => a.customerId === selectedMember.id)
-                    .slice(0, 5)
-                    .map(a => (
-                      <div key={a.id} className="bg-slate-50 p-2.5 rounded-lg flex justify-between items-center border border-slate-100">
+              {/* History Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pb-4">
+                <div>
+                  <h4 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2 uppercase tracking-wide"><Banknote className="w-4 h-4 text-slate-400" /> Transactions</h4>
+                  <div className="space-y-3">
+                    {transactions.filter(t => t.customerId === selectedMember.id).slice(0, 5).map(tx => (
+                      <div key={tx.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center transition-all hover:border-slate-300 hover:shadow-md">
                         <div>
-                          <div className="font-bold text-slate-800 font-mono">{formatDateDDMMYYYY(a.dateStr)}</div>
-                          <div className="text-slate-500">In: {new Date(a.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                          <div className="font-bold text-slate-800 text-sm mb-0.5">{tx.description}</div>
+                          <div className="text-slate-500 font-mono text-[11px] font-semibold">{formatDateDDMMYYYY(tx.date)}</div>
+                        </div>
+                        <span className="font-black text-emerald-600 text-sm">₹{tx.amount}</span>
+                      </div>
+                    ))}
+                    {transactions.filter(t => t.customerId === selectedMember.id).length === 0 && (
+                      <div className="text-slate-400 text-sm font-medium italic p-5 bg-white rounded-2xl border border-slate-100 text-center">No transactions yet.</div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2 uppercase tracking-wide"><Clock className="w-4 h-4 text-slate-400" /> Recent Attendance</h4>
+                  <div className="space-y-3">
+                    {attendance.filter(a => a.customerId === selectedMember.id).slice(0, 5).map(a => (
+                      <div key={a.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center transition-all hover:border-slate-300 hover:shadow-md">
+                        <div>
+                          <div className="font-bold text-slate-800 text-sm font-mono mb-0.5">{formatDateDDMMYYYY(a.dateStr)}</div>
+                          <div className="text-slate-500 text-[11px] font-bold">In: {new Date(a.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                         </div>
                         {a.checkOutTime ? (
                           <div className="text-right">
-                            <span className="font-bold text-blue-900 block">{a.durationMinutes} mins</span>
-                            <span className="text-slate-500">Out: {new Date(a.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span className="font-black text-blue-600 block text-sm mb-0.5">{a.durationMinutes} mins</span>
+                            <span className="text-slate-400 text-[10px] font-bold">Out: {new Date(a.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                         ) : (
-                          <span className="font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded">Active Now</span>
+                          <span className="font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-lg text-[11px] border border-emerald-200 shadow-sm">Active Now</span>
                         )}
                       </div>
                     ))}
-                  {attendance.filter(a => a.customerId === selectedMember.id).length === 0 && (
-                    <div className="text-slate-500 italic p-2 bg-slate-50 rounded-lg border border-slate-100 text-center">No attendance history found.</div>
-                  )}
+                    {attendance.filter(a => a.customerId === selectedMember.id).length === 0 && (
+                      <div className="text-slate-400 text-sm font-medium italic p-5 bg-white rounded-2xl border border-slate-100 text-center">No attendance yet.</div>
+                    )}
+                  </div>
                 </div>
               </div>
+              
             </div>
           </div>
         </div>
       )}
-
       {/* MODAL: COLLECT PENDING DUE */}
       {showCollectDueModal && collectDueMember && (
         <div className="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">

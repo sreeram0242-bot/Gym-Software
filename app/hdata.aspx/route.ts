@@ -23,7 +23,8 @@ export async function POST(req: Request) {
   const devId = headers["dev_id"] || url.searchParams.get("dev_id");
 
   if (!devId) {
-    return new NextResponse("result=OK", { status: 200 });
+    const res = "result=OK";
+    return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
   // Extract JSON by finding the first '{' and the last '}'
@@ -45,6 +46,9 @@ export async function POST(req: Request) {
   // 1. Handle Device Heartbeat / Polling
   if (cmdId === "ReceiveCommandAction") {
     // Update device status and get the device object
+    const defaultGym = await prisma.gym.findFirst();
+    const fallbackGymId = defaultGym ? defaultGym.id : "gym_1";
+
     const device = await prisma.biometricDevice.upsert({
       where: { serialNumber: devId },
       update: { lastActive: new Date(), status: "ONLINE" },
@@ -52,7 +56,7 @@ export async function POST(req: Request) {
         serialNumber: devId,
         name: "Biomax Main",
         status: "ONLINE",
-        gymId: "gym_1" // Fallback fallback
+        gymId: fallbackGymId
       }
     });
 
@@ -65,7 +69,10 @@ export async function POST(req: Request) {
 
     let payload = "OK\n";
     if (pendingCommands.length > 0) {
-      payload = pendingCommands.map(cmd => `C:${cmd.id}:${cmd.commandString}`).join('\n') + '\n';
+      payload = pendingCommands.map(cmd => {
+        const numericId = Math.floor(Math.random() * 100000000);
+        return `C:${numericId}:${cmd.commandString}`;
+      }).join('\n') + '\n';
       
       // Mark them as sent
       await prisma.biometricCommand.updateMany({
@@ -260,13 +267,15 @@ export async function POST(req: Request) {
       }
     } catch(e) { /* ignore */ }
     
-    return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+    const res = "result=OK";
+    return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
   // 3. Handle Fingerprint Enrollment Data
   if (cmdId === "RTEnrollDataAction" && jsonData) {
     console.log(`[BIOMETRIC] Fingerprint enrolled for User ${jsonData.user_id}`);
-    return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+    const res = "result=OK";
+    return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
   // Catch-all response for unknown actions (like command execution reports)
@@ -275,5 +284,6 @@ export async function POST(req: Request) {
     console.log(`[BIOMAX] Payload: ${text}`);
   }
   
-  return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+  const res = "result=OK";
+  return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
 }
