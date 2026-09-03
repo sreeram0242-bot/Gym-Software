@@ -204,3 +204,21 @@ toggleCheckIn success: {"record":{"id":"623836af-0bf5-4ef2-a08f-9464dbcded4e","g
 Parsed PIN: '112'
 Matched Customer: ZK techo
 toggleCheckIn success: {"record":{"id":"623836af-0bf5-4ef2-a08f-9464dbcded4e","gymId":"17a5d460-2811-4d25-bd35-b54c15709205","customerId":"d1f46574-551b-4206-ae7b-1d3a0a665285","customerName":"ZK techo","customerPhone":"9870665998","checkInTime":"2026-09-03T13:40:35.675Z","checkOutTime":"2026-09-03T13:40:41.236Z","durationMinutes":1,"dateStr":"2026-09-03"},"action":"checkout"}
+
+--- NEW PUNCH PAYLOAD ---
+OPLOG 4	0	2026-09-03 22:02:58	0	0	0	0
+
+Parsed PIN: ''
+FAILED to match customer for PIN: ''
+
+--- NEW PUNCH PAYLOAD ---
+OPLOG 4	0	2026-09-03 22:04:04	0	3002	0	0
+
+Parsed PIN: ''
+FAILED to match customer for PIN: ''
+
+--- NEW PUNCH PAYLOAD ---
+OPLOG 4	0	2026-09-03 22:09:41	0	0	0	0
+
+Parsed PIN: ''
+FAILED to match customer for PIN: ''
