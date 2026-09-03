@@ -19,7 +19,15 @@ export async function POST(req: Request) {
     console.log(`========================================\n`);
 
     if (!serialNumber) {
-      return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+      const res = "OK";
+      return new NextResponse(res, { 
+        status: 200, 
+        headers: { 
+          'Content-Type': 'text/plain',
+          'Connection': 'close',
+          'Content-Length': res.length.toString()
+        } 
+      });
     }
 
     const device = await prisma.biometricDevice.findUnique({
@@ -78,13 +86,26 @@ export async function POST(req: Request) {
     }
 
     // Acknowledge receipt
-    return new NextResponse('OK', { 
+    const res = "OK";
+    return new NextResponse(res, { 
       status: 200, 
-      headers: { 'Content-Type': 'text/plain' } 
+      headers: { 
+        'Content-Type': 'text/plain',
+        'Connection': 'close',
+        'Content-Length': res.length.toString()
+      } 
     });
 
   } catch (error) {
     console.error('ADMS DeviceCmd Error:', error);
-    return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+    const res = "OK";
+    return new NextResponse(res, { 
+      status: 200, 
+      headers: { 
+        'Content-Type': 'text/plain',
+        'Connection': 'close',
+        'Content-Length': res.length.toString()
+      } 
+    });
   }
 }

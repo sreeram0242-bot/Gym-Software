@@ -4,9 +4,14 @@ import { toggleCheckIn, toggleStaffCheckIn } from '@/lib/actions';
 
 export async function GET(req: Request) {
   // ADMS initialization handshake
-  return new NextResponse('OK', { 
+  const res = "OK";
+  return new NextResponse(res, { 
     status: 200, 
-    headers: { 'Content-Type': 'text/plain' } 
+    headers: { 
+      'Content-Type': 'text/plain',
+      'Connection': 'close',
+      'Content-Length': res.length.toString()
+    } 
   });
 }
 
@@ -141,12 +146,25 @@ export async function POST(req: Request) {
     // IMPORTANT: We MUST return "OK" in plain text. 
     // If the eSSL machine doesn't see "OK", it thinks the internet is down 
     // and will keep trying to send the same punch over and over again.
-    return new NextResponse('OK', { 
+    const res = "OK";
+    return new NextResponse(res, { 
       status: 200, 
-      headers: { 'Content-Type': 'text/plain' } 
+      headers: { 
+        'Content-Type': 'text/plain',
+        'Connection': 'close',
+        'Content-Length': res.length.toString()
+      } 
     });
   } catch (error) {
     console.error('Webhook Error:', error);
-    return new NextResponse('ERROR', { status: 500 });
+    const res = "ERROR";
+    return new NextResponse(res, { 
+      status: 500, 
+      headers: { 
+        'Content-Type': 'text/plain',
+        'Connection': 'close',
+        'Content-Length': res.length.toString()
+      } 
+    });
   }
 }

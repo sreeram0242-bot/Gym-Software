@@ -9,7 +9,15 @@ export async function GET(req: Request) {
     const serialNumber = url.searchParams.get('SN');
 
     if (!serialNumber) {
-      return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+      const res = "OK";
+      return new NextResponse(res, { 
+        status: 200, 
+        headers: { 
+          'Content-Type': 'text/plain',
+          'Connection': 'close',
+          'Content-Length': res.length.toString()
+        } 
+      });
     }
 
     // Find the device
@@ -19,7 +27,15 @@ export async function GET(req: Request) {
 
     if (!device) {
       // If the device is not registered, we just return OK so it doesn't crash
-      return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+      const res = "OK";
+      return new NextResponse(res, { 
+        status: 200, 
+        headers: { 
+          'Content-Type': 'text/plain',
+          'Connection': 'close',
+          'Content-Length': res.length.toString()
+        } 
+      });
     }
 
     // Update last active time
@@ -39,7 +55,15 @@ export async function GET(req: Request) {
 
     if (!pendingCommand) {
       // No commands waiting for this device
-      return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+      const res = "OK";
+      return new NextResponse(res, { 
+        status: 200, 
+        headers: { 
+          'Content-Type': 'text/plain',
+          'Connection': 'close',
+          'Content-Length': res.length.toString()
+        } 
+      });
     }
 
     // We have a command! Format it for ZKTeco ADMS.
@@ -64,11 +88,23 @@ export async function GET(req: Request) {
     // Send the command payload to the device
     return new NextResponse(commandPayload, { 
       status: 200, 
-      headers: { 'Content-Type': 'text/plain' } 
+      headers: { 
+        'Content-Type': 'text/plain',
+        'Connection': 'close',
+        'Content-Length': commandPayload.length.toString()
+      } 
     });
 
   } catch (error) {
     console.error('ADMS GetRequest Error:', error);
-    return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+    const res = "OK";
+    return new NextResponse(res, { 
+      status: 200, 
+      headers: { 
+        'Content-Type': 'text/plain',
+        'Connection': 'close',
+        'Content-Length': res.length.toString()
+      } 
+    });
   }
 }
