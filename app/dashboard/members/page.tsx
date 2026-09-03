@@ -35,6 +35,10 @@ export default function MemberManagementPage() {
   const [nfcCardId2, setNfcCardId2] = useState('');
   const [showSecondaryNfc, setShowSecondaryNfc] = useState(false);
   const [fingerprintId, setFingerprintId] = useState('');
+  const [fpPollStatus, setFpPollStatus] = useState<'IDLE'|'POLLING'|'SUCCESS'|'ERROR'>('IDLE');
+  const [fpCommandId, setFpCommandId] = useState<string|null>(null);
+  const [cardPollStatus, setCardPollStatus] = useState<'IDLE'|'POLLING'|'SUCCESS'|'ERROR'>('IDLE');
+  const [cardCommandId, setCardCommandId] = useState<string|null>(null);
   const [fpScanning, setFpScanning] = useState(false);
   const [planType, setPlanType] = useState<string>('Monthly');
   const [feeAmount, setFeeAmount] = useState<number | string>(2500);
@@ -65,6 +69,50 @@ export default function MemberManagementPage() {
   const [isEditingMember, setIsEditingMember] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
 
+  const duplicateMember = useMemo(() => {
+    if (!fingerprintId.trim()) return null;
+    return customers.find(c => c.fingerprintId && String(c.fingerprintId).trim() === fingerprintId.trim() && c.id !== editingMemberId);
+  }, [fingerprintId, customers, editingMemberId]);
+
+  // Helper to match card strings with or without leading zeros
+  const matchCard = (a?: string | null, b?: string | null) => {
+    if (!a || !b) return false;
+    const cleanA = a.trim().toLowerCase();
+    const cleanB = b.trim().toLowerCase();
+    if (cleanA === cleanB) return true;
+    const stripA = cleanA.replace(/^0+/, '');
+    const stripB = cleanB.replace(/^0+/, '');
+    return !!stripA && !!stripB && stripA === stripB;
+  };
+
+  const duplicateNfcMember = useMemo(() => {
+    if (!nfcCardId.trim()) return null;
+    return customers.find(c => 
+      c.id !== editingMemberId && (
+        matchCard(c.nfcCardId, nfcCardId) || 
+        matchCard(c.nfcCardId2, nfcCardId)
+      )
+    );
+  }, [nfcCardId, customers, editingMemberId]);
+
+  const duplicateNfc2Member = useMemo(() => {
+    if (!nfcCardId2.trim()) return null;
+    return customers.find(c => 
+      c.id !== editingMemberId && (
+        matchCard(c.nfcCardId, nfcCardId2) || 
+        matchCard(c.nfcCardId2, nfcCardId2)
+      )
+    );
+  }, [nfcCardId2, customers, editingMemberId]);
+
+  const nextSuggestedId = useMemo(() => {
+    const existingIds = customers
+      .map(c => parseInt(c.fingerprintId, 10))
+      .filter(n => !isNaN(n) && n > 0);
+    if (existingIds.length === 0) return '101';
+    return String(Math.max(...existingIds) + 1);
+  }, [customers]);
+
   // Collect Due Modal State
   const [showCollectDueModal, setShowCollectDueModal] = useState(false);
   const [collectDueMember, setCollectDueMember] = useState<any | null>(null);
@@ -92,6 +140,8 @@ export default function MemberManagementPage() {
     setNfcCardId2(cust.nfcCardId2 || '');
     setShowSecondaryNfc(!!cust.nfcCardId2);
     setFingerprintId(cust.fingerprintId || '');
+    setFpPollStatus(cust.fingerprintId ? 'SUCCESS' : 'IDLE');
+    setCardPollStatus('IDLE');
     setPlanType(cust.planType);
     setFeeAmount(cust.feeAmount);
     setPaidAmount(cust.feeAmount);
@@ -164,6 +214,51 @@ export default function MemberManagementPage() {
       setInfoMsg(`Existing member "${found.name}" found. Switched to Edit mode.`);
     }
   }, [phone, nfcCardId, showAddModal, isEditingMember, customers]);
+
+  // Polling for biometric command success (Fingerprint & Card)
+  useEffect(() => {
+    if (fpPollStatus !== 'POLLING' && cardPollStatus !== 'POLLING') return;
+    const interval = setInterval(async () => {
+      // Check Fingerprint command
+      if (fpPollStatus === 'POLLING') {
+        try {
+          const res = await fetch(`/api/biometrics/command-status?id=${fpCommandId || ''}&pin=${fingerprintId || ''}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.status === 'SUCCESS') {
+              setFpPollStatus('SUCCESS');
+              setFpCommandId(null);
+              showToast('Fingerprint Enrolled & Saved!', 'success');
+            } else if (data.status === 'ERROR') {
+              setFpPollStatus('ERROR');
+              setFpCommandId(null);
+              showToast('Fingerprint Enrollment Failed', 'error');
+            }
+          }
+        } catch (e) { }
+      }
+
+      // Check Card sync command
+      if (cardPollStatus === 'POLLING') {
+        try {
+          const res = await fetch(`/api/biometrics/command-status?id=${cardCommandId || ''}&pin=${fingerprintId || ''}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.status === 'SUCCESS') {
+              setCardPollStatus('SUCCESS');
+              setCardCommandId(null);
+              showToast('Card Synced to Device!', 'success');
+            } else if (data.status === 'ERROR') {
+              setCardPollStatus('ERROR');
+              setCardCommandId(null);
+              showToast('Card Sync Failed', 'error');
+            }
+          }
+        } catch (e) { }
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [fpPollStatus, cardPollStatus, fpCommandId, cardCommandId, fingerprintId]);
 
   useEffect(() => {
     loadData();
@@ -283,10 +378,20 @@ export default function MemberManagementPage() {
     }
 
     const newNfc = nfcCardId.trim() || `NFC-${Math.floor(10000 + Math.random() * 90000)}`;
-    const existingNfc = customers.find(c => c.nfcCardId.toLowerCase() === newNfc.toLowerCase());
-    if (existingNfc && (!isEditingMember || existingNfc.id !== editingMemberId)) {
-      setErrorMsg(`NFC Card ID "${newNfc}" is already assigned to ${existingNfc.name}. An NFC card is for one customer only.`);
+    if (nfcCardId.trim() && duplicateNfcMember) {
+      setErrorMsg(`NFC Card ID "${nfcCardId.trim()}" is already assigned to ${duplicateNfcMember.name}. Duplicate NFC cards are strictly prohibited.`);
       return;
+    }
+
+    if (showSecondaryNfc && nfcCardId2.trim()) {
+      if (matchCard(nfcCardId, nfcCardId2)) {
+        setErrorMsg(`Primary and Secondary NFC Card cannot be identical.`);
+        return;
+      }
+      if (duplicateNfc2Member) {
+        setErrorMsg(`Secondary NFC Card ID "${nfcCardId2.trim()}" is already assigned to ${duplicateNfc2Member.name}.`);
+        return;
+      }
     }
 
     if (!isEditingMember && paymentMethod === 'SPLIT') {
@@ -304,64 +409,69 @@ export default function MemberManagementPage() {
     dueObj.setMonth(dueObj.getMonth() + months);
     const nextDueDate = dueObj.toISOString().split('T')[0];
 
-    if (isEditingMember && editingMemberId) {
-      await updateCustomer(editingMemberId, {
-        name,
-        phone,
-        nfcCardId: newNfc,
-        nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
-        fingerprintId: fingerprintId || null,
-        planType,
-        feeAmount: Number(feeAmount),
-        lastPaymentDate,
-        nextDueDate
-      });
-      setIsEditingMember(false);
-      setEditingMemberId(null);
-    } else {
-      const totalPlanPrice = Number(feeAmount);
-      const actualPaid = Number(paidAmount);
-      const diff = Math.max(0, totalPlanPrice - actualPaid);
-      const finalPendingBalance = diff > 0 && remainingType === 'BALANCE' ? diff : 0;
-      const discountAmount = diff > 0 && remainingType === 'DISCOUNT' ? diff : 0;
-      const splitData = paymentMethod === 'SPLIT' ? { cash: Number(splitCash), upi: Number(splitUpi) } : undefined;
+    try {
+      if (isEditingMember && editingMemberId) {
+        await updateCustomer(editingMemberId, {
+          name,
+          phone,
+          nfcCardId: newNfc,
+          nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
+          fingerprintId: fingerprintId || null,
+          planType,
+          feeAmount: Number(feeAmount),
+          lastPaymentDate,
+          nextDueDate
+        });
+        setIsEditingMember(false);
+        setEditingMemberId(null);
+      } else {
+        const totalPlanPrice = Number(feeAmount);
+        const actualPaid = Number(paidAmount);
+        const diff = Math.max(0, totalPlanPrice - actualPaid);
+        const finalPendingBalance = diff > 0 && remainingType === 'BALANCE' ? diff : 0;
+        const discountAmount = diff > 0 && remainingType === 'DISCOUNT' ? diff : 0;
+        const splitData = paymentMethod === 'SPLIT' ? { cash: Number(splitCash), upi: Number(splitUpi) } : undefined;
 
-      await addCustomer({
-        gymId,
-        name,
-        phone,
-        nfcCardId: newNfc,
-        nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
-        fingerprintId: fingerprintId || null,
-        planType,
-        feeAmount: totalPlanPrice,
-        paidAmount: actualPaid,
-        pendingBalance: finalPendingBalance,
-        balanceDueDate: finalPendingBalance > 0 ? balanceDueDate : null,
-        discountAmount,
-        paymentMethod,
-        splitDetails: splitData,
-        upiId: paymentMethod === 'UPI' ? upiId : undefined,
-        upiSenderName: paymentMethod === 'UPI' ? upiSenderName : undefined,
-        lastPaymentDate,
-        nextDueDate
-      });
+        await addCustomer({
+          gymId,
+          name,
+          phone,
+          nfcCardId: newNfc,
+          nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
+          fingerprintId: fingerprintId || null,
+          planType,
+          feeAmount: totalPlanPrice,
+          paidAmount: actualPaid,
+          pendingBalance: finalPendingBalance,
+          balanceDueDate: finalPendingBalance > 0 ? balanceDueDate : null,
+          discountAmount,
+          paymentMethod,
+          splitDetails: splitData,
+          upiId: paymentMethod === 'UPI' ? upiId : undefined,
+          upiSenderName: paymentMethod === 'UPI' ? upiSenderName : undefined,
+          lastPaymentDate,
+          nextDueDate
+        });
 
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Member ${name} added successfully!`, type: 'success' } }));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Member ${name} added successfully!`, type: 'success' } }));
+        }
       }
-    }
 
-    setShowAddModal(false);
-    setName('');
-    setPhone('');
-    setNfcCardId('');
-    setNfcCardId2('');
-    setShowSecondaryNfc(false);
-    setUpiId('');
-    setUpiSenderName('');
-    setInfoMsg('');
-    loadData();
+      setShowAddModal(false);
+      setName('');
+      setPhone('');
+      setNfcCardId('');
+      setNfcCardId2('');
+      setShowSecondaryNfc(false);
+      setUpiId('');
+      setUpiSenderName('');
+      setInfoMsg('');
+      loadData();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to save member. Please check the entered data.');
+      showToast(err.message || 'Failed to save member', 'error');
+    }
   };
 
   const handleRenewPayment = async (cust: any) => {
@@ -1323,7 +1433,7 @@ export default function MemberManagementPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Phone Number *
@@ -1338,152 +1448,319 @@ export default function MemberManagementPage() {
                   />
                 </div>
 
-                {(settings?.attendanceNfcEnabled ?? true) && (
-                  <div className="space-y-2">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        NFC Tag ID {showSecondaryNfc ? '(Card 1)' : ''}
+                {settings?.attendanceWallMountEnabled && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                        <Shield className="w-3.5 h-3.5 text-blue-900" /> Member ID *
                       </label>
-                      <div className="relative flex items-center">
-                        <input
-                          type="text"
-                          placeholder="Tap card or enter ID"
-                          value={nfcCardId}
-                          onChange={(e) => setNfcCardId(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                            }
-                          }}
-                          className="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-mono font-bold text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none"
-                        />
-                        {!showSecondaryNfc && (
-                          <button
-                            type="button"
-                            onClick={() => setShowSecondaryNfc(true)}
-                            className="absolute right-1.5 p-1 text-blue-900 hover:text-blue-950 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors flex items-center justify-center"
-                            title="Add 2nd NFC Tag / Keyfob"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+                      <span className="text-[10px] font-medium text-slate-400">Device PIN</span>
                     </div>
-
-                    {showSecondaryNfc && (
-                      <div className="animate-in fade-in duration-150">
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="block text-xs font-bold text-blue-950 uppercase tracking-wider">
-                            NFC Tag 2 (Secondary / Band)
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setNfcCardId2('');
-                              setShowSecondaryNfc(false);
-                            }}
-                            className="text-[10px] text-rose-600 hover:text-rose-800 font-bold flex items-center gap-0.5"
-                          >
-                            <X className="w-3 h-3" /> Remove
-                          </button>
-                        </div>
-                        <div className="relative flex items-center">
-                          <input
-                            type="text"
-                            placeholder="Tap 2nd card / keyfob"
-                            value={nfcCardId2}
-                            onChange={(e) => setNfcCardId2(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                              }
-                            }}
-                            className="w-full pl-3 pr-8 py-2 bg-blue-50/50 border border-blue-300 rounded-lg text-sm font-mono font-bold text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setNfcCardId2('');
-                              setShowSecondaryNfc(false);
-                            }}
-                            className="absolute right-2 p-1 text-slate-400 hover:text-rose-600"
-                            title="Remove 2nd NFC"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                    <input
+                      type="text"
+                      placeholder="Enter ID (e.g. 101)"
+                      value={fingerprintId || ""}
+                      onChange={(e) => {
+                        setFingerprintId(e.target.value);
+                        if (fpPollStatus === 'SUCCESS') setFpPollStatus('IDLE');
+                      }}
+                      className={`w-full px-3 py-2 bg-white border ${duplicateMember ? 'border-rose-400 focus:ring-rose-400' : 'border-slate-300 focus:ring-blue-800'} rounded-lg text-sm font-bold text-slate-800 focus:ring-2 outline-none`}
+                    />
+                    {duplicateMember && (
+                      <div className="mt-1 flex flex-col gap-0.5 animate-in fade-in duration-150">
+                        <p className="text-[11px] font-bold text-rose-600 flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          Already assigned to {duplicateMember.name}!
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFingerprintId(nextSuggestedId);
+                            if (fpPollStatus === 'SUCCESS') setFpPollStatus('IDLE');
+                          }}
+                          className="text-[10px] text-blue-700 hover:text-blue-900 font-bold underline text-left cursor-pointer"
+                        >
+                          👉 Click to use next free ID: {nextSuggestedId}
+                        </button>
                       </div>
                     )}
                   </div>
                 )}
+              </div>
 
-                {settings?.attendanceMantraEnabled && (
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center gap-1">
-                      <Fingerprint className="w-3 h-3 text-blue-900" /> Biometric Data
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        readOnly
-                        placeholder={fingerprintId ? "Registered" : "No Fingerprint"}
-                        value={fingerprintId ? "Registered" : ""}
-                        className="w-full px-2 py-2 bg-slate-100 border border-slate-300 rounded-lg text-sm font-bold text-blue-900 outline-none cursor-not-allowed"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleFingerprintScan}
-                        disabled={fpScanning}
-                        className={`px-3 py-2 rounded-lg text-xs font-bold shrink-0 transition-colors ${
-                          fpScanning ? 'bg-amber-100 text-amber-700 animate-pulse' : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
-                        }`}
-                      >
-                        {fpScanning ? 'Scanning...' : 'Scan'}
-                      </button>
+              {/* Access & Biometrics Panel with LIVE TICKS */}
+              <div className="bg-slate-50/90 border border-slate-200 rounded-xl p-3.5 space-y-3">
+                <div className="text-[11px] font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5 pb-1 border-b border-slate-200">
+                  <Shield className="w-3.5 h-3.5 text-blue-900" /> Access & Biometric Enrollment
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* CARD 1: NFC CARD & NFC TICK */}
+                  {(settings?.attendanceNfcEnabled ?? true) && (
+                    <div className="bg-white p-3 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-2.5">
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <CreditCard className="w-3.5 h-3.5 text-blue-600" /> NFC Card ID
+                          </label>
+                          {/* TICK 1: NFC TICK */}
+                          {duplicateNfcMember ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-full">
+                              <AlertCircle className="w-3.5 h-3.5 text-rose-600" /> Already Taken
+                            </span>
+                          ) : cardPollStatus === 'SUCCESS' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Synced
+                            </span>
+                          ) : cardPollStatus === 'POLLING' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-300 px-2 py-0.5 rounded-full animate-pulse">
+                              <RefreshCw className="w-3 h-3 animate-spin text-blue-600" /> Sending...
+                            </span>
+                          ) : cardPollStatus === 'ERROR' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-full">
+                              <AlertCircle className="w-3.5 h-3.5 text-rose-600" /> Sync Failed
+                            </span>
+                          ) : nfcCardId.trim() ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Card Linked
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span> No Card
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="relative flex items-center">
+                          <input
+                            type="text"
+                            placeholder="Tap card or enter ID"
+                            value={nfcCardId}
+                            onChange={(e) => {
+                              setNfcCardId(e.target.value);
+                              if (cardPollStatus === 'ERROR' || cardPollStatus === 'SUCCESS') setCardPollStatus('IDLE');
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') e.preventDefault();
+                            }}
+                            className={`w-full pl-3 pr-8 py-2 border rounded-lg text-sm font-mono font-bold text-slate-800 outline-none ${duplicateNfcMember ? 'border-rose-400 focus:ring-2 focus:ring-rose-400 bg-rose-50/20' : 'bg-slate-50 border-slate-300 focus:ring-2 focus:ring-blue-800'}`}
+                          />
+                          {!showSecondaryNfc && (
+                            <button
+                              type="button"
+                              onClick={() => setShowSecondaryNfc(true)}
+                              className="absolute right-1.5 p-1 text-blue-900 hover:text-blue-950 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors flex items-center justify-center"
+                              title="Add 2nd NFC Tag / Keyfob"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        {duplicateNfcMember && (
+                          <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-rose-600 animate-in fade-in duration-150">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>Card already assigned to {duplicateNfcMember.name}!</span>
+                          </div>
+                        )}
+
+                        {showSecondaryNfc && (
+                          <div className="mt-2 pt-2 border-t border-slate-100 animate-in fade-in duration-150">
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[10px] font-bold text-blue-950 uppercase">2nd NFC (Backup)</label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setNfcCardId2('');
+                                  setShowSecondaryNfc(false);
+                                }}
+                                className="text-[10px] text-rose-600 hover:text-rose-800 font-bold"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="Tap 2nd card / keyfob"
+                              value={nfcCardId2}
+                              onChange={(e) => setNfcCardId2(e.target.value)}
+                              className={`w-full px-3 py-1.5 border rounded-lg text-xs font-mono font-bold text-slate-800 outline-none ${duplicateNfc2Member ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-400' : 'bg-blue-50/50 border-blue-200'}`}
+                            />
+                            {duplicateNfc2Member && (
+                              <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-rose-600 animate-in fade-in duration-150">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                <span>Card already assigned to {duplicateNfc2Member.name}!</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {settings?.attendanceWallMountEnabled && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!fingerprintId) {
+                              showToast('Please enter Member ID first', 'error');
+                              return;
+                            }
+                            if (duplicateMember) {
+                              showToast(`Member ID ${fingerprintId} is already assigned to ${duplicateMember.name}. Please enter a new ID.`, 'error');
+                              return;
+                            }
+                            if (!nfcCardId.trim()) {
+                              showToast('Please enter or tap an NFC Card number first', 'error');
+                              return;
+                            }
+                            if (duplicateNfcMember) {
+                              showToast(`Card ${nfcCardId} is already assigned to ${duplicateNfcMember.name}. Duplicate cards are not allowed.`, 'error');
+                              return;
+                            }
+                            setCardPollStatus('POLLING');
+                            try {
+                              const res = await fetch('/api/biometrics/enroll', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ gymId, memberId: 'temp', nfcCardId: fingerprintId, actualCardNumber: nfcCardId.trim(), enrollType: 'card' })
+                              });
+                              if (res.ok) {
+                                const data = await res.json();
+                                if (data.directSync) {
+                                  setCardPollStatus('SUCCESS');
+                                  showToast('Card saved directly to device!', 'success');
+                                } else if (data.commandId) {
+                                  setCardCommandId(data.commandId);
+                                }
+                              } else {
+                                setCardPollStatus('ERROR');
+                                showToast('Failed to send card to device', 'error');
+                              }
+                            } catch (e) {
+                              setCardPollStatus('ERROR');
+                              showToast('Failed to send card to device', 'error');
+                            }
+                          }}
+                          disabled={cardPollStatus === 'POLLING'}
+                          className="w-full py-2 px-3 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                          title="Send Card to Device"
+                        >
+                          <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                          {cardPollStatus === 'POLLING' ? 'Syncing...' : 'Send Card to Device'}
+                        </button>
+                      )}
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {settings?.attendanceWallMountEnabled && (
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center gap-1">
-                      <Shield className="w-3 h-3 text-blue-900" /> ZKTeco / Biomax Device ID
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Enter ID (e.g. 101)"
-                        value={fingerprintId || ""}
-                        onChange={(e) => setFingerprintId(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-800 outline-none"
-                      />
+                  {/* CARD 2: FINGERPRINT & FP TICK */}
+                  {settings?.attendanceWallMountEnabled && (
+                    <div className="bg-white p-3 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-2.5">
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <Fingerprint className="w-3.5 h-3.5 text-indigo-600" /> Fingerprint
+                          </label>
+                          {/* TICK 2: FINGERPRINT TICK */}
+                          {fpPollStatus === 'SUCCESS' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> FP Saved
+                            </span>
+                          ) : fpPollStatus === 'POLLING' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-300 px-2 py-0.5 rounded-full animate-pulse">
+                              <RefreshCw className="w-3 h-3 animate-spin text-blue-600" /> Place finger 3x...
+                            </span>
+                          ) : fpPollStatus === 'ERROR' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-full">
+                              <AlertCircle className="w-3 h-3 text-rose-600" /> Failed
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span> Not Enrolled
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="text-[11px] text-slate-500 leading-normal">
+                          {fpPollStatus === 'POLLING' 
+                            ? 'Device is waiting! Touch member finger 3 times on the scanner.'
+                            : fpPollStatus === 'SUCCESS'
+                            ? 'Fingerprint enrolled & registered on the machine.'
+                            : 'Click below to start 3-tap fingerprint enrollment.'}
+                        </p>
+                      </div>
+
                       <button
                         type="button"
                         onClick={async () => {
                           if (!fingerprintId) {
-                            showToast('Please enter an ID first (e.g. 101)', 'error');
+                            showToast('Please enter Member ID first (e.g. 101)', 'error');
                             return;
                           }
-                          showToast('Sending enrollment command...', 'success');
+                          if (duplicateMember) {
+                            showToast(`Member ID ${fingerprintId} is already assigned to ${duplicateMember.name}. Use a new ID like ${nextSuggestedId}.`, 'error');
+                            return;
+                          }
+                          setFpPollStatus('POLLING');
                           try {
-                            await fetch('/api/biometrics/enroll', {
+                            const res = await fetch('/api/biometrics/enroll', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ gymId, memberId: 'temp', nfcCardId: fingerprintId })
+                              body: JSON.stringify({ gymId, memberId: 'temp', nfcCardId: fingerprintId, enrollType: 'fp' })
                             });
+                            if (res.ok) {
+                              const data = await res.json();
+                              if (data.commandId) setFpCommandId(data.commandId);
+                            }
                           } catch (e) {
-                            showToast('Failed to send command', 'error');
+                            setFpPollStatus('ERROR');
+                            showToast('Failed to send enroll command', 'error');
                           }
                         }}
-                        className="shrink-0 px-3 py-2 bg-indigo-100 text-indigo-900 hover:bg-indigo-200 border border-indigo-300 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
-                        title="Send Enroll Command"
+                        disabled={fpPollStatus === 'POLLING'}
+                        className={`w-full py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 ${
+                          fpPollStatus === 'SUCCESS'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
+                            : fpPollStatus === 'POLLING'
+                            ? 'bg-blue-50 text-blue-900 border border-blue-300 animate-pulse'
+                            : 'bg-indigo-50 text-indigo-900 hover:bg-indigo-100 border border-indigo-300'
+                        }`}
                       >
-                        <Fingerprint className="w-4 h-4" /> Enroll Now
+                        <Fingerprint className="w-3.5 h-3.5 text-indigo-600" />
+                        {fpPollStatus === 'POLLING' 
+                          ? 'Waiting for Finger (3x)...' 
+                          : fpPollStatus === 'SUCCESS' 
+                          ? 'Re-enroll Fingerprint' 
+                          : 'Enroll Fingerprint on Device'}
                       </button>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
+
+              {settings?.attendanceMantraEnabled && (
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+                    <Fingerprint className="w-3 h-3 text-blue-900" /> USB Biometric Scanner (Mantra)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      placeholder={fingerprintId ? "Registered" : "No Fingerprint"}
+                      value={fingerprintId ? "Registered" : ""}
+                      className="w-full px-2 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-blue-900 outline-none cursor-not-allowed"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleFingerprintScan}
+                      disabled={fpScanning}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold shrink-0 transition-colors ${
+                        fpScanning ? 'bg-amber-100 text-amber-700 animate-pulse' : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
+                      }`}
+                    >
+                      {fpScanning ? 'Scanning...' : 'Scan'}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -1724,87 +2001,84 @@ export default function MemberManagementPage() {
         </div>
       )}
 
-      {/* MODAL: MEMBER DETAILS PROFILE (PREMIUM DESIGN) */}
+      {/* MODAL: MEMBER DETAILS PROFILE (COMPACT & SLEEK) */}
       {selectedMember && (
-        <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
-          <div className="bg-slate-50 rounded-[2rem] max-w-3xl w-full shadow-2xl overflow-hidden border border-white/60 flex flex-col max-h-[95vh] ring-1 ring-slate-900/5">
-            {/* Header / Banner */}
-            <div className="relative bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 p-6 shrink-0">
-              <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white opacity-5 rounded-full blur-3xl"></div>
-              <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-              
-              <div className="flex justify-between items-start relative z-10">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-white/10 border border-white/20 rounded-2xl flex items-center justify-center text-white text-3xl font-black shadow-inner backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-50 rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden border border-white/60 flex flex-col max-h-[92vh] ring-1 ring-slate-900/5">
+            {/* Header / Banner (Compact) */}
+            <div className="relative bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 p-3.5 sm:p-4 shrink-0">
+              <div className="flex justify-between items-center relative z-10">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 bg-white/10 border border-white/20 rounded-xl flex items-center justify-center text-white text-base font-black shadow-inner shrink-0">
                     {selectedMember.name.charAt(0).toUpperCase()}
                   </div>
-                  <div>
-                    <h3 className="font-black text-white text-2xl tracking-tight mb-1">{selectedMember.name}</h3>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-blue-100 text-sm font-medium">
-                      <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 opacity-80" /> {selectedMember.phone}</span>
-                      <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 opacity-80" /> Joined {formatDateDDMMYYYY(selectedMember.joinedDate)}</span>
+                  <div className="min-w-0">
+                    <h3 className="font-black text-white text-base sm:text-lg tracking-tight truncate leading-snug">{selectedMember.name}</h3>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-blue-100 text-xs font-medium">
+                      <span className="flex items-center gap-1"><Phone className="w-3 h-3 opacity-75" /> {selectedMember.phone}</span>
+                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3 opacity-75" /> Joined {formatDateDDMMYYYY(selectedMember.joinedDate)}</span>
                     </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <button onClick={() => handleEnrollFingerprint(selectedMember)} className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-50 rounded-xl flex items-center gap-1.5 border border-emerald-500/30 backdrop-blur-sm transition-all" title="Enroll Fingerprint on Wall Machine">
-                    <Fingerprint className="w-4 h-4" />
-                    <span className="text-xs font-bold hidden sm:inline">Enroll FP</span>
+                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                  <button onClick={() => handleEnrollFingerprint(selectedMember)} className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-50 rounded-lg flex items-center gap-1 border border-emerald-500/30 text-xs font-bold transition-all" title="Enroll Fingerprint on Wall Machine">
+                    <Fingerprint className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Enroll FP</span>
                   </button>
-                  <button onClick={() => handleEditInit(selectedMember)} className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/10 transition-all" title="Edit Profile">
-                    <Edit className="w-4 h-4" />
+                  <button onClick={() => handleEditInit(selectedMember)} className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/10 transition-all" title="Edit Profile">
+                    <Edit className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => handleDeleteMember(selectedMember.id)} className="p-2 bg-rose-500/20 hover:bg-rose-500/40 text-rose-100 rounded-xl border border-rose-500/20 transition-all" title="Delete Profile">
-                    <Trash2 className="w-4 h-4" />
+                  <button onClick={() => handleDeleteMember(selectedMember.id)} className="p-1.5 bg-rose-500/20 hover:bg-rose-500/40 text-rose-100 rounded-lg border border-rose-500/20 transition-all" title="Delete Profile">
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setSelectedMember(null)} className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/10 transition-all ml-2">
-                    <X className="w-4 h-4" />
+                  <button onClick={() => setSelectedMember(null)} className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/10 transition-all ml-1" title="Close">
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Scrollable Content Body */}
-            <div className="overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar flex-1">
+            {/* Scrollable Content Body (Compact) */}
+            <div className="overflow-y-auto p-3 sm:p-4 space-y-3 custom-scrollbar flex-1">
               
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center hover:shadow-md transition-shadow">
-                  <Tag className="w-6 h-6 text-indigo-400 mb-2" />
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">NFC / ID</span>
-                  <span className="font-black text-slate-800 text-sm mt-0.5">{selectedMember.nfcCardId}</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-center items-center text-center">
+                  <Tag className="w-4 h-4 text-indigo-500 mb-1" />
+                  <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Member ID & NFC</span>
+                  <span className="font-bold text-slate-800 text-xs mt-0.5 truncate max-w-full">{selectedMember.fingerprintId || '-'} / {selectedMember.nfcCardId || '-'}</span>
                 </div>
-                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center hover:shadow-md transition-shadow">
-                  <Dumbbell className="w-6 h-6 text-emerald-400 mb-2" />
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Avg Workout</span>
-                  <span className="font-black text-slate-800 text-sm mt-0.5">{getAvg(selectedMember.id)} hrs/day</span>
+                <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-center items-center text-center">
+                  <Dumbbell className="w-4 h-4 text-emerald-500 mb-1" />
+                  <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Avg Workout</span>
+                  <span className="font-bold text-slate-800 text-xs mt-0.5">{getAvg(selectedMember.id)} hrs/day</span>
                 </div>
-                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center hover:shadow-md transition-shadow">
-                  <Banknote className="w-6 h-6 text-blue-400 mb-2" />
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Last Paid</span>
-                  <span className="font-black text-slate-800 text-sm mt-0.5">{formatDateDDMMYYYY(selectedMember.lastPaymentDate)}</span>
+                <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-center items-center text-center">
+                  <Banknote className="w-4 h-4 text-blue-500 mb-1" />
+                  <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Last Paid</span>
+                  <span className="font-bold text-slate-800 text-xs mt-0.5">{formatDateDDMMYYYY(selectedMember.lastPaymentDate)}</span>
                 </div>
-                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center hover:shadow-md transition-shadow">
-                  <Calendar className="w-6 h-6 text-amber-500 mb-2" />
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Next Due</span>
-                  <span className="font-black text-amber-600 text-sm mt-0.5">{formatDateDDMMYYYY(selectedMember.nextDueDate)}</span>
+                <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-center items-center text-center">
+                  <Calendar className="w-4 h-4 text-amber-500 mb-1" />
+                  <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Next Due</span>
+                  <span className="font-bold text-amber-600 text-xs mt-0.5">{formatDateDDMMYYYY(selectedMember.nextDueDate)}</span>
                 </div>
               </div>
 
               {/* Status Banners */}
-              <div className="space-y-3">
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-sm">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${selectedMember.waActive ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
-                      <MessageCircle className="w-6 h-6" />
+              <div className="space-y-2">
+                <div className="bg-white border border-slate-200 rounded-xl p-2.5 sm:p-3 flex items-center justify-between shadow-2xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${selectedMember.waActive ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                      <MessageCircle className="w-4 h-4" />
                     </div>
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-sm">WhatsApp Assistant</h4>
-                      <p className="text-xs font-medium text-slate-500 mt-0.5">{selectedMember.waActive ? "Activated (Member is receiving updates)" : "Not Activated (Waiting for member to text 'start')"}</p>
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-slate-900 text-xs">WhatsApp Assistant</h4>
+                      <p className="text-[10px] text-slate-500 truncate">{selectedMember.waActive ? "Activated (Member is receiving updates)" : "Not Activated (Waiting for text 'start')"}</p>
                     </div>
                   </div>
-                  <span className={`text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-wider shrink-0 ${
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider shrink-0 ml-2 ${
                     selectedMember.waActive ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
                   }`}>
                     {selectedMember.waActive ? 'Active' : 'Pending'}
@@ -1812,21 +2086,20 @@ export default function MemberManagementPage() {
                 </div>
 
                 {(selectedMember.pendingBalance || 0) > 0 && (
-                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl"></div>
-                    <div className="relative z-10 flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 shadow-sm border border-amber-200">
-                        <AlertTriangle className="w-6 h-6" />
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-2.5 sm:p-3 flex items-center justify-between shadow-2xs">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200">
+                        <AlertTriangle className="w-4 h-4" />
                       </div>
                       <div>
-                        <h4 className="font-black text-amber-950 text-base">Pending Dues</h4>
-                        <p className="text-xs font-bold text-amber-700/80 mt-0.5">
-                          {selectedMember.balanceDueDate ? `Due before: ${formatDateDDMMYYYY(selectedMember.balanceDueDate)}` : 'No deadline specified'}
+                        <h4 className="font-bold text-amber-950 text-xs">Pending Dues</h4>
+                        <p className="text-[10px] text-amber-700/80">
+                          {selectedMember.balanceDueDate ? `Due: ${formatDateDDMMYYYY(selectedMember.balanceDueDate)}` : 'No deadline'}
                         </p>
                       </div>
                     </div>
-                    <div className="relative z-10 text-right flex flex-col items-end">
-                      <span className="font-black text-amber-900 text-xl tracking-tight">₹{selectedMember.pendingBalance}</span>
+                    <div className="text-right flex items-center gap-2">
+                      <span className="font-black text-amber-900 text-sm">₹{selectedMember.pendingBalance}</span>
                       <button
                         onClick={() => {
                           setCollectDueMember(selectedMember);
@@ -1834,27 +2107,27 @@ export default function MemberManagementPage() {
                           setCollectDuePaymentMethod('CASH');
                           setShowCollectDueModal(true);
                         }}
-                        className="mt-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all"
+                        className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] rounded-lg transition-all"
                       >
-                        Collect Balance
+                        Collect
                       </button>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Fee Renewal Action Box */}
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="bg-slate-50/80 border-b border-slate-100 p-4 sm:px-6">
-                  <h4 className="font-black text-slate-800 text-sm flex items-center gap-2 uppercase tracking-wide">
-                    <RefreshCw className="w-4 h-4 text-blue-600" />
+              {/* Fee Renewal Action Box (Compact) */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+                <div className="bg-slate-50 border-b border-slate-100 py-1.5 px-3">
+                  <h4 className="font-bold text-slate-700 text-xs flex items-center gap-1.5 uppercase tracking-wider">
+                    <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
                     Renew Membership
                   </h4>
                 </div>
-                <div className="p-4 sm:p-6 space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="p-3 space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Plan Period</label>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Plan Period</label>
                       <select
                         value={renewMonths}
                         onChange={(e) => {
@@ -1862,7 +2135,7 @@ export default function MemberManagementPage() {
                           setRenewMonths(m);
                           setRenewPaidAmount(selectedMember.feeAmount * m);
                         }}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold text-slate-800 text-sm focus:ring-2 focus:ring-blue-600 outline-none transition-all"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2.5 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-blue-600 outline-none transition-all"
                       >
                         <option value={1}>+1 Month (₹{selectedMember.feeAmount})</option>
                         <option value={3}>+3 Months (₹{selectedMember.feeAmount * 3})</option>
@@ -1871,51 +2144,51 @@ export default function MemberManagementPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Amount Paid (₹)</label>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Amount Paid (₹)</label>
                       <input
                         type="number"
                         min={0}
                         value={renewPaidAmount}
                         onChange={(e) => setRenewPaidAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-black text-emerald-600 text-sm focus:ring-2 focus:ring-emerald-600 outline-none transition-all"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2.5 font-bold text-emerald-600 text-xs focus:ring-2 focus:ring-emerald-600 outline-none transition-all"
                       />
                     </div>
                   </div>
 
                   {Number(renewPaidAmount) < selectedMember.feeAmount * renewMonths && (
-                    <div className="p-4 bg-amber-50/50 border border-amber-200 rounded-2xl space-y-3 animate-in fade-in zoom-in duration-200">
-                      <div className="flex justify-between items-center font-bold">
-                        <span className="text-amber-900 text-sm">Remaining Unpaid:</span>
-                        <span className="text-amber-700 text-lg font-black">₹{selectedMember.feeAmount * renewMonths - Number(renewPaidAmount)}</span>
+                    <div className="p-2.5 bg-amber-50/50 border border-amber-200 rounded-xl space-y-2 animate-in fade-in zoom-in duration-200">
+                      <div className="flex justify-between items-center font-bold text-xs">
+                        <span className="text-amber-900">Remaining Unpaid:</span>
+                        <span className="text-amber-700 font-black">₹{selectedMember.feeAmount * renewMonths - Number(renewPaidAmount)}</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-2">
                         <button
                           type="button"
                           onClick={() => setRenewRemainingType('BALANCE')}
-                          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                            renewRemainingType === 'BALANCE' ? 'bg-amber-500 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                          className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 ${
+                            renewRemainingType === 'BALANCE' ? 'bg-amber-500 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                           }`}
                         >
-                          <Clock className="w-4 h-4" /> Balance Due
+                          <Clock className="w-3.5 h-3.5" /> Balance Due
                         </button>
                         <button
                           type="button"
                           onClick={() => setRenewRemainingType('DISCOUNT')}
-                          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                            renewRemainingType === 'DISCOUNT' ? 'bg-purple-600 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                          className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 ${
+                            renewRemainingType === 'DISCOUNT' ? 'bg-purple-600 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                           }`}
                         >
-                          <Tag className="w-4 h-4" /> Discount
+                          <Tag className="w-3.5 h-3.5" /> Discount
                         </button>
                       </div>
                       {renewRemainingType === 'BALANCE' && (
-                        <div className="pt-2">
-                          <label className="block text-[11px] font-bold text-amber-900 uppercase tracking-wider mb-1.5">Due By Date</label>
+                        <div className="pt-1">
+                          <label className="block text-[10px] font-bold text-amber-900 uppercase tracking-wider mb-1">Due By Date</label>
                           <input
                             type="date"
                             value={renewBalanceDueDate}
                             onChange={(e) => setRenewBalanceDueDate(e.target.value)}
-                            className="w-full p-2.5 bg-white border border-amber-300 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-amber-500"
+                            className="w-full py-1.5 px-2.5 bg-white border border-amber-300 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-amber-500"
                           />
                         </div>
                       )}
@@ -1923,121 +2196,121 @@ export default function MemberManagementPage() {
                   )}
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Payment Mode</label>
-                    <div className="grid grid-cols-4 gap-2.5">
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Payment Mode</label>
+                    <div className="grid grid-cols-4 gap-1.5">
                       {(['CASH', 'UPI', 'CARD', 'SPLIT'] as const).map((mode) => (
                         <button
                           key={mode}
                           type="button"
                           onClick={() => setRenewPaymentMethod(mode)}
-                          className={`py-3 px-1 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-1.5 border ${
+                          className={`py-2 px-1 rounded-lg text-[11px] font-bold transition-all flex flex-col items-center justify-center gap-1 border ${
                             renewPaymentMethod === mode
-                              ? 'bg-blue-900 text-white border-blue-900 shadow-md ring-2 ring-blue-900 ring-offset-1'
+                              ? 'bg-blue-900 text-white border-blue-900 shadow-xs'
                               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                           }`}
                         >
-                          {mode === 'CASH' ? <Banknote className="w-5 h-5" /> : mode === 'UPI' ? <Smartphone className="w-5 h-5" /> : mode === 'CARD' ? <CreditCard className="w-5 h-5" /> : <ArrowLeftRight className="w-5 h-5" />}
-                          <span className="text-[10px] uppercase tracking-wider">{mode === 'UPI' ? 'UPI' : mode}</span>
+                          {mode === 'CASH' ? <Banknote className="w-4 h-4" /> : mode === 'UPI' ? <Smartphone className="w-4 h-4" /> : mode === 'CARD' ? <CreditCard className="w-4 h-4" /> : <ArrowLeftRight className="w-4 h-4" />}
+                          <span className="text-[9px] uppercase tracking-wider">{mode === 'UPI' ? 'UPI' : mode}</span>
                         </button>
                       ))}
                     </div>
 
                     {renewPaymentMethod === 'UPI' && (
-                      <div className="mt-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 animate-in fade-in duration-200">
+                      <div className="mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 animate-in fade-in duration-200">
                         <input
                           type="text"
                           placeholder="UPI ID / Transaction UTR"
                           value={renewUpiId}
                           onChange={(e) => setRenewUpiId(e.target.value)}
-                          className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-mono font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full py-1.5 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <input
                           type="text"
                           placeholder="Sender / Payer Name"
                           value={renewUpiSenderName}
                           onChange={(e) => setRenewUpiSenderName(e.target.value)}
-                          className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full py-1.5 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     )}
 
                     {renewPaymentMethod === 'SPLIT' && (
-                      <div className="mt-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl grid grid-cols-2 gap-4 animate-in fade-in duration-200">
+                      <div className="mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl grid grid-cols-2 gap-2 animate-in fade-in duration-200">
                         <div>
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Cash (₹)</label>
+                          <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cash (₹)</label>
                           <input
                             type="number"
                             value={renewSplitCash}
                             onChange={(e) => setRenewSplitCash(e.target.value === '' ? '' : Number(e.target.value))}
-                            className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full py-1.5 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">UPI (₹)</label>
+                          <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">UPI (₹)</label>
                           <input
                             type="number"
                             value={renewSplitUpi}
                             onChange={(e) => setRenewSplitUpi(e.target.value === '' ? '' : Number(e.target.value))}
-                            className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full py-1.5 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                       </div>
                     )}
                   </div>
                   
-                  <div className="pt-2">
+                  <div className="pt-1">
                     <button
                       onClick={() => handleRenewPayment(selectedMember)}
-                      className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all shadow-xs flex items-center justify-center gap-1.5"
                     >
-                      <CheckCircle2 className="w-5 h-5" />
+                      <CheckCircle2 className="w-4 h-4" />
                       Record Renewal & Send Receipt
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* History Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pb-4">
+              {/* History Grid (Compact) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pb-2">
                 <div>
-                  <h4 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2 uppercase tracking-wide"><Banknote className="w-4 h-4 text-slate-400" /> Transactions</h4>
-                  <div className="space-y-3">
-                    {transactions.filter(t => t.customerId === selectedMember.id).slice(0, 5).map(tx => (
-                      <div key={tx.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center transition-all hover:border-slate-300 hover:shadow-md">
-                        <div>
-                          <div className="font-bold text-slate-800 text-sm mb-0.5">{tx.description}</div>
-                          <div className="text-slate-500 font-mono text-[11px] font-semibold">{formatDateDDMMYYYY(tx.date)}</div>
+                  <h4 className="font-bold text-slate-700 text-xs mb-1.5 flex items-center gap-1.5 uppercase tracking-wide"><Banknote className="w-3.5 h-3.5 text-slate-400" /> Transactions</h4>
+                  <div className="space-y-1.5">
+                    {transactions.filter(t => t.customerId === selectedMember.id).slice(0, 4).map(tx => (
+                      <div key={tx.id} className="bg-white p-2 rounded-lg border border-slate-200/80 shadow-2xs flex justify-between items-center text-xs">
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-800 truncate">{tx.description}</div>
+                          <div className="text-slate-400 font-mono text-[10px]">{formatDateDDMMYYYY(tx.date)}</div>
                         </div>
-                        <span className="font-black text-emerald-600 text-sm">₹{tx.amount}</span>
+                        <span className="font-black text-emerald-600 text-xs ml-2 shrink-0">₹{tx.amount}</span>
                       </div>
                     ))}
                     {transactions.filter(t => t.customerId === selectedMember.id).length === 0 && (
-                      <div className="text-slate-400 text-sm font-medium italic p-5 bg-white rounded-2xl border border-slate-100 text-center">No transactions yet.</div>
+                      <div className="text-slate-400 text-xs italic p-3 bg-white rounded-lg border border-slate-100 text-center">No transactions yet.</div>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-2 uppercase tracking-wide"><Clock className="w-4 h-4 text-slate-400" /> Recent Attendance</h4>
-                  <div className="space-y-3">
-                    {attendance.filter(a => a.customerId === selectedMember.id).slice(0, 5).map(a => (
-                      <div key={a.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center transition-all hover:border-slate-300 hover:shadow-md">
+                  <h4 className="font-bold text-slate-700 text-xs mb-1.5 flex items-center gap-1.5 uppercase tracking-wide"><Clock className="w-3.5 h-3.5 text-slate-400" /> Recent Attendance</h4>
+                  <div className="space-y-1.5">
+                    {attendance.filter(a => a.customerId === selectedMember.id).slice(0, 4).map(a => (
+                      <div key={a.id} className="bg-white p-2 rounded-lg border border-slate-200/80 shadow-2xs flex justify-between items-center text-xs">
                         <div>
-                          <div className="font-bold text-slate-800 text-sm font-mono mb-0.5">{formatDateDDMMYYYY(a.dateStr)}</div>
-                          <div className="text-slate-500 text-[11px] font-bold">In: {new Date(a.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                          <div className="font-bold text-slate-800 font-mono">{formatDateDDMMYYYY(a.dateStr)}</div>
+                          <div className="text-slate-400 text-[10px]">In: {new Date(a.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                         </div>
                         {a.checkOutTime ? (
-                          <div className="text-right">
-                            <span className="font-black text-blue-600 block text-sm mb-0.5">{a.durationMinutes} mins</span>
-                            <span className="text-slate-400 text-[10px] font-bold">Out: {new Date(a.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <div className="text-right shrink-0 ml-2">
+                            <span className="font-bold text-blue-600 block text-[11px]">{a.durationMinutes}m</span>
+                            <span className="text-slate-400 text-[10px]">Out: {new Date(a.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                         ) : (
-                          <span className="font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-lg text-[11px] border border-emerald-200 shadow-sm">Active Now</span>
+                          <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[10px] border border-emerald-200">Active</span>
                         )}
                       </div>
                     ))}
                     {attendance.filter(a => a.customerId === selectedMember.id).length === 0 && (
-                      <div className="text-slate-400 text-sm font-medium italic p-5 bg-white rounded-2xl border border-slate-100 text-center">No attendance yet.</div>
+                      <div className="text-slate-400 text-xs italic p-3 bg-white rounded-lg border border-slate-100 text-center">No attendance yet.</div>
                     )}
                   </div>
                 </div>

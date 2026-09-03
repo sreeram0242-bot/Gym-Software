@@ -50,27 +50,73 @@ export async function POST(req: Request) {
     console.log(`========================================\n`);
 
     // PARSE PUNCHES (ADMS Format: PIN \t Time \t State \t VerifyMode)
+    // PARSE PUNCHES (ADMS Format: PIN \t Time \t State \t VerifyMode)
+    const fs = require('fs');
+    fs.appendFileSync('biometric.log', `\n--- NEW PUNCH PAYLOAD ---\n${rawData}\n`);
     const lines = rawData.split('\n');
-    for (const line of lines) {
-      if (!line.trim()) continue;
+    for (let line of lines) {
+      line = line.trim();
+      if (!line) continue;
+      if (line.startsWith('FP PIN=') || line.startsWith('USER PIN=')) {
+        const match = line.match(/PIN=(\d+)/);
+        if (match) {
+          const enrolledPin = match[1];
+          await prisma.biometricCommand.updateMany({
+            where: { commandString: { contains: `PIN=${enrolledPin}` }, status: 'SENT' },
+            data: { status: 'SUCCESS' }
+          });
+          fs.appendFileSync('biometric.log', `Enrollment Success callback processed for PIN: ${enrolledPin}\n`);
+          continue; // Skip regular punch logic
+        }
+      }
       
       const parts = line.split(/\s+/);
       if (parts.length >= 2) {
-        const pin = parts[0]; // fingerprintId
+        let pin = parts[0].trim();
+        // Clean up malformed PINs (e.g. if the device literally saved "101:FID=0:RETRY=3" as the ID)
+        if (pin.includes(':')) {
+           pin = pin.split(':')[0];
+        }
+        // Also strip any non-numeric garbage just to be safe
+        pin = pin.replace(/\D/g, '');
+        
+        fs.appendFileSync('biometric.log', `Parsed PIN: '${pin}'\n`);
+        
+        const strippedPin = pin.replace(/^0+/, '');
+        const padded10Pin = strippedPin ? strippedPin.padStart(10, '0') : pin;
         
         // Find Customer
         const customer = await prisma.customer.findFirst({
           where: { 
             OR: [
               { nfcCardId: pin },
-              { fingerprintId: pin }
+              { nfcCardId: strippedPin },
+              { nfcCardId: padded10Pin },
+              { nfcCardId2: pin },
+              { nfcCardId2: strippedPin },
+              { nfcCardId2: padded10Pin },
+              { fingerprintId: pin },
+              { fingerprintId: strippedPin },
+              { memberId: pin },
+              { memberId: strippedPin },
+              { memberId: `M-${pin}` },
+              { memberId: `M-${strippedPin}` }
             ]
           }
         });
         if (customer) {
+          fs.appendFileSync('biometric.log', `Matched Customer: ${customer.name}\n`);
           console.log(`[BIOMETRIC] Customer punch matched: ${customer.name}`);
-          await toggleCheckIn(customer.id, false).catch(e => console.error("CheckIn Error:", e.message));
+          try {
+            const res = await toggleCheckIn(customer.id, false);
+            fs.appendFileSync('biometric.log', `toggleCheckIn success: ${JSON.stringify(res)}\n`);
+          } catch(e: any) {
+            fs.appendFileSync('biometric.log', `toggleCheckIn error: ${e.message}\n`);
+            console.error("CheckIn Error:", e.message);
+          }
           continue;
+        } else {
+           fs.appendFileSync('biometric.log', `FAILED to match customer for PIN: '${pin}'\n`);
         }
 
         // Find Staff
@@ -78,7 +124,10 @@ export async function POST(req: Request) {
           where: { 
             OR: [
               { nfcCardId: pin },
-              { fingerprintId: pin }
+              { nfcCardId: strippedPin },
+              { nfcCardId: padded10Pin },
+              { fingerprintId: pin },
+              { fingerprintId: strippedPin }
             ]
           }
         });

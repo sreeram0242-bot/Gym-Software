@@ -34,10 +34,108 @@ export default function StaffPage() {
   const [staffRole, setStaffRole] = useState('Trainer');
   const [punchMethod, setPunchMethod] = useState<'BOTH' | 'NFC' | 'FINGERPRINT' | 'MANUAL'>('BOTH');
   const [nfcCardId, setNfcCardId] = useState('');
+  const [nfcCardId2, setNfcCardId2] = useState('');
+  const [showSecondaryNfc, setShowSecondaryNfc] = useState(false);
   const [fingerprintId, setFingerprintId] = useState('');
+  const [fpPollStatus, setFpPollStatus] = useState<'IDLE'|'POLLING'|'SUCCESS'|'ERROR'>('IDLE');
+  const [fpCommandId, setFpCommandId] = useState<string|null>(null);
+  const [cardPollStatus, setCardPollStatus] = useState<'IDLE'|'POLLING'|'SUCCESS'|'ERROR'>('IDLE');
+  const [cardCommandId, setCardCommandId] = useState<string|null>(null);
+  const [fpScanning, setFpScanning] = useState(false);
   const [joinedDate, setJoinedDate] = useState(getLocalTodayDateString());
   const [modalError, setModalError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('global-toast', { detail: { message, type } }));
+    }
+  };
+
+  const duplicateMember = useMemo(() => {
+    if (!fingerprintId.trim()) return null;
+    return staffs.find(s => s.fingerprintId && String(s.fingerprintId).trim() === fingerprintId.trim() && s.id !== editingStaffId);
+  }, [fingerprintId, staffs, editingStaffId]);
+
+  const matchCard = (a?: string | null, b?: string | null) => {
+    if (!a || !b) return false;
+    const cleanA = a.trim().toLowerCase();
+    const cleanB = b.trim().toLowerCase();
+    if (cleanA === cleanB) return true;
+    const stripA = cleanA.replace(/^0+/, '');
+    const stripB = cleanB.replace(/^0+/, '');
+    return !!stripA && !!stripB && stripA === stripB;
+  };
+
+  const duplicateNfcMember = useMemo(() => {
+    if (!nfcCardId.trim()) return null;
+    return staffs.find(s => 
+      s.id !== editingStaffId && (
+        matchCard(s.nfcCardId, nfcCardId) || 
+        matchCard(s.nfcCardId2, nfcCardId)
+      )
+    );
+  }, [nfcCardId, staffs, editingStaffId]);
+
+  const duplicateNfc2Member = useMemo(() => {
+    if (!nfcCardId2.trim()) return null;
+    return staffs.find(s => 
+      s.id !== editingStaffId && (
+        matchCard(s.nfcCardId, nfcCardId2) || 
+        matchCard(s.nfcCardId2, nfcCardId2)
+      )
+    );
+  }, [nfcCardId2, staffs, editingStaffId]);
+
+  const nextSuggestedId = useMemo(() => {
+    const existingIds = staffs
+      .map(s => parseInt(s.fingerprintId, 10))
+      .filter(n => !isNaN(n) && n > 0);
+    if (existingIds.length === 0) return '101';
+    return String(Math.max(...existingIds) + 1);
+  }, [staffs]);
+
+  // Polling for biometric command success
+  useEffect(() => {
+    if (fpPollStatus !== 'POLLING' && cardPollStatus !== 'POLLING') return;
+    const interval = setInterval(async () => {
+      if (fpPollStatus === 'POLLING') {
+        try {
+          const res = await fetch(`/api/biometrics/command-status?id=${fpCommandId || ''}&pin=${fingerprintId || ''}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.status === 'SUCCESS') {
+              setFpPollStatus('SUCCESS');
+              setFpCommandId(null);
+              showToast('Fingerprint Enrolled & Saved!', 'success');
+            } else if (data.status === 'ERROR') {
+              setFpPollStatus('ERROR');
+              setFpCommandId(null);
+              showToast('Fingerprint Enrollment Failed', 'error');
+            }
+          }
+        } catch (e) {}
+      }
+      if (cardPollStatus === 'POLLING') {
+        try {
+          const res = await fetch(`/api/biometrics/command-status?id=${cardCommandId || ''}&pin=${fingerprintId || ''}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.status === 'SUCCESS') {
+              setCardPollStatus('SUCCESS');
+              setCardCommandId(null);
+              showToast('Card Synced to Device!', 'success');
+            } else if (data.status === 'ERROR') {
+              setCardPollStatus('ERROR');
+              setCardCommandId(null);
+              showToast('Card Sync Failed', 'error');
+            }
+          }
+        } catch (e) {}
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [fpPollStatus, cardPollStatus, fpCommandId, cardCommandId, fingerprintId]);
 
   // Individual Staff Logs Panel State
   const [showExportModal, setShowExportModal] = useState(false);
@@ -94,7 +192,11 @@ export default function StaffPage() {
     setStaffRole('Trainer');
     setPunchMethod(attendanceManualEnabled ? 'MANUAL' : attendanceMantraEnabled ? 'FINGERPRINT' : attendanceNfcEnabled ? 'NFC' : 'BOTH');
     setNfcCardId('');
+    setNfcCardId2('');
+    setShowSecondaryNfc(false);
     setFingerprintId('');
+    setFpPollStatus('IDLE');
+    setCardPollStatus('IDLE');
     setJoinedDate(getLocalTodayDateString());
     setModalError(null);
     setShowStaffModal(true);
@@ -113,7 +215,11 @@ export default function StaffPage() {
     else setPunchMethod('MANUAL');
 
     setNfcCardId(staff.nfcCardId || '');
+    setNfcCardId2(staff.nfcCardId2 || '');
+    setShowSecondaryNfc(!!staff.nfcCardId2);
     setFingerprintId(staff.fingerprintId || '');
+    setFpPollStatus(staff.fingerprintId ? 'SUCCESS' : 'IDLE');
+    setCardPollStatus('IDLE');
     setJoinedDate(staff.joinedDate || getLocalTodayDateString());
     setModalError(null);
     setShowStaffModal(true);
@@ -170,6 +276,7 @@ export default function StaffPage() {
         phone: cleanPhone,
         role: staffRole.trim() || 'Trainer',
         nfcCardId: cleanNfc || null,
+        nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
         fingerprintId: cleanFp || null,
         joinedDate: joinedDate || getLocalTodayDateString(),
         status: 'active'
@@ -1360,69 +1467,249 @@ export default function StaffPage() {
               </div>
 
               {/* Hardware Punch Method Setup */}
-              <div className="pt-3 border-t border-slate-100 space-y-3">
+              <div className="pt-3 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* CARD 1: NFC & NFC TICK */}
                 {attendanceNfcEnabled && (
-                  <div className="bg-blue-50/60 border border-blue-100 p-3 rounded-xl space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <label className="block font-bold text-blue-900 uppercase">NFC Card ID (Employee Badge)</label>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-2.5">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <Radio className="w-3.5 h-3.5 text-blue-600" /> NFC Card ID
+                        </label>
+                        {duplicateNfcMember ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-full">
+                            <AlertCircle className="w-3.5 h-3.5 text-rose-600" /> Already Taken
+                          </span>
+                        ) : cardPollStatus === 'SUCCESS' ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full">
+                            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Synced
+                          </span>
+                        ) : cardPollStatus === 'POLLING' ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-300 px-2 py-0.5 rounded-full animate-pulse">
+                            <Clock className="w-3 h-3 animate-spin text-blue-600" /> Sending...
+                          </span>
+                        ) : cardPollStatus === 'ERROR' ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-full">
+                            <AlertCircle className="w-3.5 h-3.5 text-rose-600" /> Sync Failed
+                          </span>
+                        ) : nfcCardId.trim() ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full">
+                            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Card Linked
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span> No Card
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="relative flex items-center">
+                        <input
+                          type="text"
+                          placeholder="Tap card or enter ID"
+                          value={nfcCardId}
+                          onChange={(e) => {
+                            setNfcCardId(e.target.value);
+                            if (cardPollStatus === 'ERROR' || cardPollStatus === 'SUCCESS') setCardPollStatus('IDLE');
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') e.preventDefault();
+                          }}
+                          className={`w-full pl-3 pr-8 py-2 border rounded-lg text-sm font-mono font-bold text-slate-800 outline-none ${duplicateNfcMember ? 'border-rose-400 focus:ring-2 focus:ring-rose-400 bg-rose-50/20' : 'bg-slate-50 border-slate-300 focus:ring-2 focus:ring-blue-800'}`}
+                        />
+                        {!showSecondaryNfc && (
+                          <button
+                            type="button"
+                            onClick={() => setShowSecondaryNfc(true)}
+                            className="absolute right-1.5 p-1 text-blue-900 hover:text-blue-950 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors flex items-center justify-center"
+                            title="Add 2nd NFC Tag"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      {duplicateNfcMember && (
+                        <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-rose-600 animate-in fade-in duration-150">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span>Card assigned to {duplicateNfcMember.name}!</span>
+                        </div>
+                      )}
+
+                      {showSecondaryNfc && (
+                        <div className="mt-2 pt-2 border-t border-slate-100 animate-in fade-in duration-150">
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-[10px] font-bold text-blue-950 uppercase">2nd NFC (Backup)</label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNfcCardId2('');
+                                setShowSecondaryNfc(false);
+                              }}
+                              className="text-[10px] text-rose-600 hover:text-rose-800 font-bold"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Tap 2nd card / keyfob"
+                            value={nfcCardId2}
+                            onChange={(e) => setNfcCardId2(e.target.value)}
+                            className={`w-full px-3 py-1.5 border rounded-lg text-xs font-mono font-bold text-slate-800 outline-none ${duplicateNfc2Member ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-400' : 'bg-blue-50/50 border-blue-200'}`}
+                          />
+                          {duplicateNfc2Member && (
+                            <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-rose-600 animate-in fade-in duration-150">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>Card assigned to {duplicateNfc2Member.name}!</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {attendanceWallMountEnabled && (
                       <button
                         type="button"
-                        onClick={() => setNfcCardId(`STAFF-NFC-${Math.floor(1000 + Math.random() * 9000)}`)}
-                        className="text-[10px] font-bold text-blue-600 hover:underline"
+                        onClick={async () => {
+                          if (!fingerprintId) {
+                            showToast('Please enter Staff ID first', 'error');
+                            return;
+                          }
+                          if (duplicateMember) {
+                            showToast(`Staff ID ${fingerprintId} is already assigned to ${duplicateMember.name}.`, 'error');
+                            return;
+                          }
+                          if (!nfcCardId.trim()) {
+                            showToast('Please enter an NFC Card number first', 'error');
+                            return;
+                          }
+                          if (duplicateNfcMember) {
+                            showToast(`Card ${nfcCardId} is already assigned to ${duplicateNfcMember.name}.`, 'error');
+                            return;
+                          }
+                          setCardPollStatus('POLLING');
+                          try {
+                            const res = await fetch('/api/biometrics/enroll', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ gymId, memberId: 'temp', nfcCardId: fingerprintId, actualCardNumber: nfcCardId.trim(), enrollType: 'card' })
+                            });
+                            if (res.ok) {
+                              const data = await res.json();
+                              if (data.directSync) {
+                                setCardPollStatus('SUCCESS');
+                                showToast('Card saved directly to device!', 'success');
+                              } else if (data.commandId) {
+                                setCardCommandId(data.commandId);
+                              }
+                            } else {
+                              setCardPollStatus('ERROR');
+                              showToast('Failed to send card to device', 'error');
+                            }
+                          } catch (e) {
+                            setCardPollStatus('ERROR');
+                            showToast('Failed to send card to device', 'error');
+                          }
+                        }}
+                        disabled={cardPollStatus === 'POLLING'}
+                        className="w-full py-2 px-3 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
                       >
-                        Generate Random Tag ID
+                        <Radio className="w-3.5 h-3.5 text-emerald-600" />
+                        {cardPollStatus === 'POLLING' ? 'Syncing...' : 'Send Card to Device'}
                       </button>
-                    </div>
-                    <div className="relative">
-                      <Radio className="absolute left-3 top-2.5 w-3.5 h-3.5 text-blue-600" />
-                      <input 
-                        type="text" 
-                        value={nfcCardId}
-                        onChange={e => setNfcCardId(e.target.value)}
-                        placeholder="Scan card on USB reader or type badge ID..." 
-                        className="w-full pl-9 pr-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none text-xs font-mono font-bold bg-white" 
-                      />
-                    </div>
+                    )}
                   </div>
                 )}
 
-                {attendanceMantraEnabled && (
-                  <div className="bg-purple-50/60 border border-purple-100 p-3 rounded-xl space-y-1.5">
-                    <label className="block font-bold text-purple-900 uppercase">Mantra MFS100 Registration</label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        readOnly
-                        value={fingerprintId ? "Registered" : ""}
-                        placeholder="No Fingerprint" 
-                        className="w-full px-3 py-2 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none text-xs font-mono font-bold bg-white cursor-not-allowed" 
-                      />
-                      <button
-                        type="button"
-                        onClick={() => alert('Connect the GymFlow Bridge Agent and scan on the MFS100 device.')}
-                        className="px-3 py-2 rounded-lg text-xs font-bold bg-purple-100 text-purple-900 hover:bg-purple-200 shrink-0"
-                      >
-                        Scan Finger
-                      </button>
-                    </div>
-                  </div>
-                )}
-
+                {/* CARD 2: FINGERPRINT & FP TICK */}
                 {attendanceWallMountEnabled && (
-                  <div className="bg-emerald-50/60 border border-emerald-100 p-3 rounded-xl space-y-1.5">
-                    <label className="block font-bold text-emerald-900 uppercase">ZKTeco / Biomax Device ID</label>
-                    <div className="space-y-2">
-                      <div className="relative">
+                  <div className="bg-white p-3 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-2.5">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <Fingerprint className="w-3.5 h-3.5 text-indigo-600" /> Fingerprint
+                        </label>
+                        {fpPollStatus === 'SUCCESS' ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full">
+                            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> FP Saved
+                          </span>
+                        ) : fpPollStatus === 'POLLING' ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-300 px-2 py-0.5 rounded-full animate-pulse">
+                            <Clock className="w-3 h-3 animate-spin text-blue-600" /> Place finger 3x...
+                          </span>
+                        ) : fpPollStatus === 'ERROR' ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-full">
+                            <AlertCircle className="w-3 h-3 text-rose-600" /> Failed
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span> Not Enrolled
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="relative mb-2">
                         <Shield className="absolute left-3 top-2.5 w-3.5 h-3.5 text-emerald-600" />
                         <input 
                           type="text" 
                           value={fingerprintId}
                           onChange={e => setFingerprintId(e.target.value)}
-                          placeholder="Enter ID (e.g. 101)" 
+                          placeholder={`Enter ID (e.g. ${nextSuggestedId})`}
                           className="w-full pl-9 pr-3 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-600 outline-none text-xs font-mono font-bold bg-white" 
                         />
                       </div>
+                      <p className="text-[11px] text-slate-500 leading-normal">
+                        {fpPollStatus === 'POLLING' 
+                          ? 'Device is waiting! Touch staff finger 3 times on the scanner.'
+                          : fpPollStatus === 'SUCCESS'
+                          ? 'Fingerprint enrolled & registered on the machine.'
+                          : 'Click below to start 3-tap fingerprint enrollment.'}
+                      </p>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!fingerprintId) {
+                          showToast('Please enter Staff ID first (e.g. 101)', 'error');
+                          return;
+                        }
+                        if (duplicateMember) {
+                          showToast(`Staff ID ${fingerprintId} is already assigned to ${duplicateMember.name}.`, 'error');
+                          return;
+                        }
+                        setFpPollStatus('POLLING');
+                        try {
+                          const res = await fetch('/api/biometrics/enroll', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ gymId, memberId: 'temp', nfcCardId: fingerprintId, enrollType: 'fp' })
+                          });
+                          if (res.ok) {
+                            const data = await res.json();
+                            if (data.commandId) setFpCommandId(data.commandId);
+                          }
+                        } catch (e) {
+                          setFpPollStatus('ERROR');
+                          showToast('Failed to send enroll command', 'error');
+                        }
+                      }}
+                      disabled={fpPollStatus === 'POLLING'}
+                      className={`w-full py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 ${
+                        fpPollStatus === 'SUCCESS'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
+                          : fpPollStatus === 'POLLING'
+                          ? 'bg-blue-50 text-blue-900 border border-blue-300 animate-pulse'
+                          : 'bg-indigo-50 text-indigo-900 hover:bg-indigo-100 border border-indigo-300'
+                      }`}
+                    >
+                      <Fingerprint className="w-3.5 h-3.5 text-indigo-600" />
+                      {fpPollStatus === 'POLLING' 
+                        ? 'Waiting for Finger (3x)...' 
+                        : fpPollStatus === 'SUCCESS' 
+                        ? 'Re-enroll Fingerprint' 
+                        : 'Enroll Fingerprint on Device'}
+                    </button>
                   </div>
                 )}
               </div>

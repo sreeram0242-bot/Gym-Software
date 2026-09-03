@@ -6,6 +6,7 @@ import { getTemplate, compileTemplate } from './templates';
 import { WhatsAppManager } from './whatsapp';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
+import { deleteUserFromZkDevice } from './zk-device';
 
 // Global in-memory fallback store for offline development and testing
 const globalAny: any = global;
@@ -429,6 +430,55 @@ export async function addCustomer(data: any) {
 
   const memberId = data.memberId || ('M-' + Math.floor(1000 + Math.random() * 9000).toString());
 
+  if (data.fingerprintId) {
+    const existing = await prisma.customer.findFirst({
+      where: { fingerprintId: data.fingerprintId, gymId: data.gymId }
+    });
+    if (existing) {
+      throw new Error(`Member ID ${data.fingerprintId} is already in use by ${existing.name}`);
+    }
+  }
+
+  if (data.nfcCardId && data.nfcCardId.trim()) {
+    const card = data.nfcCardId.trim();
+    const stripped = card.replace(/^0+/, '');
+    const padded10 = stripped ? stripped.padStart(10, '0') : card;
+    const cardMatch = Array.from(new Set([card, stripped, padded10])).filter(Boolean);
+
+    const existingCardCust = await prisma.customer.findFirst({
+      where: {
+        gymId: data.gymId,
+        OR: [
+          { nfcCardId: { in: cardMatch } },
+          { nfcCardId2: { in: cardMatch } }
+        ]
+      }
+    });
+    if (existingCardCust) {
+      throw new Error(`NFC Card ${card} is already assigned to ${existingCardCust.name}`);
+    }
+  }
+
+  if (data.nfcCardId2 && data.nfcCardId2.trim()) {
+    const card2 = data.nfcCardId2.trim();
+    const stripped2 = card2.replace(/^0+/, '');
+    const padded10_2 = stripped2 ? stripped2.padStart(10, '0') : card2;
+    const cardMatch2 = Array.from(new Set([card2, stripped2, padded10_2])).filter(Boolean);
+
+    const existingCardCust2 = await prisma.customer.findFirst({
+      where: {
+        gymId: data.gymId,
+        OR: [
+          { nfcCardId: { in: cardMatch2 } },
+          { nfcCardId2: { in: cardMatch2 } }
+        ]
+      }
+    });
+    if (existingCardCust2) {
+      throw new Error(`Secondary NFC Card ${card2} is already assigned to ${existingCardCust2.name}`);
+    }
+  }
+
   try {
     const newCust = await prisma.customer.create({
       data: {
@@ -525,11 +575,18 @@ export async function findCustomerByPhone(phone: string, gymId?: string) {
 
 export async function findCustomerByNFC(gymId: string, nfcId: string) {
   const cleanId = nfcId.trim().toLowerCase();
+  const strippedId = cleanId.replace(/^0+/, '');
   const customers = await getCustomers(gymId);
-  return customers.find((c: any) => 
-    (c.nfcCardId && c.nfcCardId.toLowerCase() === cleanId) ||
-    (c.nfcCardId2 && c.nfcCardId2.toLowerCase() === cleanId)
-  );
+  return customers.find((c: any) => {
+    const c1 = (c.nfcCardId || '').toLowerCase();
+    const c2 = (c.nfcCardId2 || '').toLowerCase();
+    return (
+      c1 === cleanId ||
+      (strippedId && c1.replace(/^0+/, '') === strippedId) ||
+      c2 === cleanId ||
+      (strippedId && c2.replace(/^0+/, '') === strippedId)
+    );
+  });
 }
 
 export async function findCustomerByFingerprint(gymId: string, fingerprintId: string) {
@@ -539,8 +596,12 @@ export async function findCustomerByFingerprint(gymId: string, fingerprintId: st
 
 export async function findStaffByNFC(gymId: string, nfcId: string) {
   const cleanId = nfcId.trim().toLowerCase();
+  const strippedId = cleanId.replace(/^0+/, '');
   const staffs = await getStaffs(gymId);
-  return staffs.find((s: any) => s.nfcCardId && s.nfcCardId.toLowerCase() === cleanId);
+  return staffs.find((s: any) => {
+    const s1 = (s.nfcCardId || '').toLowerCase();
+    return s1 === cleanId || (strippedId && s1.replace(/^0+/, '') === strippedId);
+  });
 }
 
 export async function findStaffByFingerprint(gymId: string, fingerprintId: string) {
@@ -551,6 +612,58 @@ export async function findStaffByFingerprint(gymId: string, fingerprintId: strin
 export async function updateCustomer(id: string, data: any) {
   const callerGymId = cookies().get('active_gym_id')?.value;
   if (!callerGymId) throw new Error("Unauthorized");
+
+  if (data.fingerprintId) {
+    const existing = await prisma.customer.findFirst({
+      where: { fingerprintId: data.fingerprintId, gymId: callerGymId, id: { not: id } }
+    });
+    if (existing) {
+      throw new Error(`Member ID ${data.fingerprintId} is already in use by ${existing.name}`);
+    }
+  }
+
+  if (data.nfcCardId && data.nfcCardId.trim()) {
+    const card = data.nfcCardId.trim();
+    const stripped = card.replace(/^0+/, '');
+    const padded10 = stripped ? stripped.padStart(10, '0') : card;
+    const cardMatch = Array.from(new Set([card, stripped, padded10])).filter(Boolean);
+
+    const existingCardCust = await prisma.customer.findFirst({
+      where: {
+        gymId: callerGymId,
+        id: { not: id },
+        OR: [
+          { nfcCardId: { in: cardMatch } },
+          { nfcCardId2: { in: cardMatch } }
+        ]
+      }
+    });
+    if (existingCardCust) {
+      throw new Error(`NFC Card ${card} is already assigned to ${existingCardCust.name}`);
+    }
+  }
+
+  if (data.nfcCardId2 && data.nfcCardId2.trim()) {
+    const card2 = data.nfcCardId2.trim();
+    const stripped2 = card2.replace(/^0+/, '');
+    const padded10_2 = stripped2 ? stripped2.padStart(10, '0') : card2;
+    const cardMatch2 = Array.from(new Set([card2, stripped2, padded10_2])).filter(Boolean);
+
+    const existingCardCust2 = await prisma.customer.findFirst({
+      where: {
+        gymId: callerGymId,
+        id: { not: id },
+        OR: [
+          { nfcCardId: { in: cardMatch2 } },
+          { nfcCardId2: { in: cardMatch2 } }
+        ]
+      }
+    });
+    if (existingCardCust2) {
+      throw new Error(`Secondary NFC Card ${card2} is already assigned to ${existingCardCust2.name}`);
+    }
+  }
+
   try {
     return await prisma.customer.updateMany({
       where: { id, gymId: callerGymId },
@@ -581,6 +694,36 @@ export async function deleteCustomer(id: string) {
   const callerGymId = cookies().get('active_gym_id')?.value;
   if (!callerGymId) throw new Error("Unauthorized");
   try {
+    const cust = await prisma.customer.findUnique({
+      where: { id },
+      select: { fingerprintId: true, nfcCardId: true, gymId: true }
+    });
+
+    if (cust?.fingerprintId) {
+      // 1. Delete user & biometrics from physical ZKTeco device via TCP port 4370
+      try {
+        await deleteUserFromZkDevice(cust.fingerprintId);
+      } catch (e) {
+        console.error('Device direct delete error:', e);
+      }
+
+      // 2. Also enqueue ADMS delete command as secondary backup
+      try {
+        const device = await prisma.biometricDevice.findFirst({
+          where: { gymId: callerGymId, status: 'online' }
+        });
+        if (device) {
+          await prisma.biometricCommand.create({
+            data: {
+              deviceId: device.id,
+              commandString: `DATA DELETE USER PIN=${cust.fingerprintId}`,
+              status: 'PENDING'
+            }
+          });
+        }
+      } catch (e) {}
+    }
+
     await prisma.customer.deleteMany({ where: { id, gymId: callerGymId } });
     return true;
   } catch {
@@ -967,6 +1110,8 @@ export async function addTransaction(tx: any) {
 export async function updateTransaction(id: string, data: any) {
   const callerGymId = cookies().get('active_gym_id')?.value;
   if (!callerGymId) throw new Error("Unauthorized");
+  if (data.gymId && data.gymId !== callerGymId) throw new Error("Unauthorized tenant access");
+
   try {
     const updateData: any = {};
     if (data.amount !== undefined) updateData.amount = Number(data.amount);

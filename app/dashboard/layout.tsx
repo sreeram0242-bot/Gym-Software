@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle, Megaphone, Lock, CheckCircle, Store, Briefcase } from 'lucide-react';
+import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle, Megaphone, Lock, CheckCircle, Store, Briefcase, UserCheck } from 'lucide-react';
 import { getGyms, findCustomerByNFC, findStaffByNFC, toggleCheckIn, toggleStaffCheckIn, getMemberMonthlyAvgHours, getCustomers, getGymSettings, getActiveAnnouncement } from '@/lib/actions';
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
@@ -15,20 +15,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [gyms, setGyms] = useState<any[]>([]);
   const [currentGym, setCurrentGym] = useState<any | null>(null);
 
-  // Global Notification for Member Scans (Top Right)
-  const [globalNotification, setGlobalNotification] = useState<{
-    customerName: string;
+  // Global Live Check-in / Check-out Notification (Top Right)
+  const [livePunchNotice, setLivePunchNotice] = useState<{
+    id: string;
+    type: 'member' | 'staff';
+    name: string;
+    role: string;
     action: 'checkin' | 'checkout';
-    record: any;
-    avgHours: number;
-  } | null>(null);
-
-  // Global Notification for Staff Punches (Bottom Right)
-  const [globalStaffNotification, setGlobalStaffNotification] = useState<{
-    staffName: string;
-    staffRole: string;
-    action: 'checkin' | 'checkout';
-    record: any;
+    time: string;
     durationMinutes?: number | null;
   } | null>(null);
 
@@ -80,7 +74,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (anim === 'false') setAnimationsEnabled(false);
       }
 
-      // WhatsApp Status Check
       const checkWaStatus = async (id: string) => {
         try {
           const res = await fetch(`/api/whatsapp/status?gymId=${id}`);
@@ -92,6 +85,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       };
       checkWaStatus(matched.id);
       const waInterval = setInterval(() => checkWaStatus(matched.id), 60000);
+
+      // Global Polling for Recent Punches (for ADMS hardware and cross-tab sync)
+      let lastPunchId = '';
+      const checkRecentPunch = async (id: string) => {
+        try {
+          const res = await fetch(`/api/attendance/recent-punch?gymId=${id}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.hasPunch && data.punch && data.punch.id !== lastPunchId) {
+              lastPunchId = data.punch.id;
+              setLivePunchNotice(data.punch);
+              if (notificationTimeout) clearTimeout(notificationTimeout);
+              notificationTimeout = setTimeout(() => {
+                setLivePunchNotice(null);
+              }, 5000);
+            }
+          }
+        } catch (e) {}
+      };
+      const punchInterval = setInterval(() => checkRecentPunch(matched.id), 3000);
 
       // Automated Daily Reminders (Due, Overdue, Absentee)
       const runDailyReminders = async (id: string) => {
@@ -135,16 +148,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             const { record, action } = await toggleCheckIn(matchedCust.id);
             const avgHours = 1.2; // default
             
-            setGlobalNotification({
-              customerName: matchedCust.name,
+            setLivePunchNotice({
+              id: String(Date.now()),
+              type: 'member',
+              name: matchedCust.name,
+              role: 'Member',
               action: action as 'checkin' | 'checkout',
-              record,
-              avgHours
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              durationMinutes: record?.durationMinutes
             });
 
             if (notificationTimeout) clearTimeout(notificationTimeout);
             notificationTimeout = setTimeout(() => {
-              setGlobalNotification(null);
+              setLivePunchNotice(null);
             }, 5000);
 
             // Fetch settings to check if Attendance WA messages are enabled
@@ -191,17 +207,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               const staffRes = await toggleStaffCheckIn(matchedStaff.id);
               const isPunchIn = staffRes?.action === 'checkin';
               
-              setGlobalStaffNotification({
-                staffName: matchedStaff.name,
-                staffRole: matchedStaff.role || 'Staff',
+              setLivePunchNotice({
+                id: String(Date.now()),
+                type: 'staff',
+                name: matchedStaff.name,
+                role: matchedStaff.role || 'Staff',
                 action: isPunchIn ? 'checkin' : 'checkout',
-                record: staffRes?.record,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 durationMinutes: staffRes?.record?.durationMinutes
               });
 
               if (notificationTimeout) clearTimeout(notificationTimeout);
               notificationTimeout = setTimeout(() => {
-                setGlobalStaffNotification(null);
+                setLivePunchNotice(null);
               }, 5000);
             } else {
               // New unregistered NFC Card scanned!
@@ -230,27 +248,50 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       const handleStaffPunchEvent = (e: any) => {
         if (e.detail) {
-          setGlobalStaffNotification({
-            staffName: e.detail.staffName,
-            staffRole: e.detail.staffRole || 'Staff',
+          setLivePunchNotice({
+            id: String(Date.now()),
+            type: 'staff',
+            name: e.detail.staffName,
+            role: e.detail.staffRole || 'Staff',
             action: e.detail.action || 'checkin',
-            record: e.detail.record,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             durationMinutes: e.detail.durationMinutes
           });
           if (notificationTimeout) clearTimeout(notificationTimeout);
           notificationTimeout = setTimeout(() => {
-            setGlobalStaffNotification(null);
+            setLivePunchNotice(null);
           }, 5000);
         }
       };
       window.addEventListener('staff_punch_event', handleStaffPunchEvent);
 
+      const handleMemberPunchEvent = (e: any) => {
+        if (e.detail) {
+          setLivePunchNotice({
+            id: String(Date.now()),
+            type: 'member',
+            name: e.detail.customerName,
+            role: 'Member',
+            action: e.detail.action || 'checkin',
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            durationMinutes: e.detail.record?.durationMinutes
+          });
+          if (notificationTimeout) clearTimeout(notificationTimeout);
+          notificationTimeout = setTimeout(() => {
+            setLivePunchNotice(null);
+          }, 5000);
+        }
+      };
+      window.addEventListener('member_punch_event', handleMemberPunchEvent);
+
       return () => {
         window.removeEventListener('keydown', handleKeyDown as unknown as EventListener);
         window.removeEventListener('global-toast', handleGlobalToast);
         window.removeEventListener('staff_punch_event', handleStaffPunchEvent);
+        window.removeEventListener('member_punch_event', handleMemberPunchEvent);
         if (notificationTimeout) clearTimeout(notificationTimeout);
         clearInterval(waInterval);
+        clearInterval(punchInterval);
       };
     };
 
@@ -520,80 +561,66 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </div>
 
-      {/* MEMBER CHECK-IN NOTIFICATION POPUP (TOP RIGHT CORNER) */}
-      {globalNotification && (
-        <div className="fixed top-20 right-4 sm:right-8 z-[100] max-w-sm w-full animate-in slide-in-from-right-8 fade-in duration-300">
-          <div
-            className={`p-4 rounded-2xl border shadow-2xl flex items-center justify-between relative ${
-              globalNotification.action === 'checkin'
-                ? 'bg-blue-900 text-white border-blue-950'
-                : 'bg-slate-700 text-white border-slate-800'
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center font-bold text-xl">
-                {globalNotification.customerName.charAt(0)}
+      {/* LIVE CHECK-IN / CHECKOUT POPUP (TOP RIGHT CORNER, SLIGHTLY DOWN) */}
+      {livePunchNotice && (
+        <div className="fixed top-16 right-5 z-[9999] animate-in slide-in-from-right-8 fade-in duration-300">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/90 p-3.5 min-w-[280px] max-w-sm flex items-center justify-between gap-3 ring-1 ring-slate-900/5">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Avatar / Icon */}
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-sm shadow-xs ${
+                livePunchNotice.type === 'staff' 
+                  ? 'bg-purple-100 text-purple-700 border border-purple-200' 
+                  : 'bg-blue-100 text-blue-900 border border-blue-200'
+              }`}>
+                {livePunchNotice.name.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <div className="text-[10px] uppercase font-bold tracking-wider opacity-80 flex items-center gap-1">
-                  <span>{globalNotification.action === 'checkin' ? '✓ MEMBER CHECKED IN' : '✓ MEMBER CHECKED OUT'}</span>
+
+              {/* Name and Details */}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                    livePunchNotice.type === 'staff'
+                      ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                      : 'bg-blue-50 text-blue-800 border border-blue-200'
+                  }`}>
+                    {livePunchNotice.type === 'staff' ? `Staff • ${livePunchNotice.role}` : 'Member'}
+                  </span>
+                  <span className="text-[10px] font-medium text-slate-400">
+                    {livePunchNotice.time}
+                  </span>
                 </div>
-                <h3 className="font-extrabold text-base leading-tight">{globalNotification.customerName}</h3>
-                <p className="text-xs opacity-90 mt-0.5">
-                  Avg Monthly: <span className="font-bold underline">{globalNotification.avgHours} hrs/day</span>
-                </p>
+                <div className="text-sm font-black text-slate-900 truncate leading-tight">
+                  {livePunchNotice.name}
+                </div>
+                {livePunchNotice.action === 'checkout' && livePunchNotice.durationMinutes && (
+                  <div className="text-[10px] font-medium text-slate-500 mt-0.5">
+                    Session: {Math.floor(livePunchNotice.durationMinutes / 60)}h {livePunchNotice.durationMinutes % 60}m
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="text-right font-mono text-[10px] bg-white/10 px-2 py-1.5 rounded-lg backdrop-blur-md self-start ml-2">
-              <div>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-              {globalNotification.record?.durationMinutes && (
-                <div className="mt-1">Session: {globalNotification.record.durationMinutes}m</div>
+            {/* IN or OUT Action Badge (IN in blue, OUT colorless) */}
+            <div className="flex items-center gap-2 shrink-0">
+              {livePunchNotice.action === 'checkin' ? (
+                <span className="bg-blue-600 text-white font-black text-xs px-3 py-1.5 rounded-lg shadow-xs tracking-wider flex items-center gap-1">
+                  IN
+                </span>
+              ) : (
+                <span className="bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs px-3 py-1.5 rounded-lg tracking-wider flex items-center gap-1">
+                  OUT
+                </span>
               )}
+              
+              <button 
+                type="button"
+                onClick={() => setLivePunchNotice(null)} 
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors"
+                title="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
-            
-            <button onClick={() => setGlobalNotification(null)} className="absolute -top-2 -right-2 bg-white text-slate-900 rounded-full p-1 shadow-md hover:bg-slate-100">
-               <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* STAFF CHECK-IN / SHIFT NOTIFICATION POPUP (BOTTOM RIGHT CORNER) */}
-      {globalStaffNotification && (
-        <div className="fixed bottom-6 right-4 sm:right-8 z-[100] max-w-sm w-full animate-in slide-in-from-bottom-8 fade-in duration-300">
-          <div
-            className={`p-4 rounded-2xl border shadow-2xl flex items-center justify-between relative ${
-              globalStaffNotification.action === 'checkin'
-                ? 'bg-purple-900 text-white border-purple-950'
-                : 'bg-rose-900 text-white border-rose-950'
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center font-bold text-xl">
-                {globalStaffNotification.staffName.charAt(0)}
-              </div>
-              <div>
-                <div className="text-[10px] uppercase font-bold tracking-wider opacity-80 flex items-center gap-1">
-                  <span>{globalStaffNotification.action === 'checkin' ? '✓ STAFF PUNCH IN (SHIFT STARTED)' : '✓ STAFF PUNCH OUT (SHIFT ENDED)'}</span>
-                </div>
-                <h3 className="font-extrabold text-base leading-tight">{globalStaffNotification.staffName}</h3>
-                <p className="text-xs opacity-90 mt-0.5 font-semibold">
-                  Role: <span className="font-bold underline">{globalStaffNotification.staffRole}</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="text-right font-mono text-[10px] bg-white/10 px-2 py-1.5 rounded-lg backdrop-blur-md self-start ml-2">
-              <div>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-              {globalStaffNotification.durationMinutes ? (
-                <div className="mt-1 font-bold">Shift: {Math.floor(globalStaffNotification.durationMinutes / 60)}h {globalStaffNotification.durationMinutes % 60}m</div>
-              ) : null}
-            </div>
-            
-            <button onClick={() => setGlobalStaffNotification(null)} className="absolute -top-2 -right-2 bg-white text-slate-900 rounded-full p-1 shadow-md hover:bg-slate-100">
-               <X className="w-4 h-4" />
-            </button>
           </div>
         </div>
       )}

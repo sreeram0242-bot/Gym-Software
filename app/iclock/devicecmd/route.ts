@@ -10,6 +10,9 @@ export async function POST(req: Request) {
     // Example format: "ID=1234abcd&Return=0&CMD=ENROLL_FP"
     const rawData = await req.text();
     
+    const fs = require('fs');
+    fs.appendFileSync('biometric.log', `\n--- ADMS COMMAND RESPONSE ---\n${rawData}\n`);
+
     console.log(`\n========================================`);
     console.log(`🎯 [ADMS COMMAND RESPONSE from ${serialNumber}]`);
     console.log(`Payload: ${rawData}`);
@@ -18,6 +21,10 @@ export async function POST(req: Request) {
     if (!serialNumber) {
       return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
     }
+
+    const device = await prisma.biometricDevice.findUnique({
+      where: { serialNumber }
+    });
 
     // Parse the raw body lines
     // It can contain multiple command returns separated by newlines
@@ -37,14 +44,23 @@ export async function POST(req: Request) {
       }
 
       if (commandId) {
-        // Find the command in DB by its short ID
-        const command = await prisma.biometricCommand.findFirst({
+        let command = await prisma.biometricCommand.findFirst({
           where: {
             id: {
               startsWith: commandId
             }
           }
         });
+
+        if (!command && device) {
+          command = await prisma.biometricCommand.findFirst({
+            where: {
+              deviceId: device.id,
+              status: 'SENT'
+            },
+            orderBy: { sentAt: 'desc' }
+          });
+        }
 
         if (command) {
           // Return=0 usually means SUCCESS in ZKTeco protocol

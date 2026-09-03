@@ -47,6 +47,34 @@ export default function CheckInTerminal() {
   const deferredSearchQuery = useDeferredValue(manualSearch);
   const [punchLoading, setPunchLoading] = useState<string | null>(null);
 
+  const prevAttRef = useRef<any[]>([]);
+
+  useEffect(() => {
+    if (prevAttRef.current.length > 0 && attendance.length > 0) {
+      const prevIds = new Set(prevAttRef.current.map(a => a.id));
+      const newCheckins = attendance.filter(a => !prevIds.has(a.id));
+      
+      if (newCheckins.length > 0) {
+         if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('member_punch_event', {
+              detail: { customerName: newCheckins[0].customerName || newCheckins[0].staffName, action: 'checkin' }
+            }));
+         }
+      } else {
+         const prevActive = new Map(prevAttRef.current.filter(a => !a.checkOutTime).map(a => [a.id, a]));
+         const checkedOut = attendance.filter(a => a.checkOutTime && prevActive.has(a.id));
+         if (checkedOut.length > 0) {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('member_punch_event', {
+                detail: { customerName: checkedOut[0].customerName || checkedOut[0].staffName, action: 'checkout' }
+              }));
+            }
+         }
+      }
+    }
+    prevAttRef.current = attendance;
+  }, [attendance]);
+
   useEffect(() => {
     loadData();
 
