@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { toggleCheckIn, toggleStaffCheckIn } from '@/lib/actions';
+
+export async function GET(req: Request) {
+  // ADMS initialization handshake
+  return new NextResponse('OK', { 
+    status: 200, 
+    headers: { 'Content-Type': 'text/plain' } 
+  });
+}
 
 export async function POST(req: Request) {
   try {
@@ -39,6 +48,46 @@ export async function POST(req: Request) {
     console.log(`RAW DATA PAYLOAD:`);
     console.log(rawData);
     console.log(`========================================\n`);
+
+    // PARSE PUNCHES (ADMS Format: PIN \t Time \t State \t VerifyMode)
+    const lines = rawData.split('\n');
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      
+      const parts = line.split(/\s+/);
+      if (parts.length >= 2) {
+        const pin = parts[0]; // fingerprintId
+        
+        // Find Customer
+        const customer = await prisma.customer.findFirst({
+          where: { 
+            OR: [
+              { nfcCardId: pin },
+              { fingerprintId: pin }
+            ]
+          }
+        });
+        if (customer) {
+          console.log(`[BIOMETRIC] Customer punch matched: ${customer.name}`);
+          await toggleCheckIn(customer.id, false).catch(e => console.error("CheckIn Error:", e.message));
+          continue;
+        }
+
+        // Find Staff
+        const staff = await prisma.staff.findFirst({
+          where: { 
+            OR: [
+              { nfcCardId: pin },
+              { fingerprintId: pin }
+            ]
+          }
+        });
+        if (staff) {
+          console.log(`[BIOMETRIC] Staff punch matched: ${staff.name}`);
+          await toggleStaffCheckIn(staff.id, false).catch(e => console.error("Staff CheckIn Error:", e.message));
+        }
+      }
+    }
 
     // IMPORTANT: We MUST return "OK" in plain text. 
     // If the eSSL machine doesn't see "OK", it thinks the internet is down 
