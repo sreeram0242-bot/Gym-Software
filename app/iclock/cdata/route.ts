@@ -62,7 +62,10 @@ export async function POST(req: Request) {
     for (let line of lines) {
       line = line.trim();
       if (!line) continue;
-      if (line.startsWith('FP PIN=') || line.startsWith('USER PIN=')) {
+      // Newer ZKTeco firmwares send Fingerprint 10.0 data as "BIODATA PIN=" 
+      // instead of "FP PIN=". Some send "USER PIN=". 
+      // We will look for any line containing "PIN=" followed by digits.
+      if (line.includes('PIN=')) {
         const match = line.match(/PIN=(\d+)/);
         if (match) {
           const enrolledPin = match[1];
