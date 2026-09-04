@@ -1396,7 +1396,14 @@ export default function MemberManagementPage() {
                     </button>
                   </div>
                 )}
-                <button onClick={() => {
+                <button type="button" onClick={() => {
+                  if (!isEditingMember && fpPollStatus === 'SUCCESS' && fingerprintId) {
+                    fetch('/api/biometrics/delete', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ gymId, pin: fingerprintId })
+                    }).catch(console.error);
+                  }
                   setShowAddModal(false);
                   setIsEditingMember(false);
                   setEditingMemberId(null);
@@ -1984,7 +1991,18 @@ export default function MemberManagementPage() {
               <div className="pt-3 flex justify-end space-x-3 border-t border-slate-100 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    if (!isEditingMember && fpPollStatus === 'SUCCESS' && fingerprintId) {
+                      fetch('/api/biometrics/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ gymId, pin: fingerprintId })
+                      }).catch(console.error);
+                    }
+                    setShowAddModal(false);
+                    setIsEditingMember(false);
+                    setEditingMemberId(null);
+                  }}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
                 >
                   Cancel
