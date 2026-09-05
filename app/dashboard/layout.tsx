@@ -31,6 +31,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [globalToast, setGlobalToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
   const [productsEnabled, setProductsEnabled] = useState<boolean>(false);
   const [animationsEnabled, setAnimationsEnabled] = useState<boolean>(true);
+  // Controls the global USB NFC keyboard listener — disabled for gyms using Mantra/ZKTeco only
+  const [nfcListenerEnabled, setNfcListenerEnabled] = useState<boolean>(true);
   
   // Track if we are in Master Admin impersonation mode
   const isMasterAdmin = typeof window !== 'undefined' ? localStorage.getItem('is_master_admin') === 'true' : false;
@@ -60,7 +62,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const { getGymSettings: fetchSettings } = await import('@/lib/actions');
         const gymSettings = await fetchSettings(matched.id);
         setProductsEnabled(gymSettings?.productsEnabled ?? false);
+        // Capture NFC enabled flag as a local variable — we cannot use React state here
+        // because setState is async and the closure would always read the stale initial value (true).
+        const isNfcEnabled = gymSettings?.attendanceNfcEnabled ?? true;
+        setNfcListenerEnabled(isNfcEnabled);
         if (typeof window !== 'undefined') {
+          localStorage.setItem('nfc_listener_enabled', String(isNfcEnabled));
           localStorage.setItem('products_enabled', String(gymSettings?.productsEnabled ?? false));
         }
       } catch (e) {
@@ -152,6 +159,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       runDailyReminders(matched.id);
 
       // Global NFC scanner keyboard listener
+      // Only active when the gym has USB NFC card attendance enabled.
+      // We read from localStorage (set above) because React state is stale in this closure.
+      const nfcEnabled = typeof window !== 'undefined'
+        ? localStorage.getItem('nfc_listener_enabled') !== 'false'
+        : true;
+      if (!nfcEnabled) return;
       let buffer = '';
       let lastKeyTime = Date.now();
       let notificationTimeout: NodeJS.Timeout;

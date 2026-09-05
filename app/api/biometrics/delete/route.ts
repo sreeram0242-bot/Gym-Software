@@ -12,15 +12,26 @@ export async function POST(req: Request) {
       return new NextResponse('Missing required fields', { status: 400 });
     }
 
-    // 1. Try direct TCP delete first (fastest & most reliable for ZKTeco devices)
+    console.log(`[Biometrics Delete] Attempting to delete PIN ${pin} for gym ${gymId}`);
+
+    // 1. Look up the gym's actual device IP from GymSettings
+    const gymSettings = await prisma.gymSettings.findFirst({ where: { gymId } });
+    const deviceIp = gymSettings?.deviceIpAddress || process.env.ZK_DEVICE_IP || '192.168.137.188';
+
+    // 2. Direct TCP delete — uses the correct per-gym device IP
     try {
-      await deleteUserFromZkDevice(String(pin));
+      const result = await deleteUserFromZkDevice(String(pin), deviceIp);
+      if (result.success) {
+        console.log(`[Biometrics Delete] TCP delete succeeded for PIN ${pin} on ${deviceIp}`);
+      } else {
+        console.warn(`[Biometrics Delete] TCP delete returned failure for PIN ${pin}:`, result.error);
+      }
     } catch (e) {
-      console.error('[Biometrics Delete] Direct TCP delete failed, falling back to ADMS queue:', e);
+      console.error('[Biometrics Delete] Direct TCP delete threw exception, falling back to ADMS queue:', e);
     }
 
-    // 2. Also queue ADMS delete command as a secondary/backup mechanism
-    // (works even if the device was offline when step 1 ran)
+    // 3. Also queue ADMS delete command as a secondary/backup mechanism
+    // (executes on the next device heartbeat even if TCP failed or device was temporarily offline)
     const device = await prisma.biometricDevice.findFirst({
       where: { gymId },
       orderBy: { lastActive: 'desc' }
@@ -34,6 +45,9 @@ export async function POST(req: Request) {
           status: 'PENDING'
         }
       });
+      console.log(`[Biometrics Delete] Queued ADMS delete command for PIN ${pin} on device ${device.id}`);
+    } else {
+      console.warn(`[Biometrics Delete] No active device found for gym ${gymId} — ADMS fallback skipped`);
     }
 
     return NextResponse.json({ success: true });
@@ -42,4 +56,3 @@ export async function POST(req: Request) {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
-

@@ -212,10 +212,14 @@ export default function MemberManagementPage() {
    * from the physical device so it doesn't block future enrollments.
    */
   const closeAddModal = async () => {
-    // If this is a NEW member form (not editing), and a fingerprint was sent to
-    // the device (POLLING = command sent, SUCCESS = device confirmed it),
-    // we need to delete that ghost fingerprint from the machine.
-    if (!isEditingMember && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS')) {
+    // If this is a NEW member form (not editing), and a fingerprint enroll command was
+    // ever sent to the device (POLLING = in progress, SUCCESS = completed, ERROR = device
+    // rejected but may have partial user record), delete the ghost fingerprint from the machine.
+    const fpWasSentToDevice = !isEditingMember && fingerprintId && (
+      fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS' || fpPollStatus === 'ERROR'
+    );
+    if (fpWasSentToDevice) {
+      console.log(`[Ghost Cleanup] Cancelling modal with fpPollStatus=${fpPollStatus}. Deleting PIN ${fingerprintId} from device.`);
       fetch('/api/biometrics/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -235,10 +239,15 @@ export default function MemberManagementPage() {
     setCardCommandId(null);
   };
 
-  // Fix: Handle Ghost Fingerprint cleanup on tab close
+  // Handle ghost fingerprint cleanup on browser tab close / refresh
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!isEditingMember && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS')) {
+      // Trigger delete if enroll was attempted (POLLING, SUCCESS, or ERROR)
+      const fpWasSentToDevice = !isEditingMember && fingerprintId && (
+        fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS' || fpPollStatus === 'ERROR'
+      );
+      if (fpWasSentToDevice) {
+        // keepalive: true ensures the request survives the page unload
         fetch('/api/biometrics/delete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -307,11 +316,16 @@ export default function MemberManagementPage() {
               setFpCommandId(null);
               setEnrollingMemberId(null);
               showToast('Fingerprint Enrolled & Saved!', 'success');
-            } else if (data.status === 'ERROR') {
+            } else if (data.status === 'ERROR' || data.status === 'FAILED') {
               setFpPollStatus('ERROR');
               setFpCommandId(null);
               setEnrollingMemberId(null);
-              showToast('Fingerprint Enrollment Failed', 'error');
+              showToast('Fingerprint Enrollment Failed on Device. Please try again.', 'error');
+            } else if (data.status === 'TIMEOUT') {
+              setFpPollStatus('ERROR');
+              setFpCommandId(null);
+              setEnrollingMemberId(null);
+              showToast(data.message || 'Enrollment timed out. Device did not detect a scan.', 'error');
             }
           }
         } catch (e) { }
@@ -339,7 +353,7 @@ export default function MemberManagementPage() {
     return () => clearInterval(interval);
   }, [fpPollStatus, cardPollStatus, fpCommandId, cardCommandId, fingerprintId]);
 
-  // Timeout for biometric enrollment polling
+  // Timeout for biometric enrollment polling (client-side safety net, server also enforces 90s)
   useEffect(() => {
     if (fpPollStatus === 'POLLING') {
       const timer = setTimeout(() => {
@@ -347,9 +361,9 @@ export default function MemberManagementPage() {
           setFpPollStatus('ERROR');
           setFpCommandId(null);
           setEnrollingMemberId(null);
-          showToast('Enrollment timed out on device', 'error');
+          showToast('Enrollment timed out. The device did not detect a fingerprint scan.', 'error');
         }
-      }, 45000); // 45 seconds timeout
+      }, 95000); // 95 seconds — slightly over server-side 90s so server timeout message arrives first
       return () => clearTimeout(timer);
     }
   }, [fpPollStatus]);
@@ -1249,14 +1263,15 @@ export default function MemberManagementPage() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start justify-items-stretch">
+
         {displayedCustomers.map((cust) => {
           const avgHours = getAvg(cust.id);
           return (
             <div
               key={cust.id}
               onClick={() => setSelectedMember(cust)}
-              className="bg-white border border-slate-200 hover:border-blue-700 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+              className="bg-white border border-slate-200 hover:border-blue-700 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between w-full"
             >
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
@@ -1609,7 +1624,11 @@ export default function MemberManagementPage() {
                   />
                 </div>
 
-                {settings?.attendanceWallMountEnabled && (
+                {/* Member ID — shown whenever ANY hardware that needs a numeric PIN is enabled:
+                    - ZKTeco wall-mount uses it as the device PIN for FP/card enrollment
+                    - Mantra USB scanner uses it as the local fingerprintId for scan matching */}
+                {(settings?.attendanceWallMountEnabled || settings?.attendanceMantraEnabled) && (
+
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">

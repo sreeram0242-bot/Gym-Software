@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     if (isCard) {
       try {
         const gymSettings = await prisma.gymSettings.findFirst({ where: { gymId } });
-        const ip = gymSettings?.deviceIpAddress || process.env.DEVICE_IP || '192.168.137.188';
+        const ip = gymSettings?.deviceIpAddress || process.env.ZK_DEVICE_IP || '192.168.137.188';
         const cardInt = parseInt(cleanCard, 10);
         if (ip && !isNaN(cardInt) && cardInt > 0) {
           const ZKLib = require('node-zklib');
@@ -65,6 +65,23 @@ export async function POST(req: Request) {
         }
       } catch (err: any) {
         console.warn(`[ZK TCP 4370 Direct Write Warning]:`, err.message);
+      }
+    }
+
+    // Fix Issue C: Cancel any stale PENDING or SENT ENROLL_FP commands for this PIN
+    // before creating a new one. If left in DB, the device picks up the old command first
+    // on the next heartbeat, activating the wrong enrollment slot.
+    if (!isCard) {
+      const cancelledCount = await prisma.biometricCommand.updateMany({
+        where: {
+          deviceId: device.id,
+          commandString: { contains: `ENROLL_FP PIN=${numericPin}` },
+          status: { in: ['PENDING', 'SENT'] }
+        },
+        data: { status: 'FAILED', completedAt: new Date() }
+      });
+      if (cancelledCount.count > 0) {
+        console.log(`[Enroll] Cancelled ${cancelledCount.count} stale ENROLL_FP command(s) for PIN ${numericPin} before creating new one.`);
       }
     }
 

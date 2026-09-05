@@ -59,19 +59,29 @@ export async function POST(req: Request) {
       if (!line) continue;
       // Newer ZKTeco firmwares send Fingerprint 10.0 data as "BIODATA PIN=" 
       // instead of "FP PIN=". Some send "USER PIN=". 
-      // We will look for any line containing "PIN=" followed by digits.
-      if (line.includes('PIN=')) {
+      // We look for fingerprint enrollment data lines containing "PIN=" followed by digits.
+      // IMPORTANT: We must NOT match "DATA DELETE USERINFO PIN=" lines (delete ACKs from device)
+      // as those would falsely mark an ENROLL_FP command as SUCCESS.
+      const isDeleteAck = line.includes('DATA DELETE') || line.includes('DELETE USERINFO');
+      const isUpdateAck = line.includes('DATA UPDATE') || line.includes('UPDATE USERINFO');
+      if (!isDeleteAck && !isUpdateAck && line.includes('PIN=')) {
         const match = line.match(/PIN=(\d+)/);
         if (match) {
           const enrolledPin = match[1];
-          await prisma.biometricCommand.updateMany({
-            where: { deviceId: existingDevice.id, commandString: { contains: `PIN=${enrolledPin}` }, status: { in: ['SENT', 'PENDING', 'FAILED'] } },
+          // Only mark ENROLL_FP commands as SUCCESS — never card/delete commands
+          const updated = await prisma.biometricCommand.updateMany({
+            where: {
+              deviceId: existingDevice.id,
+              commandString: { contains: `ENROLL_FP PIN=${enrolledPin}` },
+              status: { in: ['SENT', 'PENDING', 'FAILED'] }
+            },
             data: { status: 'SUCCESS' }
           });
-          fs.appendFileSync('biometric.log', `Enrollment Success callback processed for PIN: ${enrolledPin}\n`);
+          fs.appendFileSync('biometric.log', `Enrollment Success callback processed for PIN: ${enrolledPin} (updated ${updated.count} command(s))\n`);
           continue; // Skip regular punch logic
         }
       }
+
 
       const parts = line.split(/\s+/);
 

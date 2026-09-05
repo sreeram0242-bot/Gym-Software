@@ -104,10 +104,14 @@ export default function StaffPage() {
               setFpPollStatus('SUCCESS');
               setFpCommandId(null);
               showToast('Fingerprint Enrolled & Saved!', 'success');
-            } else if (data.status === 'ERROR') {
+            } else if (data.status === 'ERROR' || data.status === 'FAILED') {
               setFpPollStatus('ERROR');
               setFpCommandId(null);
-              showToast('Fingerprint Enrollment Failed', 'error');
+              showToast('Fingerprint Enrollment Failed on Device. Please try again.', 'error');
+            } else if (data.status === 'TIMEOUT') {
+              setFpPollStatus('ERROR');
+              setFpCommandId(null);
+              showToast(data.message || 'Enrollment timed out. Device did not detect a scan.', 'error');
             }
           }
         } catch (e) { console.error('Biometric poll error:', e); }
@@ -133,16 +137,16 @@ export default function StaffPage() {
     return () => clearInterval(interval);
   }, [fpPollStatus, cardPollStatus, fpCommandId, cardCommandId, fingerprintId, gymId]);
 
-  // Timeout for biometric enrollment polling
+  // Timeout for biometric enrollment polling (client-side safety net, server also enforces 90s)
   useEffect(() => {
     if (fpPollStatus === 'POLLING') {
       const timer = setTimeout(() => {
         if (fpPollStatus === 'POLLING') {
           setFpPollStatus('ERROR');
           setFpCommandId(null);
-          showToast('Enrollment timed out on device', 'error');
+          showToast('Enrollment timed out. The device did not detect a fingerprint scan.', 'error');
         }
-      }, 45000); // 45 seconds timeout
+      }, 95000); // 95 seconds — slightly over server-side 90s so server timeout fires first
       return () => clearTimeout(timer);
     }
   }, [fpPollStatus]);
@@ -246,7 +250,13 @@ export default function StaffPage() {
     setStaffName('');
     setStaffPhone('');
     setStaffRole('Trainer');
-    setPunchMethod(attendanceManualEnabled ? 'MANUAL' : attendanceMantraEnabled ? 'FINGERPRINT' : attendanceNfcEnabled ? 'NFC' : 'BOTH');
+    // Derive the best default punch method based on what's enabled for this gym.
+    // Priority: BOTH (NFC + FP) > NFC only > FP only > MANUAL fallback.
+    let defaultPunch = 'MANUAL';
+    if (attendanceNfcEnabled && attendanceWallMountEnabled) defaultPunch = 'BOTH';
+    else if (attendanceNfcEnabled) defaultPunch = 'NFC';
+    else if (attendanceWallMountEnabled) defaultPunch = 'FINGERPRINT';
+    setPunchMethod(defaultPunch);
     setNfcCardId('');
     setNfcCardId2('');
     setShowSecondaryNfc(false);
@@ -265,10 +275,13 @@ export default function StaffPage() {
     setStaffPhone(staff.phone || '');
     setStaffRole(staff.role || 'Trainer');
     
-    if (staff.nfcCardId && staff.fingerprintId) setPunchMethod('BOTH');
-    else if (staff.nfcCardId) setPunchMethod('NFC');
-    else if (staff.fingerprintId) setPunchMethod('FINGERPRINT');
-    else setPunchMethod('MANUAL');
+    // Restore the staff's saved method, but clamp it to what's currently enabled in settings.
+    // e.g. if wallMount was later disabled but staff has a fingerprintId, don't show FP mode.
+    let savedPunch = 'MANUAL';
+    if (staff.nfcCardId && staff.fingerprintId && attendanceNfcEnabled && attendanceWallMountEnabled) savedPunch = 'BOTH';
+    else if (staff.nfcCardId && attendanceNfcEnabled) savedPunch = 'NFC';
+    else if (staff.fingerprintId && attendanceWallMountEnabled) savedPunch = 'FINGERPRINT';
+    setPunchMethod(savedPunch);
 
     setNfcCardId(staff.nfcCardId || '');
     setNfcCardId2(staff.nfcCardId2 || '');
@@ -1712,7 +1725,9 @@ export default function StaffPage() {
                 )}
 
                 {/* CARD 2: FINGERPRINT & FP TICK */}
-                {attendanceWallMountEnabled && (
+                {/* Show when ZKTeco wall-mount OR Mantra USB FP is enabled — both use a numeric Staff ID */}
+                {(attendanceWallMountEnabled || attendanceMantraEnabled) && (
+
                   <div className="bg-white p-3 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-2.5">
                     <div>
                       <div className="flex items-center justify-between mb-1.5">

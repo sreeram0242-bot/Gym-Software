@@ -1,15 +1,16 @@
 // Helper functions for direct communication with ZKTeco Biometric Device over TCP Port 4370
 
-const DEVICE_IP = process.env.ZK_DEVICE_IP || '192.168.137.188';
-const DEVICE_PORT = parseInt(process.env.ZK_DEVICE_PORT || '4370', 10);
+const DEFAULT_DEVICE_IP = process.env.ZK_DEVICE_IP || '192.168.137.188';
+const DEFAULT_DEVICE_PORT = parseInt(process.env.ZK_DEVICE_PORT || '4370', 10);
 
 /**
  * Directly writes an RFID/NFC card number into the user's record on the physical device.
  */
-export async function writeCardToZkDevice(pin: string, cardNo: number, userName: string = '') {
+export async function writeCardToZkDevice(pin: string, cardNo: number, userName: string = '', deviceIp?: string) {
+  const ip = deviceIp || DEFAULT_DEVICE_IP;
   try {
     const ZKLib = require('node-zklib');
-    const zk = new ZKLib(DEVICE_IP, DEVICE_PORT, 5000, 4000);
+    const zk = new ZKLib(ip, DEFAULT_DEVICE_PORT, 5000, 4000);
     await zk.createSocket();
 
     const users = await zk.getUsers();
@@ -37,21 +38,23 @@ export async function writeCardToZkDevice(pin: string, cardNo: number, userName:
     await zk.executeCmd(1013, '');
 
     await zk.disconnect();
-    console.log(`[ZK_DEVICE] Successfully wrote card ${cardNo} to PIN ${pin} (UID ${uid})`);
+    console.log(`[ZK_DEVICE] Successfully wrote card ${cardNo} to PIN ${pin} (UID ${uid}) on ${ip}`);
     return { success: true, uid };
   } catch (err: any) {
-    console.error(`[ZK_DEVICE] Error writing card to device:`, err);
+    console.error(`[ZK_DEVICE] Error writing card to device ${ip}:`, err);
     return { success: false, error: err.message };
   }
 }
 
 /**
  * Directly removes a user, their fingerprint, and card from the physical device memory.
+ * Pass deviceIp to target the correct gym's device (falls back to env var).
  */
-export async function deleteUserFromZkDevice(pin: string) {
+export async function deleteUserFromZkDevice(pin: string, deviceIp?: string) {
+  const ip = deviceIp || DEFAULT_DEVICE_IP;
   try {
     const ZKLib = require('node-zklib');
-    const zk = new ZKLib(DEVICE_IP, DEVICE_PORT, 5000, 4000);
+    const zk = new ZKLib(ip, DEFAULT_DEVICE_PORT, 5000, 4000);
     await zk.createSocket();
 
     const users = await zk.getUsers();
@@ -67,13 +70,15 @@ export async function deleteUserFromZkDevice(pin: string) {
       await zk.executeCmd(18, buf);
       // CMD_REFRESHDATA = 1013
       await zk.executeCmd(1013, '');
-      console.log(`[ZK_DEVICE] Successfully deleted PIN ${pin} (UID ${targetUser.uid}) from device`);
+      console.log(`[ZK_DEVICE] Successfully deleted PIN ${pin} (UID ${targetUser.uid}) from device ${ip}`);
+    } else {
+      console.log(`[ZK_DEVICE] PIN ${pin} not found on device ${ip} — nothing to delete`);
     }
 
     await zk.disconnect();
     return { success: true };
   } catch (err: any) {
-    console.error(`[ZK_DEVICE] Error deleting user from device:`, err);
+    console.error(`[ZK_DEVICE] Error deleting user from device ${ip}:`, err);
     return { success: false, error: err.message };
   }
 }
@@ -82,10 +87,11 @@ export async function deleteUserFromZkDevice(pin: string) {
  * Verifies if a user exists on the physical device.
  * Used as a fallback source-of-truth if ADMS polling fails.
  */
-export async function verifyUserExistsOnZkDevice(pin: string): Promise<boolean> {
+export async function verifyUserExistsOnZkDevice(pin: string, deviceIp?: string): Promise<boolean> {
+  const ip = deviceIp || DEFAULT_DEVICE_IP;
   try {
     const ZKLib = require('node-zklib');
-    const zk = new ZKLib(DEVICE_IP, DEVICE_PORT, 5000, 4000);
+    const zk = new ZKLib(ip, DEFAULT_DEVICE_PORT, 5000, 4000);
     await zk.createSocket();
     const users = await zk.getUsers();
     await zk.disconnect();
@@ -98,8 +104,7 @@ export async function verifyUserExistsOnZkDevice(pin: string): Promise<boolean> 
     }
     return false;
   } catch (err) {
-    console.error(`[ZK_DEVICE] Error verifying user exists:`, err);
+    console.error(`[ZK_DEVICE] Error verifying user exists on ${ip}:`, err);
     return false;
   }
 }
-
