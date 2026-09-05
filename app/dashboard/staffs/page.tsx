@@ -1472,7 +1472,7 @@ export default function StaffPage() {
                 </h3>
                 <p className="text-xs text-slate-500">Configure contact information and NFC/Fingerprint punch hardware IDs</p>
               </div>
-              <button onClick={() => setShowStaffModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={closeStaffModal} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1615,7 +1615,9 @@ export default function StaffPage() {
                             <button
                               type="button"
                               onClick={() => {
-                                                                                      }}
+                                setNfcCardId2('');
+                                setShowSecondaryNfc(false);
+                              }}
                               className="text-[10px] text-rose-600 hover:text-rose-800 font-bold"
                             >
                               Remove
@@ -1623,6 +1625,7 @@ export default function StaffPage() {
                           </div>
                           <input
                             type="text"
+                            value={nfcCardId2}
                             placeholder="Tap 2nd card / keyfob"
                             onChange={(e) => setNfcCardId2(e.target.value)}
                             className={`w-full px-3 py-1.5 border rounded-lg text-xs font-mono font-bold text-slate-800 outline-none ${duplicateNfc2Member ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-400' : 'bg-blue-50/50 border-blue-200'}`}
