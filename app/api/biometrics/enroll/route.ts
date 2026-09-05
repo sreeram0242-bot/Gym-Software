@@ -75,7 +75,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const cmdStr = isCard ? `DATA UPDATE USERINFO PIN=${numericPin}\tCard=${cleanCard || ''}` : `ENROLL_FP:PIN=${numericPin}:FID=0:RETRY=3:OVERWRITE=1`;
+    const cmdStr = isCard ? `DATA UPDATE USERINFO PIN=${numericPin}\tCard=${cleanCard || ''}` : `ENROLL_FP PIN=${numericPin} FID=0 RETRY=3 OVERWRITE=1`;
 
     // Trigger enrollment exactly as per the Biomax SKILL
     const command = await prisma.biometricCommand.create({

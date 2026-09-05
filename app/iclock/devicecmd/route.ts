@@ -52,10 +52,12 @@ export async function POST(req: Request) {
       }
 
       if (commandId) {
+        // Decode the numeric commandId back to the UUID start string
+        const uuidStart = parseInt(commandId, 10).toString(16).padStart(8, '0');
         let command = await prisma.biometricCommand.findFirst({
           where: {
             id: {
-              startsWith: commandId
+              startsWith: `${uuidStart}-`
             }
           }
         });

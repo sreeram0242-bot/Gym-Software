@@ -70,8 +70,10 @@ export async function GET(req: Request) {
     // ZKTeco expects: C:<CommandId>:<CommandString>
     // e.g., C:1:ENROLL_FP PIN=105 FID=0 RETRY=3 OVERWRITE=1
     
-    // ADMS requires purely numeric Command IDs
-    const numericId = Math.floor(Math.random() * 100000000);
+    // ADMS requires purely numeric Command IDs.
+    // We convert the first 8 chars of our UUID into an integer to perfectly track it!
+    const uuidStart = pendingCommand.id.split('-')[0];
+    const numericId = parseInt(uuidStart, 16);
     const commandPayload = `C:${numericId}:${pendingCommand.commandString}\n`;
 
     // Mark the command as SENT

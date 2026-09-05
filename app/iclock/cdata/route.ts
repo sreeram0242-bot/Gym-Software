@@ -72,8 +72,28 @@ export async function POST(req: Request) {
           continue; // Skip regular punch logic
         }
       }
-      
+
       const parts = line.split(/\s+/);
+
+      // Catch ZKTeco OPLOG 4 or 6 (New User Enrolled)
+      if (parts[0] === 'OPLOG' && (parts[1] === '4' || parts[1] === '6')) {
+        // OPLOG 4 has PIN at parts[6]. OPLOG 6 has PIN inside parts[5]
+        let enrolledPin = null;
+        if (parts[1] === '4' && parts.length > 6) {
+          enrolledPin = parts[6];
+        } else if (parts[1] === '6' && parts.length > 5) {
+          enrolledPin = parts[5].split(':')[0]; // Extracts 111 from 111:FID=0...
+        }
+        
+        if (enrolledPin) {
+          await prisma.biometricCommand.updateMany({
+            where: { deviceId: existingDevice.id, commandString: { contains: `PIN=${enrolledPin}` }, status: 'SENT' },
+            data: { status: 'SUCCESS' }
+          });
+          fs.appendFileSync('biometric.log', `Enrollment Success (OPLOG ${parts[1]}) processed for PIN: ${enrolledPin}\n`);
+        }
+        continue;
+      }
       if (parts.length >= 2) {
         let pin = parts[0].trim();
         // Clean up malformed PINs (e.g. if the device literally saved "101:FID=0:RETRY=3" as the ID)
