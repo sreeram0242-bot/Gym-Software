@@ -29,26 +29,16 @@ export async function POST(req: Request) {
     // Read the raw text data pushed by the biometric machine
     const rawData = await req.text();
 
-    // Auto-register the device if it's the first time we see this serial number
-    if (serialNumber) {
-      const existingDevice = await prisma.biometricDevice.findUnique({
-        where: { serialNumber }
-      });
-      if (!existingDevice) {
-        // Find the active gym (defaulting to the first gym for single-gym systems)
-        const gym = await prisma.gym.findFirst();
-        if (gym) {
-          await prisma.biometricDevice.create({
-            data: {
-              gymId: gym.id,
-              serialNumber,
-              name: `Device ${serialNumber}`,
-              status: 'online'
-            }
-          });
-          console.log(`[BIOMETRIC] Auto-registered new device: ${serialNumber}`);
-        }
-      }
+    // In a multi-tenant SaaS, we DO NOT auto-register devices.
+    // The device must be explicitly registered by the Admin via the Settings page
+    // using its Serial Number so we know exactly which gym it belongs to.
+    const existingDevice = await prisma.biometricDevice.findUnique({
+      where: { serialNumber: serialNumber || '' }
+    });
+
+    if (!existingDevice) {
+      console.log(`[BIOMETRIC] Rejected unknown device SN: ${serialNumber}. Admin must register it in Settings first.`);
+      return new NextResponse('OK', { status: 200 }); // Return OK so device doesn't crash, but ignore data
     }
 
     console.log(`\n========================================`);
