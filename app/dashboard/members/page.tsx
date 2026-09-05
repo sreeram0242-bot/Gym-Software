@@ -1519,7 +1519,7 @@ export default function MemberManagementPage() {
                   <span className="text-[10px] font-bold text-slate-500 mt-1 uppercase">Photo</span>
                 </div>
                 
-                <div className="flex-1 flex flex-col justify-end">
+                <div className="flex-1 flex flex-col justify-center">
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Full Name *
                   </label>
@@ -1553,7 +1553,7 @@ export default function MemberManagementPage() {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
-                        <Shield className="w-3.5 h-3.5 text-blue-900" /> ZKTeco ID (Device PIN) *
+                        <Shield className="w-3.5 h-3.5 text-blue-900" /> Member ID *
                       </label>
                       <span className="text-[10px] font-medium text-slate-400">Numeric Only</span>
                     </div>

@@ -1667,7 +1667,7 @@ export default function StaffPage() {
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                          <Shield className="w-3.5 h-3.5 text-indigo-600" /> ZKTeco ID (Device PIN)
+                          <Shield className="w-3.5 h-3.5 text-indigo-600" /> Member ID
                         </label>
                         {fpPollStatus === 'SUCCESS' ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full">
