@@ -489,6 +489,7 @@ export default function MemberManagementPage() {
     }
     
     setIsLoading(false);
+    return custs; // Return fresh customers so callers can sync selectedMember
   };
 
   const handleAddMember = async (e: React.FormEvent) => {
@@ -580,12 +581,16 @@ export default function MemberManagementPage() {
         const splitData = paymentMethod === 'SPLIT' ? { cash: Number(splitCash), upi: Number(splitUpi) } : undefined;
 
         const tempId = 'temp_' + Date.now();
-        setCustomers(prev => [{
+        const tempMember = {
           id: tempId, name: savedName, phone, nfcCardId: newNfc, nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
           fingerprintId: fingerprintId || null, profilePic: profilePic || null, planType, feeAmount: totalPlanPrice, paidAmount: actualPaid,
           pendingBalance: finalPendingBalance, lastPaymentDate, nextDueDate, status: 'ACTIVE',
           plan: plans.find(p => p.name === planType)
-        }, ...prev]);
+        };
+        setCustomers(prev => [tempMember, ...prev]);
+        // Immediately open the detail panel for the new member so the user sees a clear
+        // confirmation instead of landing back on the raw grid with an orphan card.
+        setSelectedMember(tempMember);
         if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Member ${savedName} added successfully!`, type: 'success' } }));
 
         await addCustomer({
@@ -596,7 +601,12 @@ export default function MemberManagementPage() {
           upiSenderName: paymentMethod === 'UPI' ? upiSenderName : undefined, lastPaymentDate, nextDueDate
         });
       }
-      loadData();
+      // Re-fetch from DB, then sync the detail panel to the real saved record
+      const freshCustomers = await loadData();
+      if (!isEditingMember && freshCustomers) {
+        const realMember = freshCustomers.find((c: any) => c.name === savedName && !c.id?.startsWith('temp_'));
+        if (realMember) setSelectedMember(realMember);
+      }
     } catch (err: any) {
       setCustomers(originalCustomers); // Rollback
       setShowAddModal(true);

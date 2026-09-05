@@ -31,9 +31,11 @@ export async function GET(req: Request) {
       const pinCmd = await prisma.biometricCommand.findFirst({
         where: {
           device: { gymId },
-          commandString: { contains: `PIN=${pin}` },
-          // Only look at enroll commands that succeeded — not delete acks or card commands
-          commandString: { contains: 'ENROLL_FP' },
+          // Both conditions must match — use AND to avoid duplicate key TS error
+          AND: [
+            { commandString: { contains: `PIN=${pin}` } },
+            { commandString: { contains: 'ENROLL_FP' } },
+          ],
           status: { in: ['SUCCESS', 'COMPLETED'] }
         },
         orderBy: { createdAt: 'desc' }

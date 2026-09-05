@@ -252,7 +252,7 @@ export default function StaffPage() {
     setStaffRole('Trainer');
     // Derive the best default punch method based on what's enabled for this gym.
     // Priority: BOTH (NFC + FP) > NFC only > FP only > MANUAL fallback.
-    let defaultPunch = 'MANUAL';
+    let defaultPunch: 'BOTH' | 'NFC' | 'FINGERPRINT' | 'MANUAL' = 'MANUAL';
     if (attendanceNfcEnabled && attendanceWallMountEnabled) defaultPunch = 'BOTH';
     else if (attendanceNfcEnabled) defaultPunch = 'NFC';
     else if (attendanceWallMountEnabled) defaultPunch = 'FINGERPRINT';
@@ -277,7 +277,7 @@ export default function StaffPage() {
     
     // Restore the staff's saved method, but clamp it to what's currently enabled in settings.
     // e.g. if wallMount was later disabled but staff has a fingerprintId, don't show FP mode.
-    let savedPunch = 'MANUAL';
+    let savedPunch: 'BOTH' | 'NFC' | 'FINGERPRINT' | 'MANUAL' = 'MANUAL';
     if (staff.nfcCardId && staff.fingerprintId && attendanceNfcEnabled && attendanceWallMountEnabled) savedPunch = 'BOTH';
     else if (staff.nfcCardId && attendanceNfcEnabled) savedPunch = 'NFC';
     else if (staff.fingerprintId && attendanceWallMountEnabled) savedPunch = 'FINGERPRINT';
