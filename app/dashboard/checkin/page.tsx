@@ -16,6 +16,7 @@ export default function CheckInTerminal() {
   const [gymId, setGymId] = useState<string>('gym_1');
   const [gymName, setGymName] = useState<string>('Our Gym');
   const [activeTab, setActiveTab] = useState<'members' | 'staff'>('members');
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   // Members State
   const [customers, setCustomers] = useState<any[]>([]);
@@ -57,7 +58,7 @@ export default function CheckInTerminal() {
       if (newCheckins.length > 0) {
          if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('member_punch_event', {
-              detail: { customerName: newCheckins[0].customerName || newCheckins[0].staffName, action: 'checkin' }
+              detail: { customerName: newCheckins[0].customerName || newCheckins[0].staffName, action: 'checkin', customerProfilePic: newCheckins[0].customerProfilePic }
             }));
          }
       } else {
@@ -66,7 +67,7 @@ export default function CheckInTerminal() {
          if (checkedOut.length > 0) {
             if (typeof window !== 'undefined') {
               window.dispatchEvent(new CustomEvent('member_punch_event', {
-                detail: { customerName: checkedOut[0].customerName || checkedOut[0].staffName, action: 'checkout' }
+                detail: { customerName: checkedOut[0].customerName || checkedOut[0].staffName, action: 'checkout', customerProfilePic: checkedOut[0].customerProfilePic }
               }));
             }
          }
@@ -132,6 +133,7 @@ export default function CheckInTerminal() {
     setFpPort(port);
     const matched = loadedGyms?.find((g: any) => g.id === savedId);
     if (matched) setGymName(matched.name);
+    setIsInitialLoad(false);
 
     // Connect fingerprint WebSocket if needed
     if (mantraEnabled && !fpWsRef.current) {
@@ -462,6 +464,17 @@ export default function CheckInTerminal() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-20">
+      {isInitialLoad && (
+        <div className="space-y-4 animate-pulse">
+          <div className="h-28 bg-slate-200 rounded-2xl" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="h-56 bg-slate-200 rounded-2xl" />
+            <div className="h-56 bg-slate-200 rounded-2xl" />
+          </div>
+          <div className="h-40 bg-slate-200 rounded-2xl" />
+        </div>
+      )}
+      {!isInitialLoad && <>
       {/* Header Banner */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -1094,6 +1107,9 @@ export default function CheckInTerminal() {
           </div>
         </>
       )}
+    </div>
+    </>
+    }
     </div>
   );
 }

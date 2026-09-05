@@ -274,7 +274,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             role: 'Member',
             action: e.detail.action || 'checkin',
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            durationMinutes: e.detail.record?.durationMinutes
+            durationMinutes: e.detail.record?.durationMinutes,
+            profilePic: e.detail.customerProfilePic || e.detail.record?.customerProfilePic
           });
           if (notificationTimeout) clearTimeout(notificationTimeout);
           notificationTimeout = setTimeout(() => {
@@ -567,13 +568,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/90 p-3.5 min-w-[280px] max-w-sm flex items-center justify-between gap-3 ring-1 ring-slate-900/5">
             <div className="flex items-center gap-3 min-w-0">
               {/* Avatar / Icon */}
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-sm shadow-xs ${
-                livePunchNotice.type === 'staff' 
-                  ? 'bg-purple-100 text-purple-700 border border-purple-200' 
-                  : 'bg-blue-100 text-blue-900 border border-blue-200'
-              }`}>
-                {livePunchNotice.name.charAt(0).toUpperCase()}
-              </div>
+              {livePunchNotice.profilePic ? (
+                <img src={livePunchNotice.profilePic} alt="Avatar" className="w-10 h-10 rounded-xl object-cover shadow-xs border border-slate-200 shrink-0" />
+              ) : (
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-sm shadow-xs ${
+                  livePunchNotice.type === 'staff' 
+                    ? 'bg-purple-100 text-purple-700 border border-purple-200' 
+                    : 'bg-blue-100 text-blue-900 border border-blue-200'
+                }`}>
+                  {livePunchNotice.name.charAt(0).toUpperCase()}
+                </div>
+              )}
 
               {/* Name and Details */}
               <div className="min-w-0">

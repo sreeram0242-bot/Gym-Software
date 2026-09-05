@@ -411,11 +411,17 @@ export async function getCustomers(gymId?: string) {
   if (!gymId) return [];
   try {
     return await prisma.customer.findMany({
-      where: { gymId },
-      orderBy: { joinedDate: 'desc' }
+      where: { gymId, isArchived: false },
+      orderBy: { joinedDate: 'desc' },
+      include: {
+        attendance: {
+          orderBy: { checkInTime: 'desc' },
+          take: 5
+        }
+      }
     });
   } catch (e) {
-    return store.customers.filter((c: any) => c.gymId === gymId);
+    return store.customers.filter((c: any) => c.gymId === gymId && c.isArchived !== true);
   }
 }
 
@@ -495,6 +501,7 @@ export async function addCustomer(data: any) {
         balanceDueDate: data.balanceDueDate || null,
         lastPaymentDate: data.lastPaymentDate,
         nextDueDate: data.nextDueDate,
+        profilePic: data.profilePic || null,
         status: 'active',
         waActive: false,
         joinedDate: getLocalTodayDateString()
@@ -724,7 +731,10 @@ export async function deleteCustomer(id: string) {
       } catch (e) {}
     }
 
-    await prisma.customer.deleteMany({ where: { id, gymId: callerGymId } });
+    await prisma.customer.update({
+      where: { id },
+      data: { isArchived: true }
+    });
     return true;
   } catch {
     return false;
@@ -920,10 +930,15 @@ export async function getAttendance(gymId?: string) {
       }
     }
 
-    return await prisma.attendanceRecord.findMany({
+    const records = await prisma.attendanceRecord.findMany({
       where: { gymId },
-      orderBy: { checkInTime: 'desc' }
+      orderBy: { checkInTime: 'desc' },
+      include: { customer: { select: { profilePic: true } } }
     });
+    return records.map(r => ({
+      ...r,
+      customerProfilePic: r.customer?.profilePic || null
+    }));
   } catch (e) {
     return store.attendance.filter((a: any) => a.gymId === gymId);
   }
@@ -937,6 +952,7 @@ export async function toggleCheckIn(customerId: string, isManual: boolean = fals
     customer = store.customers.find((c: any) => c.id === customerId);
   }
   if (!customer) throw new Error('Customer not found');
+  if (customer.isArchived) throw new Error('Cannot check in a deleted member');
 
   const todayStr = getLocalTodayDateString();
   const nowIso = new Date().toISOString();
@@ -980,7 +996,7 @@ export async function toggleCheckIn(customerId: string, isManual: boolean = fals
           }
         });
         if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
-        return { record: updated, action: 'checkout' as const };
+        return { record: updated, action: 'checkout' as const, customerProfilePic: customer.profilePic || null };
       } else {
         // Session exceeded cutoff timer (member forgot to checkout earlier)
         // Auto-close previous session and start fresh checkin
@@ -1006,13 +1022,13 @@ export async function toggleCheckIn(customerId: string, isManual: boolean = fals
       }
     });
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
-    return { record: newRecord, action: 'checkin' as const };
+    return { record: newRecord, action: 'checkin' as const, customerProfilePic: customer.profilePic || null };
   } catch (e) {
     const active = store.attendance.find((a: any) => a.customerId === customer.id && !a.checkOutTime && a.dateStr === todayStr);
     if (active) {
       active.checkOutTime = nowIso;
       active.durationMinutes = 60;
-      return { record: active, action: 'checkout' as const };
+      return { record: active, action: 'checkout' as const, customerProfilePic: customer.profilePic || null };
     } else {
       const newAtt = {
         id: `att_${Date.now()}`,
@@ -1026,7 +1042,7 @@ export async function toggleCheckIn(customerId: string, isManual: boolean = fals
         dateStr: todayStr
       };
       store.attendance.unshift(newAtt);
-      return { record: newAtt, action: 'checkin' as const };
+      return { record: newAtt, action: 'checkin' as const, customerProfilePic: customer.profilePic || null };
     }
   }
 }
@@ -1616,7 +1632,10 @@ export async function authenticateSuperadmin(userId: string, passwordHash: strin
 // --- STAFF MANAGEMENT ---
 export async function getStaffs(gymId: string) {
   try {
-    return await prisma.staff.findMany({ where: { gymId }, orderBy: { name: 'asc' } });
+    return await prisma.staff.findMany({
+      where: { gymId, isArchived: false },
+      orderBy: { name: 'asc' }
+    });
   } catch (e) {
     return [];
   }
@@ -1743,8 +1762,11 @@ export async function deleteStaff(id: string) {
   try {
     const current = await prisma.staff.findUnique({ where: { id } });
     if (!current || current.gymId !== callerGymId) throw new Error('Staff member not found');
-    await prisma.staffAttendanceRecord.deleteMany({ where: { staffId: id } });
-    return await prisma.staff.delete({ where: { id } });
+    await prisma.staff.update({
+      where: { id },
+      data: { isArchived: true }
+    });
+    return true;
   } catch (e) {
     throw new Error('Failed to delete staff');
   }
@@ -1780,9 +1802,14 @@ export async function getStaffAttendance(gymId: string) {
 }
 
 export async function toggleStaffCheckIn(staffId: string, isManual: boolean = false) {
+  let staff: any;
   try {
-    const staff = await prisma.staff.findUnique({ where: { id: staffId } });
-    if (!staff) throw new Error('Staff not found');
+    staff = await prisma.staff.findUnique({ where: { id: staffId } });
+  } catch (e) {
+    // fallback
+  }
+  if (!staff) throw new Error('Staff not found');
+  if (staff.isArchived) throw new Error('Cannot check in a deleted staff member');
 
     const todayStr = getLocalTodayDateString();
     const nowIso = new Date().toISOString();
@@ -1859,6 +1886,7 @@ export async function toggleStaffCheckIn(staffId: string, isManual: boolean = fa
 }
 
 // --- AUTOMATED WHATSAPP REMINDERS ENGINE ---
+
 export async function processDailyAutomatedReminders(gymId: string) {
   try {
     const today = getLocalTodayDateString();
@@ -1875,7 +1903,7 @@ export async function processDailyAutomatedReminders(gymId: string) {
 
     // Fetch all members of this gym who activated WhatsApp services (waActive === true)
     const activeWaMembers = await prisma.customer.findMany({
-      where: { gymId, waActive: true },
+      where: { gymId, waActive: true, isArchived: false },
       include: {
         attendance: {
           orderBy: { checkInTime: 'desc' },

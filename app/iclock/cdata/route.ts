@@ -65,7 +65,7 @@ export async function POST(req: Request) {
         if (match) {
           const enrolledPin = match[1];
           await prisma.biometricCommand.updateMany({
-            where: { deviceId: existingDevice.id, commandString: { contains: `PIN=${enrolledPin}` }, status: 'SENT' },
+            where: { deviceId: existingDevice.id, commandString: { contains: `PIN=${enrolledPin}` }, status: { in: ['SENT', 'PENDING', 'FAILED'] } },
             data: { status: 'SUCCESS' }
           });
           fs.appendFileSync('biometric.log', `Enrollment Success callback processed for PIN: ${enrolledPin}\n`);
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
         
         if (enrolledPin) {
           await prisma.biometricCommand.updateMany({
-            where: { deviceId: existingDevice.id, commandString: { contains: `PIN=${enrolledPin}` }, status: 'SENT' },
+            where: { deviceId: existingDevice.id, commandString: { contains: `PIN=${enrolledPin}` }, status: { in: ['SENT', 'PENDING', 'FAILED'] } },
             data: { status: 'SUCCESS' }
           });
           fs.appendFileSync('biometric.log', `Enrollment Success (OPLOG ${parts[1]}) processed for PIN: ${enrolledPin}\n`);
@@ -163,10 +163,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // IMPORTANT: We MUST return "OK" in plain text. 
-    // If the eSSL machine doesn't see "OK", it thinks the internet is down 
+    // IMPORTANT: We MUST return "result=OK" in plain text. 
+    // If the eSSL machine doesn't see "result=OK", it thinks the internet is down 
     // and will keep trying to send the same punch over and over again.
-    const res = "OK";
+    const res = "result=OK";
     return new NextResponse(res, { 
       status: 200, 
       headers: { 

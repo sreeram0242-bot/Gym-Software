@@ -8,6 +8,7 @@ import { formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
 
 export default function DashboardOverview() {
   const [gymId, setGymId] = useState<string>('gym_1');
+  const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -52,6 +53,7 @@ export default function DashboardOverview() {
     setCustomers(custs);
     setAttendance(atts);
     setTransactions(txs);
+    setIsLoading(false);
 
     try {
       const waRes = await fetch(`/api/whatsapp/status?gymId=${savedId}`);
@@ -75,6 +77,16 @@ export default function DashboardOverview() {
 
   return (
     <div className="space-y-4">
+      {isLoading && (
+        <div className="space-y-4 animate-pulse">
+          <div className="h-32 bg-slate-200 rounded-2xl" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-slate-200 rounded-2xl" />)}
+          </div>
+          <div className="h-40 bg-slate-200 rounded-2xl" />
+        </div>
+      )}
+      {!isLoading && <>
       {/* WhatsApp Disconnected Banner */}
       {(waStatus === 'disconnected' || waStatus === 'scan_qr') && (
         <Link 
@@ -348,6 +360,8 @@ export default function DashboardOverview() {
           </div>
         </div>
       </div>
+      </>
+    }
     </div>
   );
 }

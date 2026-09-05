@@ -6,6 +6,7 @@ import { getCustomers } from '@/lib/actions';
 
 export default function BroadcastPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
+  const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<any[]>([]);
   
   const [message, setMessage] = useState('');
@@ -43,6 +44,7 @@ export default function BroadcastPage() {
     setGymId(savedId);
     const custs = await getCustomers(savedId);
     setCustomers(custs);
+    setIsLoading(false);
   };
 
   const getRecipientCount = () => {
@@ -132,6 +134,16 @@ export default function BroadcastPage() {
   };
 
   return (
+    <div className="space-y-4">
+      {isLoading ? (
+        <div className="space-y-4 animate-pulse">
+          <div className="h-24 bg-slate-200 rounded-2xl" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="h-64 bg-slate-200 rounded-2xl" />
+            <div className="h-64 bg-slate-200 rounded-2xl" />
+          </div>
+        </div>
+      ) : (<>
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between">
@@ -285,6 +297,8 @@ export default function BroadcastPage() {
           </div>
         </div>
       </div>
+    </div>
+    </>)}
     </div>
   );
 }

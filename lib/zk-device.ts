@@ -77,3 +77,29 @@ export async function deleteUserFromZkDevice(pin: string) {
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * Verifies if a user exists on the physical device.
+ * Used as a fallback source-of-truth if ADMS polling fails.
+ */
+export async function verifyUserExistsOnZkDevice(pin: string): Promise<boolean> {
+  try {
+    const ZKLib = require('node-zklib');
+    const zk = new ZKLib(DEVICE_IP, DEVICE_PORT, 5000, 4000);
+    await zk.createSocket();
+    const users = await zk.getUsers();
+    await zk.disconnect();
+    
+    if (users && users.data) {
+      return users.data.some((u: any) => {
+        const uPin = String(u.userId || '').split(':')[0];
+        return uPin === String(pin) || String(u.uid) === String(pin);
+      });
+    }
+    return false;
+  } catch (err) {
+    console.error(`[ZK_DEVICE] Error verifying user exists:`, err);
+    return false;
+  }
+}
+

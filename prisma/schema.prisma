@@ -48,11 +48,13 @@ model Customer {
   nextDueDate     String
   pendingBalance  Int      @default(0)
   balanceDueDate  String?
+  profilePic      String?  @db.Text
   status          String   @default("active")
   joinedDate      String
   waActive        Boolean  @default(false)
   lastReminderSentDate String?
   lastAbsenteeSentDate String?
+  isArchived      Boolean  @default(false)
 
   attendance   AttendanceRecord[]
   transactions Transaction[]
@@ -235,6 +237,7 @@ model Staff {
   nfcCardId       String?
   fingerprintId   String?
   status          String   @default("active")
+  isArchived      Boolean  @default(false)
   joinedDate      String
 
   attendance      StaffAttendanceRecord[]

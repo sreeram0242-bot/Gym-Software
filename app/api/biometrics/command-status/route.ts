@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { verifyUserExistsOnZkDevice } from '@/lib/zk-device';
 
 export async function GET(req: Request) {
   try {
@@ -41,8 +42,25 @@ export async function GET(req: Request) {
       return NextResponse.json({ status: 'PENDING' });
     }
 
-    const isSuccess = command.status === 'SUCCESS' || command.status === 'COMPLETED';
-    const isError = command.status === 'FAILED' || command.status === 'ERROR';
+    let isSuccess = command.status === 'SUCCESS' || command.status === 'COMPLETED';
+    let isError = command.status === 'FAILED' || command.status === 'ERROR';
+
+    // TCP Fallback: If DB thinks it failed (e.g. intermediate ADMS status)
+    // but this is an ENROLL command, check the physical device directly.
+    if (isError && pin && command.commandString?.includes('ENROLL_FP')) {
+      const existsOnDevice = await verifyUserExistsOnZkDevice(pin);
+      if (existsOnDevice) {
+        console.log(`[TCP FALLBACK] Command ${command.id} was marked ERROR in DB, but PIN ${pin} exists on device! Forcing SUCCESS.`);
+        // Correct the DB in background (fire-and-forget)
+        prisma.biometricCommand.update({
+          where: { id: command.id },
+          data: { status: 'SUCCESS' }
+        }).catch(console.error);
+        
+        isSuccess = true;
+        isError = false;
+      }
+    }
 
     return NextResponse.json({ status: isSuccess ? 'SUCCESS' : isError ? 'ERROR' : command.status });
   } catch (error) {

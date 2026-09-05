@@ -13,6 +13,7 @@ import { exportToPDF } from '@/lib/exportPdf';
 export default function StaffPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
   const [gymName, setGymName] = useState<string>('Our Gym');
+  const [isLoading, setIsLoading] = useState(true);
   const [staffs, setStaffs] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
   const [attendanceManualEnabled, setAttendanceManualEnabled] = useState<boolean>(true);
@@ -172,8 +173,10 @@ export default function StaffPage() {
       setFpPort(settings?.fingerprintAgentPort || 8765);
       const matchedGym = loadedGyms?.find((g: any) => g.id === savedId);
       if (matchedGym) setGymName(matchedGym.name);
+      setIsLoading(false);
     } catch (e) {
       console.error('Error loading staff data:', e);
+      setIsLoading(false);
     }
   };
 
@@ -580,6 +583,16 @@ export default function StaffPage() {
 
   return (
     <div className="space-y-4">
+      {isLoading && (
+        <div className="space-y-4 animate-pulse">
+          <div className="h-20 bg-slate-200 rounded-2xl" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[...Array(3)].map((_, i) => <div key={i} className="h-40 bg-slate-200 rounded-2xl" />)}
+          </div>
+          <div className="h-48 bg-slate-200 rounded-2xl" />
+        </div>
+      )}
+      {!isLoading && <>
       
       {/* ─── PAGE HEADER & SUBPAGE TAB SWITCHER ─── */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1742,6 +1755,9 @@ export default function StaffPage() {
         </div>
       )}
 
+    </div>
+      </>
+    }
     </div>
   );
 }

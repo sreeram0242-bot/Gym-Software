@@ -9,6 +9,7 @@ import { formatDateDDMMYYYY } from '@/lib/utils';
 
 export default function RemindersPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
+  const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
   const [gymName, setGymName] = useState<string>('Our Gym');
@@ -52,6 +53,7 @@ export default function RemindersPage() {
     if (gymSettings && gymSettings.waReminderWindowDays !== undefined) {
       setReminderThresholdDays(gymSettings.waReminderWindowDays);
     }
+    setIsLoading(false);
   };
 
   const [batchSending, setBatchSending] = useState(false);
@@ -146,6 +148,13 @@ export default function RemindersPage() {
 
   return (
     <div className="space-y-4">
+      {isLoading ? (
+        <div className="space-y-4 animate-pulse">
+          <div className="h-28 bg-slate-200 rounded-2xl" />
+          <div className="h-16 bg-slate-200 rounded-2xl" />
+          <div className="h-64 bg-slate-200 rounded-2xl" />
+        </div>
+      ) : (<>
       {/* Header Banner */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
@@ -315,6 +324,8 @@ export default function RemindersPage() {
           </div>
         )}
       </div>
+    </div>
+    </>)}
     </div>
   );
 }

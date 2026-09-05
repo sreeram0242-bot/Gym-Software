@@ -22,6 +22,7 @@ type CartItem = {
 export default function ProductsPage() {
   const [gymId, setGymId] = useState('gym_1');
   const [gymName, setGymName] = useState('Our Gym');
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'catalog' | 'pos' | 'sales'>('pos');
   const [products, setProducts] = useState<any[]>([]);
   const [productSales, setProductSales] = useState<any[]>([]);
@@ -95,6 +96,7 @@ export default function ProductsPage() {
     setGymSettings(settings);
     const matched = loadedGyms?.find((g: any) => g.id === id);
     if (matched) setGymName(matched.name);
+    setIsLoading(false);
   };
 
   // ─── DUAL EXPORT HANDLERS (CSV & PDF) ───
@@ -275,6 +277,15 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
+      {isLoading ? (
+        <div className="space-y-4 animate-pulse">
+          <div className="h-24 bg-slate-200 rounded-2xl" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-slate-200 rounded-2xl" />)}
+          </div>
+          <div className="h-64 bg-slate-200 rounded-2xl" />
+        </div>
+      ) : (<>
       {/* Header */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -677,6 +688,8 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+    </div>
+    </>)}
     </div>
   );
 }

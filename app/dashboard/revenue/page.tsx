@@ -10,6 +10,7 @@ import { formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
 
 export default function RevenuePage() {
   const [gymId, setGymId] = useState<string>('gym_1');
+  const [isLoading, setIsLoading] = useState(true);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [gymSettings, setGymSettings] = useState<any>(null);
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
@@ -92,6 +93,7 @@ export default function RevenuePage() {
     setPlans(ps);
     setAllCustomers(custs);
     setGymSettings(settings);
+    setIsLoading(false);
   };
 
   const handleAddExpense = async (e: React.FormEvent) => {
@@ -469,6 +471,16 @@ export default function RevenuePage() {
 
   return (
     <div className="space-y-4">
+      {isLoading ? (
+        <div className="space-y-4 animate-pulse">
+          <div className="h-28 bg-slate-200 rounded-2xl" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-slate-200 rounded-2xl" />)}
+          </div>
+          <div className="h-64 bg-slate-200 rounded-2xl" />
+          <div className="h-48 bg-slate-200 rounded-2xl" />
+        </div>
+      ) : (<>
       {/* Header Banner */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -1322,6 +1334,8 @@ export default function RevenuePage() {
           </div>
         </div>
       )}
+    </div>
+      </>)}
     </div>
   );
 }

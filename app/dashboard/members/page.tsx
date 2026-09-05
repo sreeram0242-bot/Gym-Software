@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useDeferredValue, useMemo } from 'react';
-import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell, Banknote, Smartphone, ArrowLeftRight, Tag, ChevronRight, Fingerprint, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell, Banknote, Smartphone, ArrowLeftRight, Tag, ChevronRight, Fingerprint, Download, FileText, FileSpreadsheet, Camera, ImagePlus } from 'lucide-react';
 import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, collectPendingBalance, getGyms, getGymSettings, toggleCustomerWaStatus } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
@@ -11,6 +11,7 @@ import { exportToPDF } from '@/lib/exportPdf';
 export default function MemberManagementPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
   const [gymName, setGymName] = useState<string>('Our Gym');
+  const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -35,6 +36,7 @@ export default function MemberManagementPage() {
   const [nfcCardId2, setNfcCardId2] = useState('');
   const [showSecondaryNfc, setShowSecondaryNfc] = useState(false);
   const [fingerprintId, setFingerprintId] = useState('');
+  const [profilePic, setProfilePic] = useState<string>('');
   const [fpPollStatus, setFpPollStatus] = useState<'IDLE'|'POLLING'|'SUCCESS'|'ERROR'>('IDLE');
   const [fpCommandId, setFpCommandId] = useState<string|null>(null);
   const [cardPollStatus, setCardPollStatus] = useState<'IDLE'|'POLLING'|'SUCCESS'|'ERROR'>('IDLE');
@@ -140,6 +142,7 @@ export default function MemberManagementPage() {
     setNfcCardId2(cust.nfcCardId2 || '');
     setShowSecondaryNfc(!!cust.nfcCardId2);
     setFingerprintId(cust.fingerprintId || '');
+    setProfilePic(cust.profilePic || '');
     setFpPollStatus(cust.fingerprintId ? 'SUCCESS' : 'IDLE');
     setCardPollStatus('IDLE');
     setPlanType(cust.planType);
@@ -172,6 +175,37 @@ export default function MemberManagementPage() {
     } catch (e: any) {
       showToast(e.message || 'Enrollment error', 'error');
     }
+  };
+
+  /**
+   * Centralized modal close handler.
+   * If a fingerprint was enrolled (or is mid-enrollment) on the device
+   * but the member was NOT saved, we must clean up the ghost fingerprint
+   * from the physical device so it doesn't block future enrollments.
+   */
+  const closeAddModal = async () => {
+    // If this is a NEW member form (not editing), and a fingerprint was sent to
+    // the device (POLLING = command sent, SUCCESS = device confirmed it),
+    // we need to delete that ghost fingerprint from the machine.
+    if (!isEditingMember && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS')) {
+      try {
+        await fetch('/api/biometrics/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gymId, pin: fingerprintId })
+        });
+      } catch (e) {
+        console.error('Ghost fingerprint cleanup failed:', e);
+      }
+    }
+    // Reset modal state
+    setShowAddModal(false);
+    setIsEditingMember(false);
+    setEditingMemberId(null);
+    setFpPollStatus('IDLE');
+    setFpCommandId(null);
+    setCardPollStatus('IDLE');
+    setCardCommandId(null);
   };
 
   const handleDeleteMember = (id: string) => {
@@ -335,6 +369,7 @@ export default function MemberManagementPage() {
   }, []);
 
   const loadData = async () => {
+    setIsLoading(true);
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
@@ -362,6 +397,8 @@ export default function MemberManagementPage() {
       setAbsentTrackingEnabled(gymSettings.absentTrackingEnabled ?? false);
       setAbsentThresholdDays(gymSettings.absentThresholdDays ?? 3);
     }
+    
+    setIsLoading(false);
   };
 
   const handleAddMember = async (e: React.FormEvent) => {
@@ -417,6 +454,7 @@ export default function MemberManagementPage() {
           nfcCardId: newNfc,
           nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
           fingerprintId: fingerprintId || null,
+          profilePic: profilePic || null,
           planType,
           feeAmount: Number(feeAmount),
           lastPaymentDate,
@@ -439,6 +477,7 @@ export default function MemberManagementPage() {
           nfcCardId: newNfc,
           nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
           fingerprintId: fingerprintId || null,
+          profilePic: profilePic || null,
           planType,
           feeAmount: totalPlanPrice,
           paidAmount: actualPaid,
@@ -463,10 +502,15 @@ export default function MemberManagementPage() {
       setPhone('');
       setNfcCardId('');
       setNfcCardId2('');
+      setProfilePic('');
       setShowSecondaryNfc(false);
       setUpiId('');
       setUpiSenderName('');
       setInfoMsg('');
+      setFpPollStatus('IDLE');
+      setFpCommandId(null);
+      setCardPollStatus('IDLE');
+      setCardCommandId(null);
       loadData();
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to save member. Please check the entered data.');
@@ -1110,7 +1154,13 @@ export default function MemberManagementPage() {
       </div>
 
       {/* Members Grid View (Responsive Cards + Table) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mb-4" />
+          <p className="text-slate-500 font-medium">Loading members...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {displayedCustomers.map((cust) => {
           const avgHours = getAvg(cust.id);
           return (
@@ -1122,9 +1172,13 @@ export default function MemberManagementPage() {
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-950 font-extrabold text-sm flex items-center justify-center border border-blue-200">
-                      {cust.name.charAt(0)}
-                    </div>
+                    {cust.profilePic ? (
+                      <img src={cust.profilePic} alt="Profile" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-950 font-extrabold text-sm flex items-center justify-center border border-blue-200 shrink-0">
+                        {cust.name.charAt(0)}
+                      </div>
+                    )}
                     <div>
                       <div className="flex items-center gap-1.5">
                         <h3 className="font-bold text-slate-900 text-sm">{cust.name}</h3>
@@ -1284,8 +1338,9 @@ export default function MemberManagementPage() {
           );
         })}
       </div>
-
-      {/* Load More Button */}
+      )}
+      
+      {/* ADD/EDIT MEMBER MODAL */}
       {filteredCustomers.length > displayedCustomers.length && (
         <div className="flex justify-center mt-6 mb-12">
           <button
@@ -1298,7 +1353,7 @@ export default function MemberManagementPage() {
       )}
 
       {/* Empty State Component */}
-      {filteredCustomers.length === 0 && (
+      {!isLoading && filteredCustomers.length === 0 && (
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
           <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-900 mx-auto flex items-center justify-center mb-4">
             {waFilter === 'activated' ? (
@@ -1396,18 +1451,7 @@ export default function MemberManagementPage() {
                     </button>
                   </div>
                 )}
-                <button type="button" onClick={() => {
-                  if (!isEditingMember && fpPollStatus === 'SUCCESS' && fingerprintId) {
-                    fetch('/api/biometrics/delete', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ gymId, pin: fingerprintId })
-                    }).catch(console.error);
-                  }
-                  setShowAddModal(false);
-                  setIsEditingMember(false);
-                  setEditingMemberId(null);
-                }} className="text-slate-400 hover:text-slate-600">
+                <button type="button" onClick={closeAddModal} className="text-slate-400 hover:text-slate-600">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -1426,18 +1470,38 @@ export default function MemberManagementPage() {
                   <span>{infoMsg}</span>
                 </div>
               )}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Vikram Sharma"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-800 outline-none"
-                />
+              <div className="flex gap-4">
+                <div className="flex flex-col items-center justify-center shrink-0">
+                  <div className="relative w-20 h-20 bg-slate-100 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden hover:bg-slate-200 transition-colors cursor-pointer group">
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                      title="Upload Profile Picture"
+                    />
+                    {profilePic ? (
+                      <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <Camera className="w-8 h-8 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                    )}
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 mt-1 uppercase">Photo</span>
+                </div>
+                
+                <div className="flex-1 flex flex-col justify-end">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Vikram Sharma"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-800 outline-none"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1988,21 +2052,22 @@ export default function MemberManagementPage() {
                 </div>
               )}
 
+              {/* Ghost fingerprint warning — shown when FP enrolled but form not yet saved */}
+              {!isEditingMember && (fpPollStatus === 'SUCCESS' || fpPollStatus === 'POLLING') && (
+                <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-300 rounded-lg text-xs">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-amber-800 font-semibold leading-snug">
+                    {fpPollStatus === 'SUCCESS'
+                      ? 'Fingerprint enrolled on device. Save this member now — cancelling will delete the fingerprint from the machine.'
+                      : 'Fingerprint enrollment in progress. Save after enrollment completes — cancelling will abort and delete from device.'}
+                  </p>
+                </div>
+              )}
+
               <div className="pt-3 flex justify-end space-x-3 border-t border-slate-100 shrink-0">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (!isEditingMember && fpPollStatus === 'SUCCESS' && fingerprintId) {
-                      fetch('/api/biometrics/delete', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ gymId, pin: fingerprintId })
-                      }).catch(console.error);
-                    }
-                    setShowAddModal(false);
-                    setIsEditingMember(false);
-                    setEditingMemberId(null);
-                  }}
+                  onClick={closeAddModal}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
                 >
                   Cancel
@@ -2027,9 +2092,13 @@ export default function MemberManagementPage() {
             <div className="relative bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 p-3.5 sm:p-4 shrink-0">
               <div className="flex justify-between items-center relative z-10">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 bg-white/10 border border-white/20 rounded-xl flex items-center justify-center text-white text-base font-black shadow-inner shrink-0">
-                    {selectedMember.name.charAt(0).toUpperCase()}
-                  </div>
+                  {selectedMember.profilePic ? (
+                    <img src={selectedMember.profilePic} alt="Profile" className="w-10 h-10 rounded-xl object-cover border border-white/20 shadow-inner shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 bg-white/10 border border-white/20 rounded-xl flex items-center justify-center text-white text-base font-black shadow-inner shrink-0">
+                      {selectedMember.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <h3 className="font-black text-white text-base sm:text-lg tracking-tight truncate leading-snug">{selectedMember.name}</h3>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-blue-100 text-xs font-medium">
