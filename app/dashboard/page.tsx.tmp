@@ -8,38 +8,61 @@ import { formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
 
 export default function DashboardOverview() {
   const [gymId, setGymId] = useState<string>('gym_1');
+  const [isLoading, setIsLoading] = useState(true);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [activeGym, setActiveGym] = useState<any | null>(null);
   const [waStatus, setWaStatus] = useState<string>('initializing');
 
-  // Load gymId from localstorage on mount
   useEffect(() => {
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-    setGymId(savedId);
+    loadData();
+
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      loadData();
+    }, 30000);
+
+    const handleFocus = () => loadData();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    const handleUpdate = () => loadData();
+    window.addEventListener('attendance_updated', handleUpdate);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('attendance_updated', handleUpdate);
+    };
   }, []);
 
-  // Fetch data with SWR
-  const { data, isLoading } = useOverviewData(gymId);
+  const loadData = async () => {
+    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
+    setGymId(savedId);
 
-  // Derived state
-  const gyms: any[] = data?.gyms || [];
-  const activeGym = gyms.find((g: any) => g.id === gymId) || gyms[0] || null;
-  const customers: any[] = data?.custs || [];
-  const attendance: any[] = data?.atts || [];
-  const transactions: any[] = data?.txs || [];
+    const [gyms, custs, atts, txs] = await Promise.all([
+      getGyms(),
+      getCustomers(savedId),
+      getAttendance(savedId),
+      getTransactions(savedId)
+    ]);
 
-  // Fetch WhatsApp status separately
-  useEffect(() => {
-    if (!gymId) return;
-    const fetchWaStatus = async () => {
-      try {
-        const waRes = await fetch(`/api/whatsapp/status?gymId=${gymId}`);
-        const waData = await waRes.json();
-        setWaStatus(waData.status || 'disconnected');
-      } catch (e) {
-        setWaStatus('disconnected');
-      }
-    };
-    fetchWaStatus();
-  }, [gymId]);
+    setActiveGym(gyms.find((g: any) => g.id === savedId) || gyms[0]);
+    setCustomers(custs);
+    setAttendance(atts);
+    setTransactions(txs);
+    setIsLoading(false);
+
+    try {
+      const waRes = await fetch(`/api/whatsapp/status?gymId=${savedId}`);
+      const waData = await waRes.json();
+      setWaStatus(waData.status || 'disconnected');
+    } catch (e) {
+      setWaStatus('disconnected');
+    }
+  };
 
   // Calculations
   const todayStr = getLocalTodayDateString();

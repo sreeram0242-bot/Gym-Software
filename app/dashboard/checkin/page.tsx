@@ -463,7 +463,7 @@ export default function CheckInTerminal() {
   });
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-20">
+    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-20">
       {isInitialLoad && (
         <div className="space-y-4 animate-pulse">
           <div className="h-28 bg-slate-200 rounded-2xl" />

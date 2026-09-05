@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useDeferredValue, useMemo } from 'react';
 import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell, Banknote, Smartphone, ArrowLeftRight, Tag, ChevronRight, Fingerprint, Download, FileText, FileSpreadsheet, Camera, ImagePlus } from 'lucide-react';
+import { useMembersData } from '@/lib/hooks';
+import { mutate } from 'swr';
 import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, collectPendingBalance, getGyms, getGymSettings, toggleCustomerWaStatus, getNextAvailableZkTecoId } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
@@ -11,13 +13,33 @@ import ImageCropper from '@/components/ImageCropper';
 
 export default function MemberManagementPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
-  const [gymName, setGymName] = useState<string>('Our Gym');
-  const [isLoading, setIsLoading] = useState(true);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [plans, setPlans] = useState<any[]>([]);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [attendance, setAttendance] = useState<any[]>([]);
-  const [settings, setSettings] = useState<any>(null);
+
+
+
+
+
+
+
+  useEffect(() => {
+    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
+    // setGymId(savedId);
+  }, []);
+
+  const { data, isLoading } = useMembersData(gymId);
+  const customers: any[] = data?.custs || [];
+  const plans: any[] = data?.ps || [];
+  const transactions: any[] = data?.txs || [];
+  const attendance: any[] = data?.atts || [];
+  const settings = data?.gymSettings || null;
+  const nextAvailableId = data?.nextId || '';
+
+  const gyms: any[] = data?.gyms || [];
+  const matchedGym = gyms.find((g: any) => g.id === gymId);
+  const gymName = matchedGym?.name || 'Our Gym';
+
+  const absentTrackingEnabled = settings?.absentTrackingEnabled ?? false;
+  const absentThresholdDays = settings?.absentThresholdDays ?? 3;
+
   const [displayLimit, setDisplayLimit] = useState<number>(30);
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,8 +48,8 @@ export default function MemberManagementPage() {
   const [timeFilter, setTimeFilter] = useState<'all_time' | 'today' | 'this_week' | 'this_month'>('all_time');
   const [planFilter, setPlanFilter] = useState<string>('all');
   
-  const [absentTrackingEnabled, setAbsentTrackingEnabled] = useState(false);
-  const [absentThresholdDays, setAbsentThresholdDays] = useState(3);
+
+
 
   // Add Member Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -61,7 +83,7 @@ export default function MemberManagementPage() {
   const [lastPaymentDate, setLastPaymentDate] = useState(getLocalTodayDateString());
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
-  const [nextAvailableId, setNextAvailableId] = useState('');
+
 
   // Selected Member Details Drawer State
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
@@ -241,7 +263,7 @@ export default function MemberManagementPage() {
         await deleteCustomer(id);
         setSelectedMember(null);
         showToast('Member deleted successfully', 'success');
-        loadData();
+        mutate(['members', gymId]);
       }
     });
   };
@@ -356,16 +378,16 @@ export default function MemberManagementPage() {
   }, [cardPollStatus]);
 
   useEffect(() => {
-    loadData();
+    mutate(['members', gymId]);
 
     // Background live auto-refresh polling every 3 seconds
     const interval = setInterval(() => {
       if (document.hidden) return;
-      loadData();
+      mutate(['members', gymId]);
     }, 30000);
 
     const handleFocus = () => {
-      loadData();
+      mutate(['members', gymId]);
     };
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
@@ -430,7 +452,7 @@ export default function MemberManagementPage() {
   }, []);
 
   const loadData = async () => {
-    setIsLoading(true);
+    // setIsLoading(true);
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
@@ -444,24 +466,24 @@ export default function MemberManagementPage() {
       getNextAvailableZkTecoId(savedId)
     ]);
 
-    setCustomers(custs);
-    setPlans(ps);
-    setTransactions(txs);
-    setAttendance(atts);
-    setSettings(gymSettings);
-    setNextAvailableId(nextId);
+    // setCustomers(custs);
+    // setPlans(ps);
+    // setTransactions(txs);
+    // setAttendance(atts);
+    // setSettings(gymSettings);
+    // setNextAvailableId(nextId);
     
     const matchedGym = loadedGyms.find((g: any) => g.id === savedId);
     if (matchedGym) {
-      setGymName(matchedGym.name);
+      // setGymName(matchedGym.name);
     }
 
     if (gymSettings) {
-      setAbsentTrackingEnabled(gymSettings.absentTrackingEnabled ?? false);
-      setAbsentThresholdDays(gymSettings.absentThresholdDays ?? 3);
+      // setAbsentTrackingEnabled...
+      // setAbsentThresholdDays...
     }
     
-    setIsLoading(false);
+    // setIsLoading(false);
     return custs; // Return fresh customers so callers can sync selectedMember
   };
 
@@ -549,7 +571,8 @@ export default function MemberManagementPage() {
       }
       
       // Re-fetch from DB, then sync the detail panel to the real saved record
-      const freshCustomers = await loadData();
+      const freshData = await mutate(['members', gymId]);
+      const freshCustomers = freshData?.custs;
       if (!isEditingMember && freshCustomers) {
         const realMember = freshCustomers.find((c: any) => c.name === savedName && !c.id?.startsWith('temp_'));
         if (realMember) setSelectedMember(realMember);
@@ -609,7 +632,7 @@ export default function MemberManagementPage() {
       setSelectedMember(updated);
       setRenewUpiId('');
       setRenewUpiSenderName('');
-      loadData();
+      mutate(['members', gymId]);
       showToast(`Membership successfully renewed for ${updated.name}!`, 'success');
 
       const autoMessagesEnabled = settings?.waAutoMessages ?? true;
@@ -689,7 +712,7 @@ export default function MemberManagementPage() {
         setSelectedMember(updated);
       }
       showToast(`Collected ₹${collectDueAmount} from ${collectDueMember.name}! Remaining balance: ₹${updated.pendingBalance || 0}`, 'success');
-      loadData();
+      mutate(['members', gymId]);
 
       const autoMessagesEnabled = settings?.waAutoMessages ?? true;
       if (autoMessagesEnabled) {

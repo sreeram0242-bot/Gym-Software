@@ -73,13 +73,24 @@ export default async function getCroppedImg(
     pixelCrop.height
   );
 
-  // set canvas width to final desired crop size - this will clear existing context
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
+  // create a temporary canvas to hold the unscaled cropped image
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = pixelCrop.width;
+  tmpCanvas.height = pixelCrop.height;
+  const tmpCtx = tmpCanvas.getContext('2d');
+  if (tmpCtx) {
+    tmpCtx.putImageData(data, 0, 0);
+  }
 
-  // paste generated rotate image at the top left corner
-  ctx.putImageData(data, 0, 0);
+  // Set the final canvas size to max 400x400 for optimization
+  // Profile pictures are 1:1 aspect ratio, so width and height are the same.
+  const finalSize = Math.min(400, pixelCrop.width);
+  canvas.width = finalSize;
+  canvas.height = finalSize;
 
-  // As Base64 string
-  return canvas.toDataURL('image/jpeg');
+  // draw the temporary canvas onto the final canvas, automatically scaling it down
+  ctx.drawImage(tmpCanvas, 0, 0, tmpCanvas.width, tmpCanvas.height, 0, 0, finalSize, finalSize);
+
+  // As Base64 string with 85% JPEG compression to save massive storage space
+  return canvas.toDataURL('image/jpeg', 0.85);
 }

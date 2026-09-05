@@ -9,18 +9,22 @@ import {
 import { getStaffs, getStaffAttendance, addStaff, updateStaff, deleteStaff, toggleStaffCheckIn, getGymSettings, getGyms, getNextAvailableZkTecoId } from '@/lib/actions';
 import { exportToCSV, formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
 import { exportToPDF } from '@/lib/exportPdf';
+import { useStaffsData } from '@/lib/hooks';
 
 export default function StaffPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
-  const [gymName, setGymName] = useState<string>('Our Gym');
-  const [isLoading, setIsLoading] = useState(true);
-  const [staffs, setStaffs] = useState<any[]>([]);
-  const [attendance, setAttendance] = useState<any[]>([]);
-  const [attendanceManualEnabled, setAttendanceManualEnabled] = useState<boolean>(true);
-  const [attendanceNfcEnabled, setAttendanceNfcEnabled] = useState<boolean>(true);
-  const [attendanceMantraEnabled, setAttendanceMantraEnabled] = useState<boolean>(false);
-  const [attendanceWallMountEnabled, setAttendanceWallMountEnabled] = useState<boolean>(false);
-  const [fpPort, setFpPort] = useState(8765);
+  const { data, isLoading, mutate } = useStaffsData(gymId);
+  const staffs = data?.staffs || [];
+  const attendance = data?.atts || [];
+  const gymSettings = data?.gymSettings || {};
+  const nextAvailableId = data?.nextId || '';
+  const matchedGym = data?.gyms?.find((g: any) => g.id === gymId);
+  const gymName = matchedGym?.name || 'Our Gym';
+  const attendanceManualEnabled = gymSettings.attendanceManualEnabled ?? true;
+  const attendanceNfcEnabled = gymSettings.attendanceNfcEnabled ?? true;
+  const attendanceMantraEnabled = gymSettings.attendanceMantraEnabled ?? false;
+  const attendanceWallMountEnabled = gymSettings.attendanceWallMountEnabled ?? false;
+  const fpPort = gymSettings.fingerprintAgentPort || 8765;
   
   // Subpage Tab Switcher: 'directory' (Team & Live Shifts) vs 'attendance' (Attendance Logs)
   const [staffSubTab, setStaffSubTab] = useState<'directory' | 'attendance'>('directory');
@@ -46,7 +50,7 @@ export default function StaffPage() {
   const [joinedDate, setJoinedDate] = useState(getLocalTodayDateString());
   const [modalError, setModalError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [nextAvailableId, setNextAvailableId] = useState('');
+
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     if (typeof window !== 'undefined') {
@@ -73,8 +77,7 @@ export default function StaffPage() {
     if (!nfcCardId.trim()) return null;
     return staffs.find(s => 
       s.id !== editingStaffId && (
-        matchCard(s.nfcCardId, nfcCardId) || 
-        matchCard(s.nfcCardId2, nfcCardId)
+        matchCard(s.nfcCardId, nfcCardId) || matchCard((s as any).nfcCardId2, nfcCardId)
       )
     );
   }, [nfcCardId, staffs, editingStaffId]);
@@ -83,8 +86,7 @@ export default function StaffPage() {
     if (!nfcCardId2.trim()) return null;
     return staffs.find(s => 
       s.id !== editingStaffId && (
-        matchCard(s.nfcCardId, nfcCardId2) || 
-        matchCard(s.nfcCardId2, nfcCardId2)
+        matchCard(s.nfcCardId, nfcCardId2) || matchCard((s as any).nfcCardId2, nfcCardId2)
       )
     );
   }, [nfcCardId2, staffs, editingStaffId]);
@@ -208,38 +210,10 @@ export default function StaffPage() {
   const [customTo, setCustomTo] = useState('');
   const [punchLoading, setPunchLoading] = useState<string | null>(null);
 
-  const loadData = async () => {
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-    setGymId(savedId);
-    
-    try {
-      const [s, a, settings, loadedGyms, nextId] = await Promise.all([
-        getStaffs(savedId),
-        getStaffAttendance(savedId),
-        getGymSettings(savedId),
-        getGyms(),
-        getNextAvailableZkTecoId(savedId)
-      ]);
-      setStaffs(s || []);
-      setAttendance(a || []);
-      setAttendanceManualEnabled(settings?.attendanceManualEnabled ?? true);
-      setAttendanceNfcEnabled(settings?.attendanceNfcEnabled ?? true);
-      setAttendanceMantraEnabled(settings?.attendanceMantraEnabled ?? false);
-      setAttendanceWallMountEnabled(settings?.attendanceWallMountEnabled ?? false);
-      setFpPort(settings?.fingerprintAgentPort || 8765);
-      const matchedGym = loadedGyms?.find((g: any) => g.id === savedId);
-      if (matchedGym) setGymName(matchedGym.name);
-      setNextAvailableId(nextId);
-      setIsLoading(false);
-    } catch (e) {
-      console.error('Error loading staff data:', e);
-      setIsLoading(false);
-    }
-  };
 
   useEffect(() => {
-    loadData();
-    const handleUpdate = () => loadData();
+    mutate();
+    const handleUpdate = () => mutate();
     window.addEventListener('attendance_updated', handleUpdate);
     return () => window.removeEventListener('attendance_updated', handleUpdate);
   }, []);
@@ -336,7 +310,7 @@ export default function StaffPage() {
     }
 
     setModalError(null);
-    const originalStaffs = [...staffs];
+
     
     // Optimistic UI Update & Close
     setShowStaffModal(false);
@@ -351,24 +325,20 @@ export default function StaffPage() {
         phone: cleanPhone,
         role: staffRole.trim() || 'Trainer',
         nfcCardId: cleanNfc || null,
-        nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
         fingerprintId: cleanFp || null,
         joinedDate: joinedDate || getLocalTodayDateString(),
         status: 'active'
       };
 
       if (isEditingStaff && editingStaffId) {
-        setStaffs(prev => prev.map(s => s.id === editingStaffId ? { ...s, ...payload } : s));
         await updateStaff(editingStaffId, payload);
       } else {
-        const tempId = 'temp_' + Date.now();
-        setStaffs(prev => [{ id: tempId, ...payload }, ...prev]);
+
         await addStaff(payload);
       }
 
-      loadData();
+      mutate();
     } catch (err: any) {
-      setStaffs(originalStaffs); // Rollback
       setShowStaffModal(true);
       console.error('Error saving staff:', err);
       setModalError(err?.message || 'Failed to save staff member. Please check details and try again.');
@@ -391,7 +361,7 @@ export default function StaffPage() {
           }
         }));
       }
-      await loadData();
+      await mutate();
     } catch (err: any) {
       alert(err?.message || 'Punch failed');
     } finally {
@@ -1044,7 +1014,7 @@ export default function StaffPage() {
                           onClick={async () => {
                             if (confirm(`Are you sure you want to remove ${staff.name}?`)) {
                               await deleteStaff(staff.id);
-                              loadData();
+                              mutate();
                             }
                           }}
                           className="p-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors"
@@ -1315,7 +1285,7 @@ export default function StaffPage() {
         const getMonthStart = () => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
         const filteredLogs = staffLogs.filter(r => {
-          const d = r.dateStr || r.date?.slice(0, 10) || '';
+          const d = (r as any).dateStr || (r as any).date?.slice(0, 10) || '';
           if (logsFilter === 'THIS_WEEK') return d >= getWeekStart() && d <= todayStr;
           if (logsFilter === 'THIS_MONTH') return d >= getMonthStart() && d <= todayStr;
           if (logsFilter === 'CUSTOM') {
@@ -1329,7 +1299,7 @@ export default function StaffPage() {
         // Group by date and sum minutes
         const byDate: Record<string, { mins: number; shifts: number }> = {};
         filteredLogs.forEach(r => {
-          const d = r.dateStr || r.date?.slice(0, 10) || 'Unknown';
+          const d = (r as any).dateStr || (r as any).date?.slice(0, 10) || 'Unknown';
           if (!byDate[d]) byDate[d] = { mins: 0, shifts: 0 };
           byDate[d].mins += r.durationMinutes || 0;
           byDate[d].shifts += 1;
@@ -1347,7 +1317,7 @@ export default function StaffPage() {
         };
 
         return (
-          <div className="fixed inset-0 z-50 flex" onClick={() => setShowExportModal(false)}>
+          <div className="fixed inset-0 !mt-0 z-50 flex" onClick={() => setShowExportModal(false)}>
             {/* Backdrop */}
             <div className="flex-1 bg-slate-900/50 backdrop-blur-sm" />
             {/* Panel */}
@@ -1493,7 +1463,7 @@ export default function StaffPage() {
 
       {/* ─── MODAL: ADD / EDIT STAFF MEMBER ─── */}
       {showStaffModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+        <div className="fixed inset-0 !mt-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
               <div>
@@ -1645,9 +1615,7 @@ export default function StaffPage() {
                             <button
                               type="button"
                               onClick={() => {
-                                setNfcCardId2('');
-                                setShowSecondaryNfc(false);
-                              }}
+                                                                                      }}
                               className="text-[10px] text-rose-600 hover:text-rose-800 font-bold"
                             >
                               Remove
@@ -1656,7 +1624,6 @@ export default function StaffPage() {
                           <input
                             type="text"
                             placeholder="Tap 2nd card / keyfob"
-                            value={nfcCardId2}
                             onChange={(e) => setNfcCardId2(e.target.value)}
                             className={`w-full px-3 py-1.5 border rounded-lg text-xs font-mono font-bold text-slate-800 outline-none ${duplicateNfc2Member ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-400' : 'bg-blue-50/50 border-blue-200'}`}
                           />
