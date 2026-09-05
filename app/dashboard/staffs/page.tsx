@@ -6,7 +6,7 @@ import {
   UserCheck, Calendar, Filter, Edit, Radio, Fingerprint, Phone, CheckCircle, 
   AlertCircle, ChevronRight, X, Sparkles, Shield, Users, FileText, FileSpreadsheet
 } from 'lucide-react';
-import { getStaffs, getStaffAttendance, addStaff, updateStaff, deleteStaff, toggleStaffCheckIn, getGymSettings, getGyms } from '@/lib/actions';
+import { getStaffs, getStaffAttendance, addStaff, updateStaff, deleteStaff, toggleStaffCheckIn, getGymSettings, getGyms, getNextAvailableZkTecoId } from '@/lib/actions';
 import { exportToCSV, formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
 import { exportToPDF } from '@/lib/exportPdf';
 
@@ -46,6 +46,7 @@ export default function StaffPage() {
   const [joinedDate, setJoinedDate] = useState(getLocalTodayDateString());
   const [modalError, setModalError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [nextAvailableId, setNextAvailableId] = useState('');
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     if (typeof window !== 'undefined') {
@@ -88,13 +89,7 @@ export default function StaffPage() {
     );
   }, [nfcCardId2, staffs, editingStaffId]);
 
-  const nextSuggestedId = useMemo(() => {
-    const existingIds = staffs
-      .map(s => parseInt(s.fingerprintId, 10))
-      .filter(n => !isNaN(n) && n > 0);
-    if (existingIds.length === 0) return '101';
-    return String(Math.max(...existingIds) + 1);
-  }, [staffs]);
+  // We use server-fetched nextAvailableId now to prevent Member/Staff overlaps
 
   // Polling for biometric command success
   useEffect(() => {
@@ -185,11 +180,12 @@ export default function StaffPage() {
     setGymId(savedId);
     
     try {
-      const [s, a, settings, loadedGyms] = await Promise.all([
+      const [s, a, settings, loadedGyms, nextId] = await Promise.all([
         getStaffs(savedId),
         getStaffAttendance(savedId),
         getGymSettings(savedId),
-        getGyms()
+        getGyms(),
+        getNextAvailableZkTecoId(savedId)
       ]);
       setStaffs(s || []);
       setAttendance(a || []);
@@ -200,6 +196,7 @@ export default function StaffPage() {
       setFpPort(settings?.fingerprintAgentPort || 8765);
       const matchedGym = loadedGyms?.find((g: any) => g.id === savedId);
       if (matchedGym) setGymName(matchedGym.name);
+      setNextAvailableId(nextId);
       setIsLoading(false);
     } catch (e) {
       console.error('Error loading staff data:', e);
@@ -224,7 +221,7 @@ export default function StaffPage() {
     setNfcCardId('');
     setNfcCardId2('');
     setShowSecondaryNfc(false);
-    setFingerprintId('');
+    setFingerprintId(nextAvailableId);
     setFpPollStatus('IDLE');
     setCardPollStatus('IDLE');
     setJoinedDate(getLocalTodayDateString());
@@ -1669,6 +1666,9 @@ export default function StaffPage() {
                         <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                           <Shield className="w-3.5 h-3.5 text-indigo-600" /> Member ID
                         </label>
+                        <span className="text-[10px] font-medium text-slate-400">
+                          {nextAvailableId && !isEditingStaff ? `Next Available: ${nextAvailableId}` : 'Numeric Only'}
+                        </span>
                         {fpPollStatus === 'SUCCESS' ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full">
                             <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> FP Saved
@@ -1694,7 +1694,7 @@ export default function StaffPage() {
                           type="text" 
                           value={fingerprintId}
                           onChange={e => setFingerprintId(e.target.value)}
-                          placeholder={`Enter ID (e.g. ${nextSuggestedId})`}
+                          placeholder={`Enter ID (e.g. ${nextAvailableId})`}
                           className="w-full pl-9 pr-3 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-600 outline-none text-xs font-mono font-bold bg-white" 
                         />
                       </div>

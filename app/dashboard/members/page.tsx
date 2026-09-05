@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useDeferredValue, useMemo } from 'react';
 import { Users, Plus, Search, Phone, CreditCard, Calendar, Radio, CheckCircle, Clock, Edit, RefreshCw, X, Shield, Dumbbell, AlertCircle, Trash2, MessageCircle, AlertTriangle, CheckCircle2, Bell, Banknote, Smartphone, ArrowLeftRight, Tag, ChevronRight, Fingerprint, Download, FileText, FileSpreadsheet, Camera, ImagePlus } from 'lucide-react';
-import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, collectPendingBalance, getGyms, getGymSettings, toggleCustomerWaStatus } from '@/lib/actions';
+import { getCustomers, getSubscriptionPlans, getTransactions, getAttendance, getMemberMonthlyAvgHours, addCustomer, updateCustomer, deleteCustomer, renewMemberPayment, collectPendingBalance, getGyms, getGymSettings, toggleCustomerWaStatus, getNextAvailableZkTecoId } from '@/lib/actions';
 import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 import { formatDateDDMMYYYY, exportToCSV, getLocalTodayDateString } from '@/lib/utils';
@@ -40,6 +40,7 @@ export default function MemberManagementPage() {
   const [profilePic, setProfilePic] = useState<string>('');
   const [fpPollStatus, setFpPollStatus] = useState<'IDLE'|'POLLING'|'SUCCESS'|'ERROR'>('IDLE');
   const [fpCommandId, setFpCommandId] = useState<string|null>(null);
+  const [enrollingMemberId, setEnrollingMemberId] = useState<string|null>(null);
   const [cardPollStatus, setCardPollStatus] = useState<'IDLE'|'POLLING'|'SUCCESS'|'ERROR'>('IDLE');
   const [cardCommandId, setCardCommandId] = useState<string|null>(null);
   const [fpScanning, setFpScanning] = useState(false);
@@ -56,6 +57,7 @@ export default function MemberManagementPage() {
   const [lastPaymentDate, setLastPaymentDate] = useState(getLocalTodayDateString());
   const [errorMsg, setErrorMsg] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
+  const [nextAvailableId, setNextAvailableId] = useState('');
 
   // Selected Member Details Drawer State
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
@@ -172,6 +174,10 @@ export default function MemberManagementPage() {
   };
 
   const handleEnrollFingerprint = async (cust: Customer) => {
+    if (!cust.fingerprintId) {
+      showToast('Please edit the member and assign a Member ID first.', 'error');
+      return;
+    }
     try {
       showToast('Sending command to scanner...', 'success');
       const res = await fetch('/api/biometrics/enroll', {
@@ -180,13 +186,17 @@ export default function MemberManagementPage() {
         body: JSON.stringify({
           gymId: gymId,
           memberId: cust.id,
-          nfcCardId: cust.nfcCardId // Using this as the ADMS PIN
+          pin: cust.fingerprintId
         })
       });
       const data = await res.json();
       
       if (!res.ok) throw new Error(data.error || 'Failed to send command');
       
+      setFingerprintId(cust.fingerprintId);
+      setFpCommandId(data.commandId);
+      setFpPollStatus('POLLING');
+      setEnrollingMemberId(cust.id);
       showToast('Scanner activated! Please place finger on the machine.', 'success');
     } catch (e: any) {
       showToast(e.message || 'Enrollment error', 'error');
@@ -218,8 +228,11 @@ export default function MemberManagementPage() {
     setShowAddModal(false);
     setIsEditingMember(false);
     setEditingMemberId(null);
+    setFingerprintId(nextAvailableId);
+    setMantraFpData('');
     setFpPollStatus('IDLE');
     setFpCommandId(null);
+    setEnrollingMemberId(null);
     setCardPollStatus('IDLE');
     setCardCommandId(null);
   };
@@ -290,10 +303,12 @@ export default function MemberManagementPage() {
             if (data.status === 'SUCCESS') {
               setFpPollStatus('SUCCESS');
               setFpCommandId(null);
+              setEnrollingMemberId(null);
               showToast('Fingerprint Enrolled & Saved!', 'success');
             } else if (data.status === 'ERROR') {
               setFpPollStatus('ERROR');
               setFpCommandId(null);
+              setEnrollingMemberId(null);
               showToast('Fingerprint Enrollment Failed', 'error');
             }
           }
@@ -401,13 +416,14 @@ export default function MemberManagementPage() {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
 
-    const [custs, ps, txs, atts, loadedGyms, gymSettings] = await Promise.all([
+    const [custs, ps, txs, atts, loadedGyms, gymSettings, nextId] = await Promise.all([
       getCustomers(savedId),
       getSubscriptionPlans(savedId),
       getTransactions(savedId),
       getAttendance(savedId),
       getGyms(),
-      getGymSettings(savedId)
+      getGymSettings(savedId),
+      getNextAvailableZkTecoId(savedId)
     ]);
 
     setCustomers(custs);
@@ -415,6 +431,7 @@ export default function MemberManagementPage() {
     setTransactions(txs);
     setAttendance(atts);
     setSettings(gymSettings);
+    setNextAvailableId(nextId);
     
     const matchedGym = loadedGyms.find((g: any) => g.id === savedId);
     if (matchedGym) {
@@ -1319,11 +1336,12 @@ export default function MemberManagementPage() {
                       e.stopPropagation();
                       handleEnrollFingerprint(cust);
                     }}
-                    className="text-xs font-black text-indigo-900 bg-indigo-100 hover:bg-indigo-200 px-2.5 py-1.5 rounded-lg flex items-center space-x-1 transition-colors border border-indigo-300 shadow-sm"
+                    disabled={enrollingMemberId !== null && enrollingMemberId !== cust.id}
+                    className={`text-xs font-black px-2.5 py-1.5 rounded-lg flex items-center space-x-1 transition-colors border shadow-sm ${enrollingMemberId === cust.id ? 'text-blue-900 bg-blue-100 border-blue-300 animate-pulse' : 'text-indigo-900 bg-indigo-100 hover:bg-indigo-200 border-indigo-300'}`}
                     title="Enroll Fingerprint to Device"
                   >
-                    <Fingerprint className="w-3.5 h-3.5" />
-                    <span>Enroll FP</span>
+                    {enrollingMemberId === cust.id ? <Clock className="w-3.5 h-3.5 animate-spin" /> : <Fingerprint className="w-3.5 h-3.5" />}
+                    <span>{enrollingMemberId === cust.id ? 'Syncing...' : 'Enroll FP'}</span>
                   </button>
                   {(cust.pendingBalance || 0) > 0 && (
                     <button
@@ -1555,7 +1573,9 @@ export default function MemberManagementPage() {
                       <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
                         <Shield className="w-3.5 h-3.5 text-blue-900" /> Member ID *
                       </label>
-                      <span className="text-[10px] font-medium text-slate-400">Numeric Only</span>
+                      <span className="text-[10px] font-medium text-slate-400">
+                        {nextAvailableId && !isEditingMember ? `Next Available: ${nextAvailableId}` : 'Numeric Only'}
+                      </span>
                     </div>
                     <input
                       type="text"
@@ -2139,9 +2159,9 @@ export default function MemberManagementPage() {
                 </div>
                 
                 <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                  <button onClick={() => handleEnrollFingerprint(selectedMember)} className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-50 rounded-lg flex items-center gap-1 border border-emerald-500/30 text-xs font-bold transition-all" title="Enroll Fingerprint on Wall Machine">
-                    <Fingerprint className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Enroll FP</span>
+                  <button disabled={enrollingMemberId !== null && enrollingMemberId !== selectedMember.id} onClick={() => handleEnrollFingerprint(selectedMember)} className={`px-2.5 py-1 ${enrollingMemberId === selectedMember.id ? 'bg-blue-500/40 text-blue-100 border-blue-500/50 animate-pulse' : 'bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-50 border-emerald-500/30'} rounded-lg flex items-center gap-1 border text-xs font-bold transition-all`} title="Enroll Fingerprint on Wall Machine">
+                    {enrollingMemberId === selectedMember.id ? <Clock className="w-3.5 h-3.5 animate-spin" /> : <Fingerprint className="w-3.5 h-3.5" />}
+                    <span className="hidden sm:inline">{enrollingMemberId === selectedMember.id ? 'Syncing...' : 'Enroll FP'}</span>
                   </button>
                   <button onClick={() => handleEditInit(selectedMember)} className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/10 transition-all" title="Edit Profile">
                     <Edit className="w-3.5 h-3.5" />

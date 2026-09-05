@@ -762,7 +762,13 @@ export async function deleteCustomer(id: string) {
 
     await prisma.customer.update({
       where: { id },
-      data: { isArchived: true }
+      data: { 
+        isArchived: true,
+        fingerprintId: null,
+        mantraFpData: null,
+        nfcCardId: "",
+        nfcCardId2: null
+      }
     });
     return true;
   } catch {
@@ -1809,11 +1815,45 @@ export async function deleteStaff(id: string) {
   const callerGymId = cookies().get('active_gym_id')?.value;
   if (!callerGymId) throw new Error("Unauthorized");
   try {
-    const current = await prisma.staff.findUnique({ where: { id } });
+    const current = await prisma.staff.findUnique({ 
+      where: { id },
+      select: { fingerprintId: true, nfcCardId: true, gymId: true }
+    });
     if (!current || current.gymId !== callerGymId) throw new Error('Staff member not found');
+
+    if (current.fingerprintId) {
+      // 1. Delete user & biometrics from physical ZKTeco device via TCP port 4370
+      try {
+        await deleteUserFromZkDevice(current.fingerprintId);
+      } catch (e) {
+        console.error('Device direct delete error:', e);
+      }
+
+      // 2. Also enqueue ADMS delete command as secondary backup
+      try {
+        const device = await prisma.biometricDevice.findFirst({
+          where: { gymId: callerGymId, status: 'online' }
+        });
+        if (device) {
+          await prisma.biometricCommand.create({
+            data: {
+              deviceId: device.id,
+              commandString: `DATA DELETE USER PIN=${current.fingerprintId}`,
+              status: 'PENDING'
+            }
+          });
+        }
+      } catch (e) {}
+    }
+
     await prisma.staff.update({
       where: { id },
-      data: { isArchived: true }
+      data: { 
+        isArchived: true,
+        fingerprintId: null,
+        mantraFpData: null,
+        nfcCardId: null
+      }
     });
     return true;
   } catch (e) {
@@ -2063,4 +2103,29 @@ export async function registerBiometricDevice(gymId: string, serialNumber: strin
 export async function getBiometricDevice(gymId: string) {
   if (!gymId) return null;
   return prisma.biometricDevice.findFirst({ where: { gymId } });
+}
+
+export async function getNextAvailableZkTecoId(gymId: string): Promise<string> {
+  try {
+    const customers = await prisma.customer.findMany({
+      where: { gymId, fingerprintId: { not: null } },
+      select: { fingerprintId: true }
+    });
+    
+    const staffs = await prisma.staff.findMany({
+      where: { gymId, fingerprintId: { not: null } },
+      select: { fingerprintId: true }
+    });
+
+    const allIds = [
+      ...customers.map(c => Number(c.fingerprintId)).filter(n => !isNaN(n)),
+      ...staffs.map(s => Number(s.fingerprintId)).filter(n => !isNaN(n))
+    ];
+
+    if (allIds.length === 0) return '1';
+    
+    return (Math.max(...allIds) + 1).toString();
+  } catch (e) {
+    return '1';
+  }
 }

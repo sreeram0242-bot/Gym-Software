@@ -3,10 +3,12 @@ import prisma from '@/lib/db';
 
 export async function POST(req: Request) {
   try {
-    const { gymId, memberId, nfcCardId, actualCardNumber, enrollType } = await req.json();
+    const { gymId, memberId, nfcCardId, actualCardNumber, enrollType, pin } = await req.json();
 
-    if (!gymId || !memberId || !nfcCardId) {
-      return new NextResponse('Missing required fields', { status: 400 });
+    const targetPin = pin || nfcCardId;
+
+    if (!gymId || !memberId || !targetPin) {
+      return new NextResponse('Missing required fields (Member ID / PIN)', { status: 400 });
     }
 
     // Find the first registered online biometric device for this gym
@@ -22,18 +24,9 @@ export async function POST(req: Request) {
     }
 
     // Ensure we have a purely numeric PIN for the machine
-    let numericPin = nfcCardId.replace(/\D/g, ''); // strip non-digits
+    let numericPin = targetPin.replace(/\D/g, ''); // strip non-digits
     if (!numericPin || numericPin.length === 0 || numericPin.length > 8) {
-       // if no digits or too long, generate a random 5 digit number
-       numericPin = Math.floor(10000 + Math.random() * 90000).toString();
-    }
-    
-    // Save this numericPin as the fingerprintId in the database if member exists!
-    if (memberId && memberId !== 'temp') {
-      await prisma.customer.update({
-        where: { id: memberId },
-        data: { fingerprintId: numericPin }
-      });
+       return new NextResponse(JSON.stringify({ error: 'Invalid Member ID. Must be numeric and max 8 digits.' }), { status: 400 });
     }
 
     const isCard = enrollType === 'card';
