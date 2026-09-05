@@ -4,7 +4,12 @@ import { toggleCheckIn, toggleStaffCheckIn } from '@/lib/actions';
 
 export async function GET(req: Request) {
   // ADMS initialization handshake
-  const res = "OK";
+  const url = new URL(req.url);
+  const serialNumber = url.searchParams.get('SN') || 'UNKNOWN';
+  
+  // Force the device to poll every 2 seconds instead of the factory default 15s
+  const res = `GET OPTION FROM: ${serialNumber}\nDelay=2\nErrorDelay=15\nRealtime=1\nTransTimes=00:00;14:00\nTransInterval=1\nTransFlag=1111000000\n`;
+  
   return new NextResponse(res, { 
     status: 200, 
     headers: { 
