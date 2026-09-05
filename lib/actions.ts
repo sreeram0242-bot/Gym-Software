@@ -443,6 +443,12 @@ export async function addCustomer(data: any) {
     if (existing) {
       throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by ${existing.name}`);
     }
+    const existingStaff = await prisma.staff.findFirst({
+      where: { fingerprintId: data.fingerprintId, gymId: data.gymId }
+    });
+    if (existingStaff) {
+      throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by Staff Member: ${existingStaff.name}`);
+    }
   }
 
   if (data.mantraFpData) {
@@ -451,6 +457,12 @@ export async function addCustomer(data: any) {
     });
     if (existingMantra) {
       throw new Error(`Mantra Fingerprint is already registered to ${existingMantra.name}`);
+    }
+    const existingMantraStaff = await prisma.staff.findFirst({
+      where: { mantraFpData: data.mantraFpData, gymId: data.gymId }
+    });
+    if (existingMantraStaff) {
+      throw new Error(`Mantra Fingerprint is already registered to Staff Member: ${existingMantraStaff.name}`);
     }
   }
 
@@ -472,6 +484,12 @@ export async function addCustomer(data: any) {
     if (existingCardCust) {
       throw new Error(`NFC Card ${card} is already assigned to ${existingCardCust.name}`);
     }
+    const existingCardStaff = await prisma.staff.findFirst({
+      where: { gymId: data.gymId, nfcCardId: { in: cardMatch } }
+    });
+    if (existingCardStaff) {
+      throw new Error(`NFC Card ${card} is already assigned to Staff Member: ${existingCardStaff.name}`);
+    }
   }
 
   if (data.nfcCardId2 && data.nfcCardId2.trim()) {
@@ -491,6 +509,12 @@ export async function addCustomer(data: any) {
     });
     if (existingCardCust2) {
       throw new Error(`Secondary NFC Card ${card2} is already assigned to ${existingCardCust2.name}`);
+    }
+    const existingCardStaff2 = await prisma.staff.findFirst({
+      where: { gymId: data.gymId, nfcCardId: { in: cardMatch2 } }
+    });
+    if (existingCardStaff2) {
+      throw new Error(`Secondary NFC Card ${card2} is already assigned to Staff Member: ${existingCardStaff2.name}`);
     }
   }
 
@@ -647,6 +671,12 @@ export async function updateCustomer(id: string, data: any) {
     if (existing) {
       throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by ${existing.name}`);
     }
+    const existingStaff = await prisma.staff.findFirst({
+      where: { fingerprintId: data.fingerprintId, gymId: callerGymId }
+    });
+    if (existingStaff) {
+      throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by Staff Member: ${existingStaff.name}`);
+    }
   }
 
   if (data.mantraFpData) {
@@ -655,6 +685,12 @@ export async function updateCustomer(id: string, data: any) {
     });
     if (existingMantra) {
       throw new Error(`Mantra Fingerprint is already registered to ${existingMantra.name}`);
+    }
+    const existingMantraStaff = await prisma.staff.findFirst({
+      where: { mantraFpData: data.mantraFpData, gymId: callerGymId }
+    });
+    if (existingMantraStaff) {
+      throw new Error(`Mantra Fingerprint is already registered to Staff Member: ${existingMantraStaff.name}`);
     }
   }
 
@@ -677,6 +713,12 @@ export async function updateCustomer(id: string, data: any) {
     if (existingCardCust) {
       throw new Error(`NFC Card ${card} is already assigned to ${existingCardCust.name}`);
     }
+    const existingCardStaff = await prisma.staff.findFirst({
+      where: { gymId: callerGymId, nfcCardId: { in: cardMatch } }
+    });
+    if (existingCardStaff) {
+      throw new Error(`NFC Card ${card} is already assigned to Staff Member: ${existingCardStaff.name}`);
+    }
   }
 
   if (data.nfcCardId2 && data.nfcCardId2.trim()) {
@@ -697,6 +739,12 @@ export async function updateCustomer(id: string, data: any) {
     });
     if (existingCardCust2) {
       throw new Error(`Secondary NFC Card ${card2} is already assigned to ${existingCardCust2.name}`);
+    }
+    const existingCardStaff2 = await prisma.staff.findFirst({
+      where: { gymId: callerGymId, nfcCardId: { in: cardMatch2 } }
+    });
+    if (existingCardStaff2) {
+      throw new Error(`Secondary NFC Card ${card2} is already assigned to Staff Member: ${existingCardStaff2.name}`);
     }
   }
 
@@ -1715,6 +1763,12 @@ export async function addStaff(data: any) {
       if (existingNfc) {
         throw new Error(`NFC Card ID "${cleanNfc}" is already assigned to staff: ${existingNfc.name}.`);
       }
+      const existingCustNfc = await prisma.customer.findFirst({
+        where: { gymId, OR: [{ nfcCardId: cleanNfc }, { nfcCardId2: cleanNfc }] }
+      });
+      if (existingCustNfc) {
+        throw new Error(`NFC Card ID "${cleanNfc}" is already assigned to Member: ${existingCustNfc.name}.`);
+      }
     }
 
     if (cleanFp) {
@@ -1724,6 +1778,12 @@ export async function addStaff(data: any) {
       if (existingFp) {
         throw new Error(`ZKTeco ID "${cleanFp}" is already assigned to staff: ${existingFp.name}.`);
       }
+      const existingCustFp = await prisma.customer.findFirst({
+        where: { gymId, fingerprintId: cleanFp }
+      });
+      if (existingCustFp) {
+        throw new Error(`ZKTeco ID "${cleanFp}" is already assigned to Member: ${existingCustFp.name}.`);
+      }
     }
 
     if (cleanMantraFp) {
@@ -1732,6 +1792,12 @@ export async function addStaff(data: any) {
       });
       if (existingMantra) {
         throw new Error(`Mantra Fingerprint is already assigned to staff: ${existingMantra.name}.`);
+      }
+      const existingCustMantra = await prisma.customer.findFirst({
+        where: { gymId, mantraFpData: cleanMantraFp }
+      });
+      if (existingCustMantra) {
+        throw new Error(`Mantra Fingerprint is already assigned to Member: ${existingCustMantra.name}.`);
       }
     }
 
@@ -1783,6 +1849,12 @@ export async function updateStaff(id: string, data: any) {
       if (existingNfc) {
         throw new Error(`NFC Card ID "${cleanNfc}" is already assigned to staff: ${existingNfc.name}.`);
       }
+      const existingCustNfc = await prisma.customer.findFirst({
+        where: { gymId: current.gymId, OR: [{ nfcCardId: cleanNfc }, { nfcCardId2: cleanNfc }] }
+      });
+      if (existingCustNfc) {
+        throw new Error(`NFC Card ID "${cleanNfc}" is already assigned to Member: ${existingCustNfc.name}.`);
+      }
     }
 
     if (cleanFp && cleanFp !== current.fingerprintId) {
@@ -1792,6 +1864,12 @@ export async function updateStaff(id: string, data: any) {
       if (existingFp) {
         throw new Error(`ZKTeco ID "${cleanFp}" is already assigned to staff: ${existingFp.name}.`);
       }
+      const existingCustFp = await prisma.customer.findFirst({
+        where: { gymId: current.gymId, fingerprintId: cleanFp }
+      });
+      if (existingCustFp) {
+        throw new Error(`ZKTeco ID "${cleanFp}" is already assigned to Member: ${existingCustFp.name}.`);
+      }
     }
 
     if (cleanMantraFp && cleanMantraFp !== current.mantraFpData) {
@@ -1800,6 +1878,12 @@ export async function updateStaff(id: string, data: any) {
       });
       if (existingMantra) {
         throw new Error(`Mantra Fingerprint is already assigned to staff: ${existingMantra.name}.`);
+      }
+      const existingCustMantra = await prisma.customer.findFirst({
+        where: { gymId: current.gymId, mantraFpData: cleanMantraFp }
+      });
+      if (existingCustMantra) {
+        throw new Error(`Mantra Fingerprint is already assigned to Member: ${existingCustMantra.name}.`);
       }
     }
 

@@ -2,11 +2,31 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2, Edit2, Download, Banknote, Smartphone, ArrowLeftRight, Copy, Check } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, updateTransaction, deleteTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan, getGyms, getGymSettings } from '@/lib/actions';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-900 text-white p-3 rounded-xl shadow-xl border border-slate-700 text-sm">
+        <p className="font-bold text-slate-300 mb-2 border-b border-slate-700 pb-1">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex items-center justify-between gap-4 py-0.5">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+              <span className="text-slate-300 font-medium">{entry.name}</span>
+            </div>
+            <span className="font-black">₹{Number(entry.value).toLocaleString()}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function RevenuePage() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -658,15 +678,23 @@ export default function RevenuePage() {
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748B' }} />
-              <YAxis tick={{ fontSize: 12, fill: '#64748B' }} />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0' }}
-                formatter={(value: any) => [`₹${Number(value).toLocaleString()}`, '']}
-              />
-              <Bar dataKey="Income" fill="#1E3A8A" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Expense" fill="#B91C1C" radius={[4, 4, 0, 0]} />
+              <defs>
+                <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={1}/>
+                  <stop offset="95%" stopColor="#1E3A8A" stopOpacity={0.8}/>
+                </linearGradient>
+                <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#F43F5E" stopOpacity={1}/>
+                  <stop offset="95%" stopColor="#9F1239" stopOpacity={0.8}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+              <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748B' }} axisLine={false} tickLine={false} dy={10} />
+              <YAxis tick={{ fontSize: 12, fill: '#64748B' }} axisLine={false} tickLine={false} />
+              <Tooltip cursor={{ fill: '#F8FAFC' }} content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+              <Bar dataKey="Income" fill="url(#colorIncome)" radius={[6, 6, 0, 0]} barSize={32} animationDuration={1500} />
+              <Bar dataKey="Expense" fill="url(#colorExpense)" radius={[6, 6, 0, 0]} barSize={32} animationDuration={1500} />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -322,8 +322,14 @@ export default function StaffPage() {
       }
     }
 
-    setIsSaving(true);
     setModalError(null);
+    const originalStaffs = [...staffs];
+    
+    // Optimistic UI Update & Close
+    setShowStaffModal(false);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Staff ${cleanName} ${isEditingStaff ? 'updated' : 'added'} successfully!`, type: 'success' } }));
+    }
 
     try {
       const payload = {
@@ -339,18 +345,20 @@ export default function StaffPage() {
       };
 
       if (isEditingStaff && editingStaffId) {
+        setStaffs(prev => prev.map(s => s.id === editingStaffId ? { ...s, ...payload } : s));
         await updateStaff(editingStaffId, payload);
       } else {
+        const tempId = 'temp_' + Date.now();
+        setStaffs(prev => [{ id: tempId, ...payload }, ...prev]);
         await addStaff(payload);
       }
 
-      setShowStaffModal(false);
-      await loadData();
+      loadData();
     } catch (err: any) {
+      setStaffs(originalStaffs); // Rollback
+      setShowStaffModal(true);
       console.error('Error saving staff:', err);
       setModalError(err?.message || 'Failed to save staff member. Please check details and try again.');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -1038,9 +1046,25 @@ export default function StaffPage() {
               })}
 
               {filteredStaffs.length === 0 && (
-                <div className="col-span-full p-10 text-center text-slate-400 text-xs bg-slate-50 rounded-2xl border border-dashed border-slate-300">
-                  <Briefcase className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                  <p className="font-semibold text-slate-600">No staff members found matching "{search}".</p>
+                <div className="col-span-full bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
+                  <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-900 mx-auto flex items-center justify-center mb-4">
+                    <Briefcase className="w-8 h-8 text-blue-900" />
+                  </div>
+                  <h3 className="text-base font-bold text-slate-900 mb-1">
+                    {search ? `No staff members found matching "${search}"` : 'No Staff Members Yet'}
+                  </h3>
+                  <p className="text-slate-500 mb-6 font-medium max-w-sm mx-auto">
+                    {search ? 'Try adjusting your search terms.' : 'When you add staff members they will appear here.'}
+                  </p>
+                  {!search && (
+                    <button
+                      onClick={openAddModal}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md inline-flex items-center space-x-2"
+                    >
+                      <UserPlus className="w-5 h-5" />
+                      <span>Add New Staff</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1811,6 +1835,16 @@ export default function StaffPage() {
         </div>
       )}
       </>}
+
+      {/* MOBILE FLOATING ACTION BUTTON */}
+      {!isLoading && (
+        <button
+          onClick={openAddModal}
+          className="md:hidden fixed bottom-24 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-95 transition-transform"
+        >
+          <UserPlus className="w-6 h-6" />
+        </button>
+      )}
     </div>
   );
 }

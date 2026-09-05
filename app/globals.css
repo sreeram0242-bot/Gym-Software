@@ -176,6 +176,12 @@ select:focus {
 
 .toast-animate { animation: toast-enter var(--dur-base) var(--ease-out) both; }
 
+@keyframes toast-progress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+.toast-progress { animation: toast-progress 3s linear forwards; }
+
 /* ─────────────────────────────────────
    BADGE / COUNTER — pop in
 ───────────────────────────────────── */

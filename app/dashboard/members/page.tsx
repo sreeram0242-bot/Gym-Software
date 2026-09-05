@@ -7,6 +7,7 @@ import { Customer, Transaction, AttendanceRecord, SubscriptionPlan, Gym } from '
 import { getTemplate, compileTemplate } from '@/lib/templates';
 import { formatDateDDMMYYYY, exportToCSV, getLocalTodayDateString } from '@/lib/utils';
 import { exportToPDF } from '@/lib/exportPdf';
+import ImageCropper from '@/components/ImageCropper';
 
 export default function MemberManagementPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
@@ -38,6 +39,7 @@ export default function MemberManagementPage() {
   const [fingerprintId, setFingerprintId] = useState('');
   const [mantraFpData, setMantraFpData] = useState('');
   const [profilePic, setProfilePic] = useState<string>('');
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [fpPollStatus, setFpPollStatus] = useState<'IDLE'|'POLLING'|'SUCCESS'|'ERROR'>('IDLE');
   const [fpCommandId, setFpCommandId] = useState<string|null>(null);
   const [enrollingMemberId, setEnrollingMemberId] = useState<string|null>(null);
@@ -167,7 +169,7 @@ export default function MemberManagementPage() {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfilePic(reader.result as string);
+        setImageToCrop(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -520,23 +522,41 @@ export default function MemberManagementPage() {
     dueObj.setMonth(dueObj.getMonth() + months);
     const nextDueDate = dueObj.toISOString().split('T')[0];
 
+    const originalCustomers = [...customers];
+    
+    // Optimistically hide modal & clear forms
+    setShowAddModal(false);
+    const savedName = name;
+    setName('');
+    setPhone('');
+    setNfcCardId('');
+    setNfcCardId2('');
+    setProfilePic('');
+    setShowSecondaryNfc(false);
+    setUpiId('');
+    setUpiSenderName('');
+    setInfoMsg('');
+    setFpPollStatus('IDLE');
+    setFpCommandId(null);
+    setCardPollStatus('IDLE');
+    setCardCommandId(null);
+
     try {
       if (isEditingMember && editingMemberId) {
-        await updateCustomer(editingMemberId, {
-          name,
-          phone,
-          nfcCardId: newNfc,
-          nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
-          fingerprintId: fingerprintId || null,
-          mantraFpData,
-          profilePic: profilePic || null,
-          planType,
-          feeAmount: Number(feeAmount),
-          lastPaymentDate,
-          nextDueDate
-        });
+        setCustomers(prev => prev.map(c => c.id === editingMemberId ? {
+          ...c, name: savedName, phone, nfcCardId: newNfc, nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
+          fingerprintId: fingerprintId || null, profilePic: profilePic || null, planType, feeAmount: Number(feeAmount),
+          lastPaymentDate, nextDueDate
+        } : c));
         setIsEditingMember(false);
         setEditingMemberId(null);
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Member ${savedName} updated successfully!`, type: 'success' } }));
+
+        await updateCustomer(editingMemberId, {
+          name: savedName, phone, nfcCardId: newNfc, nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
+          fingerprintId: fingerprintId || null, mantraFpData, profilePic: profilePic || null, planType, feeAmount: Number(feeAmount),
+          lastPaymentDate, nextDueDate
+        });
       } else {
         const totalPlanPrice = Number(feeAmount);
         const actualPaid = Number(paidAmount);
@@ -545,50 +565,27 @@ export default function MemberManagementPage() {
         const discountAmount = diff > 0 && remainingType === 'DISCOUNT' ? diff : 0;
         const splitData = paymentMethod === 'SPLIT' ? { cash: Number(splitCash), upi: Number(splitUpi) } : undefined;
 
+        const tempId = 'temp_' + Date.now();
+        setCustomers(prev => [{
+          id: tempId, name: savedName, phone, nfcCardId: newNfc, nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
+          fingerprintId: fingerprintId || null, profilePic: profilePic || null, planType, feeAmount: totalPlanPrice, paidAmount: actualPaid,
+          pendingBalance: finalPendingBalance, lastPaymentDate, nextDueDate, status: 'ACTIVE',
+          plan: plans.find(p => p.name === planType)
+        }, ...prev]);
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Member ${savedName} added successfully!`, type: 'success' } }));
+
         await addCustomer({
-          gymId,
-          name,
-          phone,
-          nfcCardId: newNfc,
-          nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
-          fingerprintId: fingerprintId || null,
-          mantraFpData,
-          profilePic: profilePic || null,
-          planType,
-          feeAmount: totalPlanPrice,
-          paidAmount: actualPaid,
-          pendingBalance: finalPendingBalance,
-          balanceDueDate: finalPendingBalance > 0 ? balanceDueDate : null,
-          discountAmount,
-          paymentMethod,
-          splitDetails: splitData,
-          upiId: paymentMethod === 'UPI' ? upiId : undefined,
-          upiSenderName: paymentMethod === 'UPI' ? upiSenderName : undefined,
-          lastPaymentDate,
-          nextDueDate
+          gymId, name: savedName, phone, nfcCardId: newNfc, nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
+          fingerprintId: fingerprintId || null, mantraFpData, profilePic: profilePic || null, planType, feeAmount: totalPlanPrice,
+          paidAmount: actualPaid, pendingBalance: finalPendingBalance, balanceDueDate: finalPendingBalance > 0 ? balanceDueDate : null,
+          discountAmount, paymentMethod, splitDetails: splitData, upiId: paymentMethod === 'UPI' ? upiId : undefined,
+          upiSenderName: paymentMethod === 'UPI' ? upiSenderName : undefined, lastPaymentDate, nextDueDate
         });
-
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Member ${name} added successfully!`, type: 'success' } }));
-        }
       }
-
-      setShowAddModal(false);
-      setName('');
-      setPhone('');
-      setNfcCardId('');
-      setNfcCardId2('');
-      setProfilePic('');
-      setShowSecondaryNfc(false);
-      setUpiId('');
-      setUpiSenderName('');
-      setInfoMsg('');
-      setFpPollStatus('IDLE');
-      setFpCommandId(null);
-      setCardPollStatus('IDLE');
-      setCardCommandId(null);
       loadData();
     } catch (err: any) {
+      setCustomers(originalCustomers); // Rollback
+      setShowAddModal(true);
       setErrorMsg(err.message || 'Failed to save member. Please check the entered data.');
       showToast(err.message || 'Failed to save member', 'error');
     }
@@ -1045,6 +1042,21 @@ export default function MemberManagementPage() {
     return filteredCustomers.slice(0, displayLimit);
   }, [filteredCustomers, displayLimit]);
 
+  const handleOpenAddModal = () => {
+    setIsEditingMember(false);
+    setEditingMemberId(null);
+    setName('');
+    setPhone('');
+    setNfcCardId('');
+    setNfcCardId2('');
+    setShowSecondaryNfc(false);
+    setFingerprintId(nextSuggestedId);
+    setFeeAmount(2500);
+    setPaidAmount(2500);
+    setInfoMsg('');
+    setErrorMsg('');
+    setShowAddModal(true);
+  };
 
   return (
     <div className="pt-0 mt-0">
@@ -1066,21 +1078,7 @@ export default function MemberManagementPage() {
 
         <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => {
-                setIsEditingMember(false);
-                setEditingMemberId(null);
-                setName('');
-                setPhone('');
-                setNfcCardId('');
-                setNfcCardId2('');
-                setShowSecondaryNfc(false);
-                setFingerprintId(nextSuggestedId);
-                setFeeAmount(2500);
-                setPaidAmount(2500);
-                setInfoMsg('');
-                setErrorMsg('');
-                setShowAddModal(true);
-              }}
+              onClick={handleOpenAddModal}
               className="px-4 py-2.5 bg-blue-900 hover:bg-blue-950 text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex items-center space-x-2"
             >
               <Plus className="w-4 h-4" />
@@ -1231,9 +1229,24 @@ export default function MemberManagementPage() {
 
       {/* Members Grid View (Responsive Cards + Table) */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20">
-          <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mb-4" />
-          <p className="text-slate-500 font-medium">Loading members...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-between h-48">
+              <div>
+                <div className="flex items-center space-x-3 pb-3 border-b border-slate-100 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-200 shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 bg-slate-200 rounded w-1/2" />
+                    <div className="h-3 bg-slate-200 rounded w-1/3" />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="h-3 bg-slate-200 rounded w-3/4" />
+                  <div className="h-3 bg-slate-200 rounded w-2/3" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -2695,11 +2708,12 @@ export default function MemberManagementPage() {
       {/* CUSTOM UI TOAST NOTIFICATION */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
-          <div className={`flex items-center space-x-3 px-5 py-4 rounded-2xl shadow-lg border ${
+          <div className={`flex items-center space-x-3 px-5 py-4 rounded-2xl shadow-lg border relative overflow-hidden ${
             toast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
             toast.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
             'bg-blue-50 border-blue-200 text-blue-800'
           }`}>
+            <div className="absolute bottom-0 left-0 h-1 bg-current opacity-20 toast-progress" />
             {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
             {toast.type === 'error' && <AlertTriangle className="w-5 h-5 text-red-600" />}
             {toast.type === 'info' && <Bell className="w-5 h-5 text-blue-600" />}
@@ -2707,6 +2721,26 @@ export default function MemberManagementPage() {
           </div>
         </div>
       )}
+
+      {/* IMAGE CROPPER MODAL */}
+      {imageToCrop && (
+        <ImageCropper
+          imageSrc={imageToCrop}
+          onCropCompleteAction={(croppedImg) => {
+            setProfilePic(croppedImg);
+            setImageToCrop(null);
+          }}
+          onCancel={() => setImageToCrop(null)}
+        />
+      )}
+
+      {/* MOBILE FLOATING ACTION BUTTON */}
+      <button
+        onClick={handleOpenAddModal}
+        className="md:hidden fixed bottom-24 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-95 transition-transform"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
     </div>
   );
 }

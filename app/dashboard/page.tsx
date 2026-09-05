@@ -137,7 +137,7 @@ export default function DashboardOverview() {
       {/* Overview Stat Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1: Total Members */}
-        <Link href="/dashboard/members" className="bg-white border border-slate-200 hover:border-blue-700 p-4 rounded-xl shadow-sm transition-all group">
+        <Link href="/dashboard/members" className="bg-white border border-slate-200 hover:border-blue-700 p-4 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 group">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Total Members</span>
             <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-900 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -152,7 +152,7 @@ export default function DashboardOverview() {
         </Link>
 
         {/* Metric 2: Today's Visits */}
-        <Link href="/dashboard/checkin" className="bg-white border border-slate-200 hover:border-blue-700 p-4 rounded-xl shadow-sm transition-all group">
+        <Link href="/dashboard/checkin" className="bg-white border border-slate-200 hover:border-emerald-500 p-4 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 group">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Today Check-Ins</span>
             <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -169,7 +169,7 @@ export default function DashboardOverview() {
         </Link>
 
         {/* Metric 3: Due Reminders */}
-        <Link href="/dashboard/reminders" className="bg-white border border-slate-200 hover:border-amber-400 p-4 rounded-xl shadow-sm transition-all group">
+        <Link href="/dashboard/reminders" className="bg-white border border-slate-200 hover:border-amber-400 p-4 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 group">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Payment Dues</span>
             <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -184,7 +184,7 @@ export default function DashboardOverview() {
         </Link>
 
         {/* Metric 4: Today's Payments */}
-        <Link href="/dashboard/revenue" className="bg-white border border-slate-200 hover:border-blue-700 p-4 rounded-xl shadow-sm transition-all group">
+        <Link href="/dashboard/revenue" className="bg-white border border-slate-200 hover:border-blue-700 p-4 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 group">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Today's Collection</span>
             <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-900 flex items-center justify-center group-hover:scale-110 transition-transform">

@@ -420,11 +420,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Global Right-Bottom Toast for Messages */}
       {globalToast && (
-        <div className={`fixed bottom-20 md:bottom-6 right-6 z-[200] flex items-center space-x-2 px-4 py-3 rounded-xl shadow-xl animate-in slide-in-from-right-4 fade-in ${
-          globalToast.type === 'error' ? 'bg-rose-600 text-white' : 
-          globalToast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white'
+        <div className={`fixed bottom-20 md:bottom-6 right-6 z-[200] flex items-center space-x-2 px-4 py-3 rounded-xl shadow-xl border overflow-hidden relative animate-in slide-in-from-right-4 fade-in ${
+          globalToast.type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 
+          globalToast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-blue-50 border-blue-200 text-blue-800'
         }`}>
-          {globalToast.type === 'error' ? <AlertTriangle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+          <div className="absolute bottom-0 left-0 h-1 bg-current opacity-20 toast-progress" style={{ animationDuration: '3.5s' }} />
+          {globalToast.type === 'error' ? <AlertTriangle className="w-5 h-5 text-rose-600" /> : <CheckCircle className="w-5 h-5 text-emerald-600" />}
           <span className="font-bold text-sm">{globalToast.message}</span>
         </div>
       )}
