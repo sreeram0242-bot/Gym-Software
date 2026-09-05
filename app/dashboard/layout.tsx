@@ -81,29 +81,54 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           if (res.ok) {
             const data = await res.json();
             setWaStatus(data.status);
+          } else {
+            setWaStatus('DISCONNECTED');
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error('WhatsApp status poll error:', e);
+          setWaStatus('DISCONNECTED');
+        }
       };
       checkWaStatus(matched.id);
       const waInterval = setInterval(() => checkWaStatus(matched.id), 60000);
 
       // Global Polling for Recent Punches (for ADMS hardware and cross-tab sync)
-      let lastPunchId = '';
+      const processedPunchIds = new Set<string>();
+      let punchQueue: any[] = [];
+      let isShowingPopup = false;
+      let lastPollTime = Date.now() - 90000; // Start looking up to 1.5 mins ago for missed background punches
+
       const checkRecentPunch = async (id: string) => {
         try {
-          const res = await fetch(`/api/attendance/recent-punch?gymId=${id}`);
+          const res = await fetch(`/api/attendance/recent-punch?gymId=${id}&since=${lastPollTime}`);
+          lastPollTime = Date.now();
           if (res.ok) {
             const data = await res.json();
-            if (data.hasPunch && data.punch && data.punch.id !== lastPunchId) {
-              lastPunchId = data.punch.id;
-              setLivePunchNotice(data.punch);
-              if (notificationTimeout) clearTimeout(notificationTimeout);
-              notificationTimeout = setTimeout(() => {
-                setLivePunchNotice(null);
-              }, 5000);
+            if (data.hasPunch && data.punches) {
+              data.punches.forEach((p: any) => {
+                if (!processedPunchIds.has(p.id)) {
+                  processedPunchIds.add(p.id);
+                  punchQueue.push(p);
+                }
+              });
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error('Recent punch poll error:', e);
+        }
+
+        // Process queue
+        if (!isShowingPopup && punchQueue.length > 0) {
+          isShowingPopup = true;
+          const nextPunch = punchQueue.shift();
+          setLivePunchNotice(nextPunch);
+          
+          if (notificationTimeout) clearTimeout(notificationTimeout);
+          notificationTimeout = setTimeout(() => {
+            setLivePunchNotice(null);
+            isShowingPopup = false;
+          }, 4500);
+        }
       };
       const punchInterval = setInterval(() => checkRecentPunch(matched.id), 3000);
 
@@ -120,7 +145,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               body: JSON.stringify({ gymId: id })
             }).catch(() => {});
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error('Daily reminders error:', e);
+        }
       };
       runDailyReminders(matched.id);
 

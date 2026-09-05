@@ -1006,6 +1006,18 @@ export async function toggleCheckIn(customerId: string, isManual: boolean = fals
     }
     const cutoffHours = gymSettings?.memberCutoffHours || 4;
 
+    // ── Debounce Check (Hardware scanners often double-fire) ──
+    const latestRecord = await prisma.attendanceRecord.findFirst({
+      where: { customerId: customer.id },
+      orderBy: { checkInTime: 'desc' }
+    });
+    if (latestRecord) {
+      const msSinceLastPunch = new Date(nowIso).getTime() - new Date(latestRecord.checkInTime).getTime();
+      if (msSinceLastPunch < 5000) {
+        return { record: latestRecord, action: latestRecord.checkOutTime ? 'checkout' : 'checkin' as const, customerProfilePic: customer.profilePic || null };
+      }
+    }
+
     // Find latest active session without checkout time
     const activeSession = await prisma.attendanceRecord.findFirst({
       where: {
@@ -1907,6 +1919,18 @@ export async function toggleStaffCheckIn(staffId: string, isManual: boolean = fa
     // Get gym staff cutoff timer setting
     const gymSettings = await prisma.gymSettings.findUnique({ where: { gymId: staff.gymId } });
     const cutoffHours = gymSettings?.staffCutoffHours || 12;
+
+    // ── Debounce Check (Hardware scanners often double-fire) ──
+    const latestRecord = await prisma.staffAttendanceRecord.findFirst({
+      where: { staffId: staff.id },
+      orderBy: { checkInTime: 'desc' }
+    });
+    if (latestRecord) {
+      const msSinceLastPunch = new Date(nowIso).getTime() - new Date(latestRecord.checkInTime).getTime();
+      if (msSinceLastPunch < 5000) {
+        return { record: latestRecord, action: latestRecord.checkOutTime ? 'checkout' : 'checkin' as const };
+      }
+    }
 
     // ── NFC/Fingerprint Enforcement ─────────────────────────────────────
     if (isManual) {

@@ -92,7 +92,9 @@ export default function RemindersPage() {
         });
         sent++;
         setBatchSentCount(sent);
-      } catch (e) {}
+      } catch (e) {
+        console.error('Batch reminder send failed for', cust.name, e);
+      }
 
       // Anti-ban delay between 3 to 6 seconds
       if (i < recipients.length - 1) {

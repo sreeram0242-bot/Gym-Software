@@ -110,7 +110,7 @@ export default function StaffPage() {
               showToast('Fingerprint Enrollment Failed', 'error');
             }
           }
-        } catch (e) {}
+        } catch (e) { console.error('Biometric poll error:', e); }
       }
       if (cardPollStatus === 'POLLING') {
         try {
@@ -127,17 +127,50 @@ export default function StaffPage() {
               showToast('Card Sync Failed', 'error');
             }
           }
-        } catch (e) {}
+        } catch (e) { console.error('Card poll error:', e); }
       }
     }, 2000);
     return () => clearInterval(interval);
   }, [fpPollStatus, cardPollStatus, fpCommandId, cardCommandId, fingerprintId, gymId]);
 
+  // Timeout for biometric enrollment polling
+  useEffect(() => {
+    if (fpPollStatus === 'POLLING') {
+      const timer = setTimeout(() => {
+        if (fpPollStatus === 'POLLING') {
+          setFpPollStatus('ERROR');
+          setFpCommandId(null);
+          showToast('Enrollment timed out on device', 'error');
+        }
+      }, 45000); // 45 seconds timeout
+      return () => clearTimeout(timer);
+    }
+  }, [fpPollStatus]);
+
+  // Timeout for card enrollment polling
+  useEffect(() => {
+    if (cardPollStatus === 'POLLING') {
+      const timer = setTimeout(() => {
+        if (cardPollStatus === 'POLLING') {
+          setCardPollStatus('ERROR');
+          setCardCommandId(null);
+          showToast('Card enrollment timed out on device', 'error');
+        }
+      }, 45000); // 45 seconds timeout
+      return () => clearTimeout(timer);
+    }
+  }, [cardPollStatus]);
+
   // Fix: Handle Ghost Fingerprint cleanup on tab close
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!isEditingStaff && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS')) {
-        navigator.sendBeacon('/api/biometrics/delete', JSON.stringify({ gymId, pin: fingerprintId }));
+        fetch('/api/biometrics/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gymId, pin: fingerprintId }),
+          keepalive: true
+        }).catch(() => {});
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -147,15 +180,11 @@ export default function StaffPage() {
   // Handle centralized closing of the add/edit modal (to cleanup ghosts)
   const closeStaffModal = async () => {
     if (!isEditingStaff && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS')) {
-      try {
-        await fetch('/api/biometrics/delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ gymId, pin: fingerprintId })
-        });
-      } catch (e) {
-        console.error('Ghost cleanup failed', e);
-      }
+      fetch('/api/biometrics/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gymId, pin: fingerprintId })
+      }).catch(e => console.error('Ghost cleanup failed', e));
     }
     setShowStaffModal(false);
   };

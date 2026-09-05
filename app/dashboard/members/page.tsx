@@ -214,15 +214,11 @@ export default function MemberManagementPage() {
     // the device (POLLING = command sent, SUCCESS = device confirmed it),
     // we need to delete that ghost fingerprint from the machine.
     if (!isEditingMember && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS')) {
-      try {
-        await fetch('/api/biometrics/delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ gymId, pin: fingerprintId })
-        });
-      } catch (e) {
-        console.error('Ghost fingerprint cleanup failed:', e);
-      }
+      fetch('/api/biometrics/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gymId, pin: fingerprintId })
+      }).catch(e => console.error('Ghost fingerprint cleanup failed:', e));
     }
     // Reset modal state
     setShowAddModal(false);
@@ -241,8 +237,12 @@ export default function MemberManagementPage() {
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!isEditingMember && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS')) {
-        // Use sendBeacon for reliable delivery during page unload
-        navigator.sendBeacon('/api/biometrics/delete', JSON.stringify({ gymId, pin: fingerprintId }));
+        fetch('/api/biometrics/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gymId, pin: fingerprintId }),
+          keepalive: true
+        }).catch(() => {});
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -336,6 +336,35 @@ export default function MemberManagementPage() {
     }, 2000);
     return () => clearInterval(interval);
   }, [fpPollStatus, cardPollStatus, fpCommandId, cardCommandId, fingerprintId]);
+
+  // Timeout for biometric enrollment polling
+  useEffect(() => {
+    if (fpPollStatus === 'POLLING') {
+      const timer = setTimeout(() => {
+        if (fpPollStatus === 'POLLING') {
+          setFpPollStatus('ERROR');
+          setFpCommandId(null);
+          setEnrollingMemberId(null);
+          showToast('Enrollment timed out on device', 'error');
+        }
+      }, 45000); // 45 seconds timeout
+      return () => clearTimeout(timer);
+    }
+  }, [fpPollStatus]);
+
+  // Timeout for card enrollment polling
+  useEffect(() => {
+    if (cardPollStatus === 'POLLING') {
+      const timer = setTimeout(() => {
+        if (cardPollStatus === 'POLLING') {
+          setCardPollStatus('ERROR');
+          setCardCommandId(null);
+          showToast('Card enrollment timed out on device', 'error');
+        }
+      }, 45000); // 45 seconds timeout
+      return () => clearTimeout(timer);
+    }
+  }, [cardPollStatus]);
 
   useEffect(() => {
     loadData();

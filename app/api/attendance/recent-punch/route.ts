@@ -15,8 +15,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ hasPunch: false });
     }
 
-    // 1. Fetch most recent member attendance
-    const recentMember = await prisma.attendanceRecord.findFirst({
+    // 1. Fetch recent member attendance
+    const recentMembers = await prisma.attendanceRecord.findMany({
       where: {
         gymId,
         OR: [
@@ -27,8 +27,8 @@ export async function GET(req: NextRequest) {
       orderBy: { checkInTime: 'desc' }
     });
 
-    // 2. Fetch most recent staff attendance
-    const recentStaff = await prisma.staffAttendanceRecord.findFirst({
+    // 2. Fetch recent staff attendance
+    const recentStaffs = await prisma.staffAttendanceRecord.findMany({
       where: {
         gymId,
         OR: [
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       orderBy: { checkInTime: 'desc' }
     });
 
-    let punch: any = null;
+    let punches: any[] = [];
 
     // Helper to evaluate punch event
     const evalEvent = (rec: any, isStaff = false) => {
@@ -68,24 +68,30 @@ export async function GET(req: NextRequest) {
         role: isStaff ? (rec.staff?.role || 'Staff') : 'Member',
         action: isOut ? 'checkout' : 'checkin',
         time: new Date(actionTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        durationMinutes: rec.durationMinutes || null
+        durationMinutes: rec.durationMinutes || null,
+        profilePic: rec.customerProfilePic || null
       };
     };
 
-    const memberEvent = evalEvent(recentMember, false);
-    const staffEvent = evalEvent(recentStaff, true);
-
-    if (memberEvent && staffEvent) {
-      punch = memberEvent.timestamp >= staffEvent.timestamp ? memberEvent : staffEvent;
-    } else {
-      punch = memberEvent || staffEvent;
+    for (const rec of recentMembers) {
+      const event = evalEvent(rec, false);
+      if (event) punches.push(event);
+    }
+    
+    for (const rec of recentStaffs) {
+      const event = evalEvent(rec, true);
+      if (event) punches.push(event);
     }
 
-    if (!punch) {
+    // Sort punches by timestamp ascending so we process them in chronological order
+    punches.sort((a, b) => a.timestamp - b.timestamp);
+
+    if (punches.length === 0) {
       return NextResponse.json({ hasPunch: false });
     }
 
-    return NextResponse.json({ hasPunch: true, punch });
+    // We still return 'punch' for backwards compatibility, but mainly 'punches'
+    return NextResponse.json({ hasPunch: true, punch: punches[punches.length - 1], punches });
   } catch (error: any) {
     console.error('recent-punch error:', error);
     return NextResponse.json({ hasPunch: false }, { status: 500 });
