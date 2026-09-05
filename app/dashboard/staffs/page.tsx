@@ -519,7 +519,7 @@ export default function StaffPage() {
         Punch_IN: new Date(a.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
         Punch_OUT: a.checkOutTime ? new Date(a.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : 'Active Shift (On Duty)',
         Duration_Minutes: a.durationMinutes || (a.checkOutTime ? 0 : 'In Progress'),
-        Duration_Formatted: a.durationMinutes ? `${Math.floor(a.durationMinutes / 60)}h ${a.durationMinutes % 60}m` : 'In Progress',
+        Duration_Formatted: a.durationMinutes ? (a.durationMinutes < 60 ? `${a.durationMinutes}m` : `${Math.floor(a.durationMinutes / 60)}h ${a.durationMinutes % 60}m`) : 'In Progress',
         Punch_Method: hardwareLabel
       };
     });
@@ -545,7 +545,7 @@ export default function StaffPage() {
         a.staffPhone,
         new Date(a.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
         a.checkOutTime ? new Date(a.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : 'Active Shift',
-        a.durationMinutes ? `${Math.floor(a.durationMinutes / 60)}h ${a.durationMinutes % 60}m` : 'In Progress',
+        a.durationMinutes ? (a.durationMinutes < 60 ? `${a.durationMinutes}m` : `${Math.floor(a.durationMinutes / 60)}h ${a.durationMinutes % 60}m`) : 'In Progress',
         hardwareLabel
       ];
     });
@@ -620,7 +620,7 @@ export default function StaffPage() {
       Punch_IN: new Date(a.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
       Punch_OUT: a.checkOutTime ? new Date(a.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : 'In Progress',
       Duration_Minutes: a.durationMinutes || 0,
-      Duration_Formatted: a.durationMinutes ? `${Math.floor(a.durationMinutes / 60)}h ${a.durationMinutes % 60}m` : 'In Progress'
+      Duration_Formatted: a.durationMinutes ? (a.durationMinutes < 60 ? `${a.durationMinutes}m` : `${Math.floor(a.durationMinutes / 60)}h ${a.durationMinutes % 60}m`) : 'In Progress'
     }));
     exportToCSV(exportData, `Attendance_${staff.name.replace(/\s+/g, '_')}_${todayStr}.csv`);
   };
@@ -635,7 +635,7 @@ export default function StaffPage() {
       formatDateDDMMYYYY(a.dateStr),
       new Date(a.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
       a.checkOutTime ? new Date(a.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : 'Active Shift',
-      a.durationMinutes ? `${Math.floor(a.durationMinutes / 60)}h ${a.durationMinutes % 60}m` : 'In Progress',
+      a.durationMinutes ? (a.durationMinutes < 60 ? `${a.durationMinutes}m` : `${Math.floor(a.durationMinutes / 60)}h ${a.durationMinutes % 60}m`) : 'In Progress',
       staff.nfcCardId ? `NFC: ${staff.nfcCardId}` : staff.fingerprintId ? `FP: #${staff.fingerprintId}` : 'Manual'
     ]);
 
@@ -873,7 +873,7 @@ export default function StaffPage() {
                         <div className="flex justify-between items-center pt-2 mt-1 border-t border-slate-100 border-dashed">
                           <span className="font-semibold text-slate-400">Shift Total:</span>
                           <span className="font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-                            {session.durationMinutes ? `${Math.floor(session.durationMinutes / 60)}h ${session.durationMinutes % 60}m` : 'In Progress'}
+                            {session.durationMinutes ? (session.durationMinutes < 60 ? `${session.durationMinutes}m` : `${Math.floor(session.durationMinutes / 60)}h ${session.durationMinutes % 60}m`) : 'In Progress'}
                           </span>
                         </div>
 
@@ -1256,7 +1256,7 @@ export default function StaffPage() {
                         <td className="py-3 px-4">
                           {record.durationMinutes ? (
                             <span className="font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
-                              {Math.floor(record.durationMinutes / 60)}h {record.durationMinutes % 60}m
+                              {record.durationMinutes < 60 ? `${record.durationMinutes}m` : `${Math.floor(record.durationMinutes / 60)}h ${record.durationMinutes % 60}m`}
                             </span>
                           ) : isActive ? (
                             <span className="font-semibold text-emerald-600 text-[11px]">In Progress</span>
@@ -1670,57 +1670,6 @@ export default function StaffPage() {
                       )}
                     </div>
 
-                    {attendanceWallMountEnabled && (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!fingerprintId) {
-                            showToast('Please enter Staff ID first', 'error');
-                            return;
-                          }
-                          if (duplicateMember) {
-                            showToast(`Staff ID ${fingerprintId} is already assigned to ${duplicateMember.name}.`, 'error');
-                            return;
-                          }
-                          if (!nfcCardId.trim()) {
-                            showToast('Please enter an NFC Card number first', 'error');
-                            return;
-                          }
-                          if (duplicateNfcMember) {
-                            showToast(`Card ${nfcCardId} is already assigned to ${duplicateNfcMember.name}.`, 'error');
-                            return;
-                          }
-                          setCardPollStatus('POLLING');
-                          try {
-                            const res = await fetch('/api/biometrics/enroll', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ gymId, memberId: 'temp', nfcCardId: fingerprintId, actualCardNumber: nfcCardId.trim(), enrollType: 'card' })
-                            });
-                            if (res.ok) {
-                              const data = await res.json();
-                              if (data.directSync) {
-                                setCardPollStatus('SUCCESS');
-                                showToast('Card saved directly to device!', 'success');
-                              } else if (data.commandId) {
-                                setCardCommandId(data.commandId);
-                              }
-                            } else {
-                              setCardPollStatus('ERROR');
-                              showToast('Failed to send card to device', 'error');
-                            }
-                          } catch (e) {
-                            setCardPollStatus('ERROR');
-                            showToast('Failed to send card to device', 'error');
-                          }
-                        }}
-                        disabled={cardPollStatus === 'POLLING'}
-                        className="w-full py-2 px-3 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-                      >
-                        <Radio className="w-3.5 h-3.5 text-emerald-600" />
-                        {cardPollStatus === 'POLLING' ? 'Syncing...' : 'Send Card to Device'}
-                      </button>
-                    )}
                   </div>
                 )}
 
@@ -1766,58 +1715,7 @@ export default function StaffPage() {
                           className="w-full pl-9 pr-3 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-600 outline-none text-xs font-mono font-bold bg-white" 
                         />
                       </div>
-                      <p className="text-[11px] text-slate-500 leading-normal">
-                        {fpPollStatus === 'POLLING' 
-                          ? 'Device is waiting! Touch staff finger 3 times on the scanner.'
-                          : fpPollStatus === 'SUCCESS'
-                          ? 'Fingerprint enrolled & registered on the machine.'
-                          : 'Click below to start 3-tap fingerprint enrollment.'}
-                      </p>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!fingerprintId) {
-                          showToast('Please enter Staff ID first (e.g. 101)', 'error');
-                          return;
-                        }
-                        if (duplicateMember) {
-                          showToast(`Staff ID ${fingerprintId} is already assigned to ${duplicateMember.name}.`, 'error');
-                          return;
-                        }
-                        setFpPollStatus('POLLING');
-                        try {
-                          const res = await fetch('/api/biometrics/enroll', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ gymId, memberId: 'temp', nfcCardId: fingerprintId, enrollType: 'fp' })
-                          });
-                          if (res.ok) {
-                            const data = await res.json();
-                            if (data.commandId) setFpCommandId(data.commandId);
-                          }
-                        } catch (e) {
-                          setFpPollStatus('ERROR');
-                          showToast('Failed to send enroll command', 'error');
-                        }
-                      }}
-                      disabled={fpPollStatus === 'POLLING'}
-                      className={`w-full py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 ${
-                        fpPollStatus === 'SUCCESS'
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
-                          : fpPollStatus === 'POLLING'
-                          ? 'bg-blue-50 text-blue-900 border border-blue-300 animate-pulse'
-                          : 'bg-indigo-50 text-indigo-900 hover:bg-indigo-100 border border-indigo-300'
-                      }`}
-                    >
-                      <Fingerprint className="w-3.5 h-3.5 text-indigo-600" />
-                      {fpPollStatus === 'POLLING' 
-                        ? 'Waiting for Finger (3x)...' 
-                        : fpPollStatus === 'SUCCESS' 
-                        ? 'Re-enroll Fingerprint' 
-                        : 'Enroll Fingerprint on Device'}
-                    </button>
                   </div>
                 )}
               </div>

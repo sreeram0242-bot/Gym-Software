@@ -641,7 +641,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
                 {livePunchNotice.action === 'checkout' && livePunchNotice.durationMinutes && (
                   <div className="text-[10px] font-medium text-slate-500 mt-0.5">
-                    Session: {Math.floor(livePunchNotice.durationMinutes / 60)}h {livePunchNotice.durationMinutes % 60}m
+                    Session: {livePunchNotice.durationMinutes < 60 ? `${livePunchNotice.durationMinutes}m` : `${Math.floor(livePunchNotice.durationMinutes / 60)}h ${livePunchNotice.durationMinutes % 60}m`}
                   </div>
                 )}
               </div>

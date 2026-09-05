@@ -31,6 +31,8 @@ export default function MemberManagementPage() {
 
   // Add Member Modal State
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const modalSessionIdRef = React.useRef(0);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [nfcCardId, setNfcCardId] = useState('');
@@ -175,35 +177,6 @@ export default function MemberManagementPage() {
     }
   };
 
-  const handleEnrollFingerprint = async (cust: Customer) => {
-    if (!cust.fingerprintId) {
-      showToast('Please edit the member and assign a Member ID first.', 'error');
-      return;
-    }
-    try {
-      showToast('Sending command to scanner...', 'success');
-      const res = await fetch('/api/biometrics/enroll', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gymId: gymId,
-          memberId: cust.id,
-          pin: cust.fingerprintId
-        })
-      });
-      const data = await res.json();
-      
-      if (!res.ok) throw new Error(data.error || 'Failed to send command');
-      
-      setFingerprintId(cust.fingerprintId);
-      setFpCommandId(data.commandId);
-      setFpPollStatus('POLLING');
-      setEnrollingMemberId(cust.id);
-      showToast('Scanner activated! Please place finger on the machine.', 'success');
-    } catch (e: any) {
-      showToast(e.message || 'Enrollment error', 'error');
-    }
-  };
 
   /**
    * Centralized modal close handler.
@@ -505,6 +478,15 @@ export default function MemberManagementPage() {
       return;
     }
 
+    if (fingerprintId && fingerprintId.trim()) {
+      const cleanFp = fingerprintId.trim();
+      const existingFp = customers.find(c => c.fingerprintId === cleanFp);
+      if (existingFp && (!isEditingMember || existingFp.id !== editingMemberId)) {
+        setErrorMsg(`Member ID (ZKTeco ID) "${cleanFp}" is already in use by ${existingFp.name}. Please use the Next Available ID.`);
+        return;
+      }
+    }
+
     const newNfc = nfcCardId.trim() || `NFC-${Math.floor(10000 + Math.random() * 90000)}`;
     if (nfcCardId.trim() && duplicateNfcMember) {
       setErrorMsg(`NFC Card ID "${nfcCardId.trim()}" is already assigned to ${duplicateNfcMember.name}. Duplicate NFC cards are strictly prohibited.`);
@@ -537,41 +519,17 @@ export default function MemberManagementPage() {
     dueObj.setMonth(dueObj.getMonth() + months);
     const nextDueDate = dueObj.toISOString().split('T')[0];
 
-    const originalCustomers = [...customers];
-    
-    // Optimistically hide modal & clear forms
-    setShowAddModal(false);
+    setIsSubmitting(true);
     const savedName = name;
-    setName('');
-    setPhone('');
-    setNfcCardId('');
-    setNfcCardId2('');
-    setProfilePic('');
-    setShowSecondaryNfc(false);
-    setUpiId('');
-    setUpiSenderName('');
-    setInfoMsg('');
-    setFpPollStatus('IDLE');
-    setFpCommandId(null);
-    setCardPollStatus('IDLE');
-    setCardCommandId(null);
 
     try {
       if (isEditingMember && editingMemberId) {
-        setCustomers(prev => prev.map(c => c.id === editingMemberId ? {
-          ...c, name: savedName, phone, nfcCardId: newNfc, nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
-          fingerprintId: fingerprintId || null, profilePic: profilePic || null, planType, feeAmount: Number(feeAmount),
-          lastPaymentDate, nextDueDate
-        } : c));
-        setIsEditingMember(false);
-        setEditingMemberId(null);
-        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Member ${savedName} updated successfully!`, type: 'success' } }));
-
         await updateCustomer(editingMemberId, {
           name: savedName, phone, nfcCardId: newNfc, nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
           fingerprintId: fingerprintId || null, mantraFpData, profilePic: profilePic || null, planType, feeAmount: Number(feeAmount),
           lastPaymentDate, nextDueDate
         });
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Member ${savedName} updated successfully!`, type: 'success' } }));
       } else {
         const totalPlanPrice = Number(feeAmount);
         const actualPaid = Number(paidAmount);
@@ -580,19 +538,6 @@ export default function MemberManagementPage() {
         const discountAmount = diff > 0 && remainingType === 'DISCOUNT' ? diff : 0;
         const splitData = paymentMethod === 'SPLIT' ? { cash: Number(splitCash), upi: Number(splitUpi) } : undefined;
 
-        const tempId = 'temp_' + Date.now();
-        const tempMember = {
-          id: tempId, name: savedName, phone, nfcCardId: newNfc, nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
-          fingerprintId: fingerprintId || null, profilePic: profilePic || null, planType, feeAmount: totalPlanPrice, paidAmount: actualPaid,
-          pendingBalance: finalPendingBalance, lastPaymentDate, nextDueDate, status: 'ACTIVE',
-          plan: plans.find(p => p.name === planType)
-        };
-        setCustomers(prev => [tempMember, ...prev]);
-        // Immediately open the detail panel for the new member so the user sees a clear
-        // confirmation instead of landing back on the raw grid with an orphan card.
-        setSelectedMember(tempMember);
-        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Member ${savedName} added successfully!`, type: 'success' } }));
-
         await addCustomer({
           gymId, name: savedName, phone, nfcCardId: newNfc, nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
           fingerprintId: fingerprintId || null, mantraFpData, profilePic: profilePic || null, planType, feeAmount: totalPlanPrice,
@@ -600,18 +545,39 @@ export default function MemberManagementPage() {
           discountAmount, paymentMethod, splitDetails: splitData, upiId: paymentMethod === 'UPI' ? upiId : undefined,
           upiSenderName: paymentMethod === 'UPI' ? upiSenderName : undefined, lastPaymentDate, nextDueDate
         });
+        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Member ${savedName} added successfully!`, type: 'success' } }));
       }
+      
       // Re-fetch from DB, then sync the detail panel to the real saved record
       const freshCustomers = await loadData();
       if (!isEditingMember && freshCustomers) {
         const realMember = freshCustomers.find((c: any) => c.name === savedName && !c.id?.startsWith('temp_'));
         if (realMember) setSelectedMember(realMember);
       }
+
+      // Close modal and clear forms only on success
+      setShowAddModal(false);
+      setIsEditingMember(false);
+      setEditingMemberId(null);
+      setName('');
+      setPhone('');
+      setNfcCardId('');
+      setNfcCardId2('');
+      setProfilePic('');
+      setShowSecondaryNfc(false);
+      setUpiId('');
+      setUpiSenderName('');
+      setInfoMsg('');
+      setFingerprintId('');
+      setFpPollStatus('IDLE');
+      setFpCommandId(null);
+      setCardPollStatus('IDLE');
+      setCardCommandId(null);
     } catch (err: any) {
-      setCustomers(originalCustomers); // Rollback
-      setShowAddModal(true);
       setErrorMsg(err.message || 'Failed to save member. Please check the entered data.');
       showToast(err.message || 'Failed to save member', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -845,7 +811,7 @@ export default function MemberManagementPage() {
         body.push([
           formatDateDDMMYYYY(a.dateStr),
           `Attendance: In ${new Date(a.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}${a.checkOutTime ? ` - Out ${new Date(a.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}`,
-          a.durationMinutes ? `${Math.floor(a.durationMinutes / 60)}h ${a.durationMinutes % 60}m` : 'In Progress',
+          a.durationMinutes ? (a.durationMinutes < 60 ? `${a.durationMinutes}m` : `${Math.floor(a.durationMinutes / 60)}h ${a.durationMinutes % 60}m`) : 'In Progress',
           a.checkOutTime ? 'Completed' : 'Active'
         ]);
       });
@@ -1294,26 +1260,26 @@ export default function MemberManagementPage() {
                       </div>
                     )}
                     <div>
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="font-bold text-slate-900 text-sm">{cust.name}</h3>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <h3 className="font-bold text-slate-900 text-sm truncate">{cust.name}</h3>
                         {cust.memberId && (
-                          <span className="text-[10px] font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200 px-1.5 py-0.2 rounded">
-                            {cust.memberId}
+                          <span className="whitespace-nowrap shrink-0 text-[10px] font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200 px-1.5 py-0.5 rounded">
+                            M-{cust.memberId}
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-slate-500 font-mono flex items-center gap-1"><Phone className="w-3 h-3" /> {cust.phone}</div>
+                      <div className="text-xs text-slate-500 font-mono flex items-center gap-1"><Phone className="w-3 h-3 shrink-0" /> <span className="truncate">{cust.phone}</span></div>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex flex-wrap justify-end gap-1.5 pl-2">
                     {(cust.pendingBalance || 0) > 0 && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-300 shadow-sm animate-pulse flex items-center gap-1">
+                      <span className="whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-300 shadow-sm animate-pulse flex items-center gap-1">
                         <AlertTriangle className="w-2.5 h-2.5" /> ₹{cust.pendingBalance} Due
                       </span>
                     )}
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      className={`whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-[10px] font-bold ${
                         cust.waActive
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           : 'bg-slate-100 text-slate-500 border border-slate-200'
@@ -1323,7 +1289,7 @@ export default function MemberManagementPage() {
                       {cust.waActive ? '● WA Active' : '○ No WA'}
                     </span>
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      className={`whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-[10px] font-bold ${
                         isAbsent(cust.id) 
                           ? 'bg-purple-50 text-purple-700 border border-purple-200'
                           : cust.status === 'active'
@@ -1398,18 +1364,6 @@ export default function MemberManagementPage() {
 
               <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
                 <div className="flex items-center space-x-1.5">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEnrollFingerprint(cust);
-                    }}
-                    disabled={enrollingMemberId !== null && enrollingMemberId !== cust.id}
-                    className={`text-xs font-black px-2.5 py-1.5 rounded-lg flex items-center space-x-1 transition-colors border shadow-sm ${enrollingMemberId === cust.id ? 'text-blue-900 bg-blue-100 border-blue-300 animate-pulse' : 'text-indigo-900 bg-indigo-100 hover:bg-indigo-200 border-indigo-300'}`}
-                    title="Enroll Fingerprint to Device"
-                  >
-                    {enrollingMemberId === cust.id ? <Clock className="w-3.5 h-3.5 animate-spin" /> : <Fingerprint className="w-3.5 h-3.5" />}
-                    <span>{enrollingMemberId === cust.id ? 'Syncing...' : 'Enroll FP'}</span>
-                  </button>
                   {(cust.pendingBalance || 0) > 0 && (
                     <button
                       onClick={(e) => {
@@ -2195,9 +2149,10 @@ export default function MemberManagementPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                  disabled={isSubmitting}
+                  className={`px-5 py-2 text-white rounded-lg text-xs font-bold transition-colors shadow-sm ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-900 hover:bg-blue-950'}`}
                 >
-                  {isEditingMember ? 'Save Changes' : 'Save Member & Collect Fee'}
+                  {isSubmitting ? 'Saving...' : (isEditingMember ? 'Save Changes' : 'Save Member & Collect Fee')}
                 </button>
               </div>
             </form>
@@ -2230,10 +2185,6 @@ export default function MemberManagementPage() {
                 </div>
                 
                 <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                  <button disabled={enrollingMemberId !== null && enrollingMemberId !== selectedMember.id} onClick={() => handleEnrollFingerprint(selectedMember)} className={`px-2.5 py-1 ${enrollingMemberId === selectedMember.id ? 'bg-blue-500/40 text-blue-100 border-blue-500/50 animate-pulse' : 'bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-50 border-emerald-500/30'} rounded-lg flex items-center gap-1 border text-xs font-bold transition-all`} title="Enroll Fingerprint on Wall Machine">
-                    {enrollingMemberId === selectedMember.id ? <Clock className="w-3.5 h-3.5 animate-spin" /> : <Fingerprint className="w-3.5 h-3.5" />}
-                    <span className="hidden sm:inline">{enrollingMemberId === selectedMember.id ? 'Syncing...' : 'Enroll FP'}</span>
-                  </button>
                   <button onClick={() => handleEditInit(selectedMember)} className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/10 transition-all" title="Edit Profile">
                     <Edit className="w-3.5 h-3.5" />
                   </button>
@@ -2499,7 +2450,16 @@ export default function MemberManagementPage() {
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-slate-700 text-xs mb-1.5 flex items-center gap-1.5 uppercase tracking-wide"><Clock className="w-3.5 h-3.5 text-slate-400" /> Recent Attendance</h4>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h4 className="font-bold text-slate-700 text-xs flex items-center gap-1.5 uppercase tracking-wide"><Clock className="w-3.5 h-3.5 text-slate-400" /> Recent Attendance</h4>
+                    <button
+                      onClick={() => exportIndividualMember(selectedMember.id, 'pdf')}
+                      className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-blue-600 transition-colors"
+                      title="Download Member Report (PDF)"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <div className="space-y-1.5">
                     {attendance.filter(a => a.customerId === selectedMember.id).slice(0, 4).map(a => (
                       <div key={a.id} className="bg-white p-2 rounded-lg border border-slate-200/80 shadow-2xs flex justify-between items-center text-xs">

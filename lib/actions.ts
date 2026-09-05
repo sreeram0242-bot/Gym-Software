@@ -2230,10 +2230,11 @@ export async function getNextAvailableZkTecoId(gymId: string): Promise<string> {
       ...staffs.map(s => Number(s.fingerprintId)).filter(n => !isNaN(n))
     ];
 
-    if (allIds.length === 0) return '1';
+    if (allIds.length === 0) return '001';
     
-    return (Math.max(...allIds) + 1).toString();
+    const nextId = Math.max(...allIds) + 1;
+    return nextId.toString().padStart(3, '0');
   } catch (e) {
-    return '1';
+    return '001';
   }
 }

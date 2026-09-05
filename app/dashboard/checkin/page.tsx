@@ -162,7 +162,7 @@ export default function CheckInTerminal() {
       r.customerPhone,
       new Date(r.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
       r.checkOutTime ? new Date(r.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : 'IN GYM',
-      r.durationMinutes ? `${Math.floor(r.durationMinutes / 60)}h ${r.durationMinutes % 60}m` : 'In Progress',
+      r.durationMinutes ? (r.durationMinutes < 60 ? `${r.durationMinutes}m` : `${Math.floor(r.durationMinutes / 60)}h ${r.durationMinutes % 60}m`) : 'In Progress',
       `${getAvg(r.customerId)} hrs/day`
     ]);
 
@@ -209,7 +209,7 @@ export default function CheckInTerminal() {
         r.staffPhone,
         new Date(r.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
         r.checkOutTime ? new Date(r.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : 'ON DUTY',
-        r.durationMinutes ? `${Math.floor(r.durationMinutes / 60)}h ${r.durationMinutes % 60}m` : 'In Progress',
+        r.durationMinutes ? (r.durationMinutes < 60 ? `${r.durationMinutes}m` : `${Math.floor(r.durationMinutes / 60)}h ${r.durationMinutes % 60}m`) : 'In Progress',
         staffObj?.nfcCardId ? `NFC: ${staffObj.nfcCardId}` : staffObj?.fingerprintId ? `FP: #${staffObj.fingerprintId}` : 'Manual'
       ];
     });
@@ -675,7 +675,7 @@ export default function CheckInTerminal() {
                           : 'bg-slate-400 text-white'
                       }`}>
                         {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
-                        <span>{isActive ? `IN GYM (${elapsedMinutes}m)` : 'COMPLETED'}</span>
+                        <span>{isActive ? `IN GYM (${elapsedMinutes <= 60 ? `${elapsedMinutes}m` : `${Math.floor(elapsedMinutes / 60)}h ${elapsedMinutes % 60}m`})` : 'COMPLETED'}</span>
                       </div>
                       
                       <div className="flex items-center space-x-3 mb-3">
@@ -964,7 +964,7 @@ export default function CheckInTerminal() {
                         <div className="flex justify-between items-center pt-2 mt-1 border-t border-slate-100 border-dashed">
                           <span className="font-semibold text-slate-400">Shift Total:</span>
                           <span className="font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-                            {session.durationMinutes ? `${Math.floor(session.durationMinutes / 60)}h ${session.durationMinutes % 60}m` : 'In Progress'}
+                            {session.durationMinutes ? (session.durationMinutes < 60 ? `${session.durationMinutes}m` : `${Math.floor(session.durationMinutes / 60)}h ${session.durationMinutes % 60}m`) : 'In Progress'}
                           </span>
                         </div>
 
@@ -1079,7 +1079,7 @@ export default function CheckInTerminal() {
                           </td>
 
                           <td className="py-3 px-4 text-center font-bold text-slate-700">
-                            {rec.durationMinutes ? `${Math.floor(rec.durationMinutes / 60)}h ${rec.durationMinutes % 60}m` : 'In Progress'}
+                            {rec.durationMinutes ? (rec.durationMinutes < 60 ? `${rec.durationMinutes}m` : `${Math.floor(rec.durationMinutes / 60)}h ${rec.durationMinutes % 60}m`) : 'In Progress'}
                           </td>
 
                           <td className="py-3 px-4 text-center">
