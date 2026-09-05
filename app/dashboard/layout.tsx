@@ -433,7 +433,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Global Right-Bottom Toast for Messages */}
       {globalToast && (
-        <div className={`fixed bottom-20 md:bottom-6 right-6 z-[200] flex items-center space-x-2 px-4 py-3 rounded-xl shadow-xl border overflow-hidden relative animate-in slide-in-from-right-4 fade-in ${
+        <div className={`fixed bottom-20 md:bottom-6 right-6 z-[200] flex items-center space-x-2 px-4 py-3 rounded-xl shadow-xl border overflow-hidden animate-in slide-in-from-right-4 fade-in ${
           globalToast.type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 
           globalToast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-blue-50 border-blue-200 text-blue-800'
         }`}>

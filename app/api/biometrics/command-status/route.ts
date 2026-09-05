@@ -26,8 +26,8 @@ export async function GET(req: Request) {
       where: { id: commandId, device: { gymId } }
     }) : null;
 
-    // Check if any recent ENROLL_FP command for this PIN succeeded (fingerprint data arrived via cdata/hdata)
-    if ((!command || (command.status !== 'SUCCESS' && command.status !== 'COMPLETED')) && pin) {
+    // Fallback: If no commandId is provided, check if any recent ENROLL_FP command for this PIN succeeded
+    if (!commandId && pin) {
       const pinCmd = await prisma.biometricCommand.findFirst({
         where: {
           device: { gymId },
@@ -36,7 +36,10 @@ export async function GET(req: Request) {
             { commandString: { contains: `PIN=${pin}` } },
             { commandString: { contains: 'ENROLL_FP' } },
           ],
-          status: { in: ['SUCCESS', 'COMPLETED'] }
+          status: { in: ['SUCCESS', 'COMPLETED'] },
+          createdAt: {
+            gte: new Date(Date.now() - 5 * 60 * 1000) // Only check last 5 minutes
+          }
         },
         orderBy: { createdAt: 'desc' }
       });
