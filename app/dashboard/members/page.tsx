@@ -954,7 +954,7 @@ export default function MemberManagementPage() {
                 setNfcCardId('');
                 setNfcCardId2('');
                 setShowSecondaryNfc(false);
-                setFingerprintId('');
+                setFingerprintId(nextSuggestedId);
                 setFeeAmount(2500);
                 setPaidAmount(2500);
                 setInfoMsg('');
@@ -1355,7 +1355,7 @@ export default function MemberManagementPage() {
                 setNfcCardId('');
                 setNfcCardId2('');
                 setShowSecondaryNfc(false);
-                setFingerprintId('');
+                setFingerprintId(nextSuggestedId);
                 if (plans.length > 0) {
                   setPlanType(plans[0].name);
                   setFeeAmount(plans[0].price);
