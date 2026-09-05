@@ -65,7 +65,7 @@ export async function POST(req: Request) {
         if (match) {
           const enrolledPin = match[1];
           await prisma.biometricCommand.updateMany({
-            where: { commandString: { contains: `PIN=${enrolledPin}` }, status: 'SENT' },
+            where: { deviceId: existingDevice.id, commandString: { contains: `PIN=${enrolledPin}` }, status: 'SENT' },
             data: { status: 'SUCCESS' }
           });
           fs.appendFileSync('biometric.log', `Enrollment Success callback processed for PIN: ${enrolledPin}\n`);
@@ -91,6 +91,7 @@ export async function POST(req: Request) {
         // Find Customer
         const customer = await prisma.customer.findFirst({
           where: { 
+            gymId: existingDevice.gymId,
             OR: [
               { nfcCardId: pin },
               { nfcCardId: strippedPin },
@@ -125,6 +126,7 @@ export async function POST(req: Request) {
         // Find Staff
         const staff = await prisma.staff.findFirst({
           where: { 
+            gymId: existingDevice.gymId,
             OR: [
               { nfcCardId: pin },
               { nfcCardId: strippedPin },

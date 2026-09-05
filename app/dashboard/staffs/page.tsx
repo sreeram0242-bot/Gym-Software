@@ -101,7 +101,7 @@ export default function StaffPage() {
     const interval = setInterval(async () => {
       if (fpPollStatus === 'POLLING') {
         try {
-          const res = await fetch(`/api/biometrics/command-status?id=${fpCommandId || ''}&pin=${fingerprintId || ''}`);
+          const res = await fetch(`/api/biometrics/command-status?id=${fpCommandId || ''}&pin=${fingerprintId || ''}&gymId=${gymId}`);
           if (res.ok) {
             const data = await res.json();
             if (data.status === 'SUCCESS') {
@@ -118,7 +118,7 @@ export default function StaffPage() {
       }
       if (cardPollStatus === 'POLLING') {
         try {
-          const res = await fetch(`/api/biometrics/command-status?id=${cardCommandId || ''}&pin=${fingerprintId || ''}`);
+          const res = await fetch(`/api/biometrics/command-status?id=${cardCommandId || ''}&pin=${fingerprintId || ''}&gymId=${gymId}`);
           if (res.ok) {
             const data = await res.json();
             if (data.status === 'SUCCESS') {

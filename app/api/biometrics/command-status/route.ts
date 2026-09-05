@@ -8,19 +8,25 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const commandId = url.searchParams.get('id');
     const pin = url.searchParams.get('pin');
+    const gymId = url.searchParams.get('gymId');
+
+    if (!gymId) {
+      return new NextResponse('Missing gymId for SaaS security', { status: 400 });
+    }
 
     if (!commandId && !pin) {
       return new NextResponse('Missing command ID or PIN', { status: 400 });
     }
 
-    let command = commandId ? await prisma.biometricCommand.findUnique({
-      where: { id: commandId }
+    let command = commandId ? await prisma.biometricCommand.findFirst({
+      where: { id: commandId, device: { gymId } }
     }) : null;
 
     // Check if any recent command for this PIN succeeded
     if ((!command || (command.status !== 'SUCCESS' && command.status !== 'COMPLETED')) && pin) {
       const pinCmd = await prisma.biometricCommand.findFirst({
         where: {
+          device: { gymId },
           commandString: { contains: `PIN=${pin}` },
           status: { in: ['SUCCESS', 'COMPLETED'] }
         },
