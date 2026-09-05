@@ -109,17 +109,20 @@ export const CustomerScalarFieldEnum = {
   nfcCardId: 'nfcCardId',
   nfcCardId2: 'nfcCardId2',
   fingerprintId: 'fingerprintId',
+  mantraFpData: 'mantraFpData',
   planType: 'planType',
   feeAmount: 'feeAmount',
   lastPaymentDate: 'lastPaymentDate',
   nextDueDate: 'nextDueDate',
   pendingBalance: 'pendingBalance',
   balanceDueDate: 'balanceDueDate',
+  profilePic: 'profilePic',
   status: 'status',
   joinedDate: 'joinedDate',
   waActive: 'waActive',
   lastReminderSentDate: 'lastReminderSentDate',
-  lastAbsenteeSentDate: 'lastAbsenteeSentDate'
+  lastAbsenteeSentDate: 'lastAbsenteeSentDate',
+  isArchived: 'isArchived'
 } as const
 
 export type CustomerScalarFieldEnum = (typeof CustomerScalarFieldEnum)[keyof typeof CustomerScalarFieldEnum]
@@ -279,7 +282,9 @@ export const StaffScalarFieldEnum = {
   role: 'role',
   nfcCardId: 'nfcCardId',
   fingerprintId: 'fingerprintId',
+  mantraFpData: 'mantraFpData',
   status: 'status',
+  isArchived: 'isArchived',
   joinedDate: 'joinedDate'
 } as const
 

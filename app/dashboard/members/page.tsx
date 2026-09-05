@@ -36,6 +36,7 @@ export default function MemberManagementPage() {
   const [nfcCardId2, setNfcCardId2] = useState('');
   const [showSecondaryNfc, setShowSecondaryNfc] = useState(false);
   const [fingerprintId, setFingerprintId] = useState('');
+  const [mantraFpData, setMantraFpData] = useState('');
   const [profilePic, setProfilePic] = useState<string>('');
   const [fpPollStatus, setFpPollStatus] = useState<'IDLE'|'POLLING'|'SUCCESS'|'ERROR'>('IDLE');
   const [fpCommandId, setFpCommandId] = useState<string|null>(null);
@@ -142,6 +143,7 @@ export default function MemberManagementPage() {
     setNfcCardId2(cust.nfcCardId2 || '');
     setShowSecondaryNfc(!!cust.nfcCardId2);
     setFingerprintId(cust.fingerprintId || '');
+    setMantraFpData(cust.mantraFpData || '');
     setProfilePic(cust.profilePic || '');
     setFpPollStatus(cust.fingerprintId ? 'SUCCESS' : 'IDLE');
     setCardPollStatus('IDLE');
@@ -153,6 +155,20 @@ export default function MemberManagementPage() {
     setEditingMemberId(cust.id);
     setSelectedMember(null); // Close the details modal so the edit modal is visible
     setShowAddModal(true);
+  };
+  const handleImageUpload = (e: any) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Image must be under 2MB', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePic(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleEnrollFingerprint = async (cust: Customer) => {
@@ -207,6 +223,18 @@ export default function MemberManagementPage() {
     setCardPollStatus('IDLE');
     setCardCommandId(null);
   };
+
+  // Fix: Handle Ghost Fingerprint cleanup on tab close
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isEditingMember && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS')) {
+        // Use sendBeacon for reliable delivery during page unload
+        navigator.sendBeacon('/api/biometrics/delete', JSON.stringify({ gymId, pin: fingerprintId }));
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isEditingMember, fingerprintId, fpPollStatus, gymId]);
 
   const handleDeleteMember = (id: string) => {
     setConfirmDialog({
@@ -454,6 +482,7 @@ export default function MemberManagementPage() {
           nfcCardId: newNfc,
           nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
           fingerprintId: fingerprintId || null,
+          mantraFpData,
           profilePic: profilePic || null,
           planType,
           feeAmount: Number(feeAmount),
@@ -477,6 +506,7 @@ export default function MemberManagementPage() {
           nfcCardId: newNfc,
           nfcCardId2: showSecondaryNfc && nfcCardId2.trim() ? nfcCardId2.trim() : null,
           fingerprintId: fingerprintId || null,
+          mantraFpData,
           profilePic: profilePic || null,
           planType,
           feeAmount: totalPlanPrice,
@@ -798,7 +828,7 @@ export default function MemberManagementPage() {
           const data = JSON.parse(event.data);
           if (data.type === 'scan_result') {
             if (data.success && data.fingerprintId) {
-              setFingerprintId(data.fingerprintId);
+              setMantraFpData(data.fingerprintId);
               setInfoMsg('Fingerprint registered successfully!');
             } else {
               setErrorMsg(data.error || 'Failed to scan fingerprint.');
@@ -1523,9 +1553,9 @@ export default function MemberManagementPage() {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
-                        <Shield className="w-3.5 h-3.5 text-blue-900" /> Member ID *
+                        <Shield className="w-3.5 h-3.5 text-blue-900" /> ZKTeco ID (Device PIN) *
                       </label>
-                      <span className="text-[10px] font-medium text-slate-400">Device PIN</span>
+                      <span className="text-[10px] font-medium text-slate-400">Numeric Only</span>
                     </div>
                     <input
                       type="text"
@@ -1815,8 +1845,8 @@ export default function MemberManagementPage() {
                     <input
                       type="text"
                       readOnly
-                      placeholder={fingerprintId ? "Registered" : "No Fingerprint"}
-                      value={fingerprintId ? "Registered" : ""}
+                      placeholder={mantraFpData ? "Registered" : "No Fingerprint"}
+                      value={mantraFpData ? "Registered" : ""}
                       className="w-full px-2 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-blue-900 outline-none cursor-not-allowed"
                     />
                     <button

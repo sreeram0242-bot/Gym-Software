@@ -24,6 +24,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     action: 'checkin' | 'checkout';
     time: string;
     durationMinutes?: number | null;
+    profilePic?: string | null;
   } | null>(null);
 
   const [waStatus, setWaStatus] = useState<string>('connected');

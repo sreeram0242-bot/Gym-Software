@@ -1334,7 +1334,6 @@ export default function RevenuePage() {
           </div>
         </div>
       )}
-    </div>
       </>)}
     </div>
   );

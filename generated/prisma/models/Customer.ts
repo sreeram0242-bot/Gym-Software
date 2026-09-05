@@ -45,17 +45,20 @@ export type CustomerMinAggregateOutputType = {
   nfcCardId: string | null
   nfcCardId2: string | null
   fingerprintId: string | null
+  mantraFpData: string | null
   planType: string | null
   feeAmount: number | null
   lastPaymentDate: string | null
   nextDueDate: string | null
   pendingBalance: number | null
   balanceDueDate: string | null
+  profilePic: string | null
   status: string | null
   joinedDate: string | null
   waActive: boolean | null
   lastReminderSentDate: string | null
   lastAbsenteeSentDate: string | null
+  isArchived: boolean | null
 }
 
 export type CustomerMaxAggregateOutputType = {
@@ -67,17 +70,20 @@ export type CustomerMaxAggregateOutputType = {
   nfcCardId: string | null
   nfcCardId2: string | null
   fingerprintId: string | null
+  mantraFpData: string | null
   planType: string | null
   feeAmount: number | null
   lastPaymentDate: string | null
   nextDueDate: string | null
   pendingBalance: number | null
   balanceDueDate: string | null
+  profilePic: string | null
   status: string | null
   joinedDate: string | null
   waActive: boolean | null
   lastReminderSentDate: string | null
   lastAbsenteeSentDate: string | null
+  isArchived: boolean | null
 }
 
 export type CustomerCountAggregateOutputType = {
@@ -89,17 +95,20 @@ export type CustomerCountAggregateOutputType = {
   nfcCardId: number
   nfcCardId2: number
   fingerprintId: number
+  mantraFpData: number
   planType: number
   feeAmount: number
   lastPaymentDate: number
   nextDueDate: number
   pendingBalance: number
   balanceDueDate: number
+  profilePic: number
   status: number
   joinedDate: number
   waActive: number
   lastReminderSentDate: number
   lastAbsenteeSentDate: number
+  isArchived: number
   _all: number
 }
 
@@ -123,17 +132,20 @@ export type CustomerMinAggregateInputType = {
   nfcCardId?: true
   nfcCardId2?: true
   fingerprintId?: true
+  mantraFpData?: true
   planType?: true
   feeAmount?: true
   lastPaymentDate?: true
   nextDueDate?: true
   pendingBalance?: true
   balanceDueDate?: true
+  profilePic?: true
   status?: true
   joinedDate?: true
   waActive?: true
   lastReminderSentDate?: true
   lastAbsenteeSentDate?: true
+  isArchived?: true
 }
 
 export type CustomerMaxAggregateInputType = {
@@ -145,17 +157,20 @@ export type CustomerMaxAggregateInputType = {
   nfcCardId?: true
   nfcCardId2?: true
   fingerprintId?: true
+  mantraFpData?: true
   planType?: true
   feeAmount?: true
   lastPaymentDate?: true
   nextDueDate?: true
   pendingBalance?: true
   balanceDueDate?: true
+  profilePic?: true
   status?: true
   joinedDate?: true
   waActive?: true
   lastReminderSentDate?: true
   lastAbsenteeSentDate?: true
+  isArchived?: true
 }
 
 export type CustomerCountAggregateInputType = {
@@ -167,17 +182,20 @@ export type CustomerCountAggregateInputType = {
   nfcCardId?: true
   nfcCardId2?: true
   fingerprintId?: true
+  mantraFpData?: true
   planType?: true
   feeAmount?: true
   lastPaymentDate?: true
   nextDueDate?: true
   pendingBalance?: true
   balanceDueDate?: true
+  profilePic?: true
   status?: true
   joinedDate?: true
   waActive?: true
   lastReminderSentDate?: true
   lastAbsenteeSentDate?: true
+  isArchived?: true
   _all?: true
 }
 
@@ -276,17 +294,20 @@ export type CustomerGroupByOutputType = {
   nfcCardId: string
   nfcCardId2: string | null
   fingerprintId: string | null
+  mantraFpData: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
   nextDueDate: string
   pendingBalance: number
   balanceDueDate: string | null
+  profilePic: string | null
   status: string
   joinedDate: string
   waActive: boolean
   lastReminderSentDate: string | null
   lastAbsenteeSentDate: string | null
+  isArchived: boolean
   _count: CustomerCountAggregateOutputType | null
   _avg: CustomerAvgAggregateOutputType | null
   _sum: CustomerSumAggregateOutputType | null
@@ -321,17 +342,20 @@ export type CustomerWhereInput = {
   nfcCardId?: Prisma.StringFilter<"Customer"> | string
   nfcCardId2?: Prisma.StringNullableFilter<"Customer"> | string | null
   fingerprintId?: Prisma.StringNullableFilter<"Customer"> | string | null
+  mantraFpData?: Prisma.StringNullableFilter<"Customer"> | string | null
   planType?: Prisma.StringFilter<"Customer"> | string
   feeAmount?: Prisma.IntFilter<"Customer"> | number
   lastPaymentDate?: Prisma.StringFilter<"Customer"> | string
   nextDueDate?: Prisma.StringFilter<"Customer"> | string
   pendingBalance?: Prisma.IntFilter<"Customer"> | number
   balanceDueDate?: Prisma.StringNullableFilter<"Customer"> | string | null
+  profilePic?: Prisma.StringNullableFilter<"Customer"> | string | null
   status?: Prisma.StringFilter<"Customer"> | string
   joinedDate?: Prisma.StringFilter<"Customer"> | string
   waActive?: Prisma.BoolFilter<"Customer"> | boolean
   lastReminderSentDate?: Prisma.StringNullableFilter<"Customer"> | string | null
   lastAbsenteeSentDate?: Prisma.StringNullableFilter<"Customer"> | string | null
+  isArchived?: Prisma.BoolFilter<"Customer"> | boolean
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
   attendance?: Prisma.AttendanceRecordListRelationFilter
   transactions?: Prisma.TransactionListRelationFilter
@@ -347,17 +371,20 @@ export type CustomerOrderByWithRelationInput = {
   nfcCardId?: Prisma.SortOrder
   nfcCardId2?: Prisma.SortOrderInput | Prisma.SortOrder
   fingerprintId?: Prisma.SortOrderInput | Prisma.SortOrder
+  mantraFpData?: Prisma.SortOrderInput | Prisma.SortOrder
   planType?: Prisma.SortOrder
   feeAmount?: Prisma.SortOrder
   lastPaymentDate?: Prisma.SortOrder
   nextDueDate?: Prisma.SortOrder
   pendingBalance?: Prisma.SortOrder
   balanceDueDate?: Prisma.SortOrderInput | Prisma.SortOrder
+  profilePic?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
   waActive?: Prisma.SortOrder
   lastReminderSentDate?: Prisma.SortOrderInput | Prisma.SortOrder
   lastAbsenteeSentDate?: Prisma.SortOrderInput | Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
   gym?: Prisma.GymOrderByWithRelationInput
   attendance?: Prisma.AttendanceRecordOrderByRelationAggregateInput
   transactions?: Prisma.TransactionOrderByRelationAggregateInput
@@ -376,17 +403,20 @@ export type CustomerWhereUniqueInput = Prisma.AtLeast<{
   nfcCardId?: Prisma.StringFilter<"Customer"> | string
   nfcCardId2?: Prisma.StringNullableFilter<"Customer"> | string | null
   fingerprintId?: Prisma.StringNullableFilter<"Customer"> | string | null
+  mantraFpData?: Prisma.StringNullableFilter<"Customer"> | string | null
   planType?: Prisma.StringFilter<"Customer"> | string
   feeAmount?: Prisma.IntFilter<"Customer"> | number
   lastPaymentDate?: Prisma.StringFilter<"Customer"> | string
   nextDueDate?: Prisma.StringFilter<"Customer"> | string
   pendingBalance?: Prisma.IntFilter<"Customer"> | number
   balanceDueDate?: Prisma.StringNullableFilter<"Customer"> | string | null
+  profilePic?: Prisma.StringNullableFilter<"Customer"> | string | null
   status?: Prisma.StringFilter<"Customer"> | string
   joinedDate?: Prisma.StringFilter<"Customer"> | string
   waActive?: Prisma.BoolFilter<"Customer"> | boolean
   lastReminderSentDate?: Prisma.StringNullableFilter<"Customer"> | string | null
   lastAbsenteeSentDate?: Prisma.StringNullableFilter<"Customer"> | string | null
+  isArchived?: Prisma.BoolFilter<"Customer"> | boolean
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
   attendance?: Prisma.AttendanceRecordListRelationFilter
   transactions?: Prisma.TransactionListRelationFilter
@@ -402,17 +432,20 @@ export type CustomerOrderByWithAggregationInput = {
   nfcCardId?: Prisma.SortOrder
   nfcCardId2?: Prisma.SortOrderInput | Prisma.SortOrder
   fingerprintId?: Prisma.SortOrderInput | Prisma.SortOrder
+  mantraFpData?: Prisma.SortOrderInput | Prisma.SortOrder
   planType?: Prisma.SortOrder
   feeAmount?: Prisma.SortOrder
   lastPaymentDate?: Prisma.SortOrder
   nextDueDate?: Prisma.SortOrder
   pendingBalance?: Prisma.SortOrder
   balanceDueDate?: Prisma.SortOrderInput | Prisma.SortOrder
+  profilePic?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
   waActive?: Prisma.SortOrder
   lastReminderSentDate?: Prisma.SortOrderInput | Prisma.SortOrder
   lastAbsenteeSentDate?: Prisma.SortOrderInput | Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
   _count?: Prisma.CustomerCountOrderByAggregateInput
   _avg?: Prisma.CustomerAvgOrderByAggregateInput
   _max?: Prisma.CustomerMaxOrderByAggregateInput
@@ -432,17 +465,20 @@ export type CustomerScalarWhereWithAggregatesInput = {
   nfcCardId?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   nfcCardId2?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   fingerprintId?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
+  mantraFpData?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   planType?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   feeAmount?: Prisma.IntWithAggregatesFilter<"Customer"> | number
   lastPaymentDate?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   nextDueDate?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   pendingBalance?: Prisma.IntWithAggregatesFilter<"Customer"> | number
   balanceDueDate?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
+  profilePic?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   status?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   joinedDate?: Prisma.StringWithAggregatesFilter<"Customer"> | string
   waActive?: Prisma.BoolWithAggregatesFilter<"Customer"> | boolean
   lastReminderSentDate?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   lastAbsenteeSentDate?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
+  isArchived?: Prisma.BoolWithAggregatesFilter<"Customer"> | boolean
 }
 
 export type CustomerCreateInput = {
@@ -453,17 +489,20 @@ export type CustomerCreateInput = {
   nfcCardId: string
   nfcCardId2?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
   nextDueDate: string
   pendingBalance?: number
   balanceDueDate?: string | null
+  profilePic?: string | null
   status?: string
   joinedDate: string
   waActive?: boolean
   lastReminderSentDate?: string | null
   lastAbsenteeSentDate?: string | null
+  isArchived?: boolean
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
@@ -479,17 +518,20 @@ export type CustomerUncheckedCreateInput = {
   nfcCardId: string
   nfcCardId2?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
   nextDueDate: string
   pendingBalance?: number
   balanceDueDate?: string | null
+  profilePic?: string | null
   status?: string
   joinedDate: string
   waActive?: boolean
   lastReminderSentDate?: string | null
   lastAbsenteeSentDate?: string | null
+  isArchived?: boolean
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
@@ -503,17 +545,20 @@ export type CustomerUpdateInput = {
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
   nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
   pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profilePic?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
@@ -529,17 +574,20 @@ export type CustomerUncheckedUpdateInput = {
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
   nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
   pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profilePic?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
@@ -554,17 +602,20 @@ export type CustomerCreateManyInput = {
   nfcCardId: string
   nfcCardId2?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
   nextDueDate: string
   pendingBalance?: number
   balanceDueDate?: string | null
+  profilePic?: string | null
   status?: string
   joinedDate: string
   waActive?: boolean
   lastReminderSentDate?: string | null
   lastAbsenteeSentDate?: string | null
+  isArchived?: boolean
 }
 
 export type CustomerUpdateManyMutationInput = {
@@ -575,17 +626,20 @@ export type CustomerUpdateManyMutationInput = {
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
   nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
   pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profilePic?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type CustomerUncheckedUpdateManyInput = {
@@ -597,17 +651,20 @@ export type CustomerUncheckedUpdateManyInput = {
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
   nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
   pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profilePic?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type CustomerListRelationFilter = {
@@ -629,17 +686,20 @@ export type CustomerCountOrderByAggregateInput = {
   nfcCardId?: Prisma.SortOrder
   nfcCardId2?: Prisma.SortOrder
   fingerprintId?: Prisma.SortOrder
+  mantraFpData?: Prisma.SortOrder
   planType?: Prisma.SortOrder
   feeAmount?: Prisma.SortOrder
   lastPaymentDate?: Prisma.SortOrder
   nextDueDate?: Prisma.SortOrder
   pendingBalance?: Prisma.SortOrder
   balanceDueDate?: Prisma.SortOrder
+  profilePic?: Prisma.SortOrder
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
   waActive?: Prisma.SortOrder
   lastReminderSentDate?: Prisma.SortOrder
   lastAbsenteeSentDate?: Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
 }
 
 export type CustomerAvgOrderByAggregateInput = {
@@ -656,17 +716,20 @@ export type CustomerMaxOrderByAggregateInput = {
   nfcCardId?: Prisma.SortOrder
   nfcCardId2?: Prisma.SortOrder
   fingerprintId?: Prisma.SortOrder
+  mantraFpData?: Prisma.SortOrder
   planType?: Prisma.SortOrder
   feeAmount?: Prisma.SortOrder
   lastPaymentDate?: Prisma.SortOrder
   nextDueDate?: Prisma.SortOrder
   pendingBalance?: Prisma.SortOrder
   balanceDueDate?: Prisma.SortOrder
+  profilePic?: Prisma.SortOrder
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
   waActive?: Prisma.SortOrder
   lastReminderSentDate?: Prisma.SortOrder
   lastAbsenteeSentDate?: Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
 }
 
 export type CustomerMinOrderByAggregateInput = {
@@ -678,17 +741,20 @@ export type CustomerMinOrderByAggregateInput = {
   nfcCardId?: Prisma.SortOrder
   nfcCardId2?: Prisma.SortOrder
   fingerprintId?: Prisma.SortOrder
+  mantraFpData?: Prisma.SortOrder
   planType?: Prisma.SortOrder
   feeAmount?: Prisma.SortOrder
   lastPaymentDate?: Prisma.SortOrder
   nextDueDate?: Prisma.SortOrder
   pendingBalance?: Prisma.SortOrder
   balanceDueDate?: Prisma.SortOrder
+  profilePic?: Prisma.SortOrder
   status?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
   waActive?: Prisma.SortOrder
   lastReminderSentDate?: Prisma.SortOrder
   lastAbsenteeSentDate?: Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
 }
 
 export type CustomerSumOrderByAggregateInput = {
@@ -810,17 +876,20 @@ export type CustomerCreateWithoutGymInput = {
   nfcCardId: string
   nfcCardId2?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
   nextDueDate: string
   pendingBalance?: number
   balanceDueDate?: string | null
+  profilePic?: string | null
   status?: string
   joinedDate: string
   waActive?: boolean
   lastReminderSentDate?: string | null
   lastAbsenteeSentDate?: string | null
+  isArchived?: boolean
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutCustomerInput
@@ -834,17 +903,20 @@ export type CustomerUncheckedCreateWithoutGymInput = {
   nfcCardId: string
   nfcCardId2?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
   nextDueDate: string
   pendingBalance?: number
   balanceDueDate?: string | null
+  profilePic?: string | null
   status?: string
   joinedDate: string
   waActive?: boolean
   lastReminderSentDate?: string | null
   lastAbsenteeSentDate?: string | null
+  isArchived?: boolean
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
@@ -888,17 +960,20 @@ export type CustomerScalarWhereInput = {
   nfcCardId?: Prisma.StringFilter<"Customer"> | string
   nfcCardId2?: Prisma.StringNullableFilter<"Customer"> | string | null
   fingerprintId?: Prisma.StringNullableFilter<"Customer"> | string | null
+  mantraFpData?: Prisma.StringNullableFilter<"Customer"> | string | null
   planType?: Prisma.StringFilter<"Customer"> | string
   feeAmount?: Prisma.IntFilter<"Customer"> | number
   lastPaymentDate?: Prisma.StringFilter<"Customer"> | string
   nextDueDate?: Prisma.StringFilter<"Customer"> | string
   pendingBalance?: Prisma.IntFilter<"Customer"> | number
   balanceDueDate?: Prisma.StringNullableFilter<"Customer"> | string | null
+  profilePic?: Prisma.StringNullableFilter<"Customer"> | string | null
   status?: Prisma.StringFilter<"Customer"> | string
   joinedDate?: Prisma.StringFilter<"Customer"> | string
   waActive?: Prisma.BoolFilter<"Customer"> | boolean
   lastReminderSentDate?: Prisma.StringNullableFilter<"Customer"> | string | null
   lastAbsenteeSentDate?: Prisma.StringNullableFilter<"Customer"> | string | null
+  isArchived?: Prisma.BoolFilter<"Customer"> | boolean
 }
 
 export type CustomerCreateWithoutAttendanceInput = {
@@ -909,17 +984,20 @@ export type CustomerCreateWithoutAttendanceInput = {
   nfcCardId: string
   nfcCardId2?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
   nextDueDate: string
   pendingBalance?: number
   balanceDueDate?: string | null
+  profilePic?: string | null
   status?: string
   joinedDate: string
   waActive?: boolean
   lastReminderSentDate?: string | null
   lastAbsenteeSentDate?: string | null
+  isArchived?: boolean
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutCustomerInput
@@ -934,17 +1012,20 @@ export type CustomerUncheckedCreateWithoutAttendanceInput = {
   nfcCardId: string
   nfcCardId2?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
   nextDueDate: string
   pendingBalance?: number
   balanceDueDate?: string | null
+  profilePic?: string | null
   status?: string
   joinedDate: string
   waActive?: boolean
   lastReminderSentDate?: string | null
   lastAbsenteeSentDate?: string | null
+  isArchived?: boolean
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
 }
@@ -973,17 +1054,20 @@ export type CustomerUpdateWithoutAttendanceInput = {
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
   nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
   pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profilePic?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutCustomerNestedInput
@@ -998,17 +1082,20 @@ export type CustomerUncheckedUpdateWithoutAttendanceInput = {
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
   nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
   pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profilePic?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
 }
@@ -1021,17 +1108,20 @@ export type CustomerCreateWithoutTransactionsInput = {
   nfcCardId: string
   nfcCardId2?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
   nextDueDate: string
   pendingBalance?: number
   balanceDueDate?: string | null
+  profilePic?: string | null
   status?: string
   joinedDate: string
   waActive?: boolean
   lastReminderSentDate?: string | null
   lastAbsenteeSentDate?: string | null
+  isArchived?: boolean
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleCreateNestedManyWithoutCustomerInput
@@ -1046,17 +1136,20 @@ export type CustomerUncheckedCreateWithoutTransactionsInput = {
   nfcCardId: string
   nfcCardId2?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
   nextDueDate: string
   pendingBalance?: number
   balanceDueDate?: string | null
+  profilePic?: string | null
   status?: string
   joinedDate: string
   waActive?: boolean
   lastReminderSentDate?: string | null
   lastAbsenteeSentDate?: string | null
+  isArchived?: boolean
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   productSales?: Prisma.ProductSaleUncheckedCreateNestedManyWithoutCustomerInput
 }
@@ -1085,17 +1178,20 @@ export type CustomerUpdateWithoutTransactionsInput = {
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
   nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
   pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profilePic?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutCustomerNestedInput
@@ -1110,17 +1206,20 @@ export type CustomerUncheckedUpdateWithoutTransactionsInput = {
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
   nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
   pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profilePic?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
 }
@@ -1133,17 +1232,20 @@ export type CustomerCreateWithoutProductSalesInput = {
   nfcCardId: string
   nfcCardId2?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
   nextDueDate: string
   pendingBalance?: number
   balanceDueDate?: string | null
+  profilePic?: string | null
   status?: string
   joinedDate: string
   waActive?: boolean
   lastReminderSentDate?: string | null
   lastAbsenteeSentDate?: string | null
+  isArchived?: boolean
   gym: Prisma.GymCreateNestedOneWithoutCustomersInput
   attendance?: Prisma.AttendanceRecordCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionCreateNestedManyWithoutCustomerInput
@@ -1158,17 +1260,20 @@ export type CustomerUncheckedCreateWithoutProductSalesInput = {
   nfcCardId: string
   nfcCardId2?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
   nextDueDate: string
   pendingBalance?: number
   balanceDueDate?: string | null
+  profilePic?: string | null
   status?: string
   joinedDate: string
   waActive?: boolean
   lastReminderSentDate?: string | null
   lastAbsenteeSentDate?: string | null
+  isArchived?: boolean
   attendance?: Prisma.AttendanceRecordUncheckedCreateNestedManyWithoutCustomerInput
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCustomerInput
 }
@@ -1197,17 +1302,20 @@ export type CustomerUpdateWithoutProductSalesInput = {
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
   nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
   pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profilePic?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   gym?: Prisma.GymUpdateOneRequiredWithoutCustomersNestedInput
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
@@ -1222,17 +1330,20 @@ export type CustomerUncheckedUpdateWithoutProductSalesInput = {
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
   nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
   pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profilePic?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
 }
@@ -1245,17 +1356,20 @@ export type CustomerCreateManyGymInput = {
   nfcCardId: string
   nfcCardId2?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   planType: string
   feeAmount: number
   lastPaymentDate: string
   nextDueDate: string
   pendingBalance?: number
   balanceDueDate?: string | null
+  profilePic?: string | null
   status?: string
   joinedDate: string
   waActive?: boolean
   lastReminderSentDate?: string | null
   lastAbsenteeSentDate?: string | null
+  isArchived?: boolean
 }
 
 export type CustomerUpdateWithoutGymInput = {
@@ -1266,17 +1380,20 @@ export type CustomerUpdateWithoutGymInput = {
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
   nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
   pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profilePic?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendance?: Prisma.AttendanceRecordUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUpdateManyWithoutCustomerNestedInput
@@ -1290,17 +1407,20 @@ export type CustomerUncheckedUpdateWithoutGymInput = {
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
   nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
   pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profilePic?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendance?: Prisma.AttendanceRecordUncheckedUpdateManyWithoutCustomerNestedInput
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCustomerNestedInput
   productSales?: Prisma.ProductSaleUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1314,17 +1434,20 @@ export type CustomerUncheckedUpdateManyWithoutGymInput = {
   nfcCardId?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planType?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.IntFieldUpdateOperationsInput | number
   lastPaymentDate?: Prisma.StringFieldUpdateOperationsInput | string
   nextDueDate?: Prisma.StringFieldUpdateOperationsInput | string
   pendingBalance?: Prisma.IntFieldUpdateOperationsInput | number
   balanceDueDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profilePic?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   waActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastReminderSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastAbsenteeSentDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
@@ -1385,17 +1508,20 @@ export type CustomerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   nfcCardId?: boolean
   nfcCardId2?: boolean
   fingerprintId?: boolean
+  mantraFpData?: boolean
   planType?: boolean
   feeAmount?: boolean
   lastPaymentDate?: boolean
   nextDueDate?: boolean
   pendingBalance?: boolean
   balanceDueDate?: boolean
+  profilePic?: boolean
   status?: boolean
   joinedDate?: boolean
   waActive?: boolean
   lastReminderSentDate?: boolean
   lastAbsenteeSentDate?: boolean
+  isArchived?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
   attendance?: boolean | Prisma.Customer$attendanceArgs<ExtArgs>
   transactions?: boolean | Prisma.Customer$transactionsArgs<ExtArgs>
@@ -1412,17 +1538,20 @@ export type CustomerSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   nfcCardId?: boolean
   nfcCardId2?: boolean
   fingerprintId?: boolean
+  mantraFpData?: boolean
   planType?: boolean
   feeAmount?: boolean
   lastPaymentDate?: boolean
   nextDueDate?: boolean
   pendingBalance?: boolean
   balanceDueDate?: boolean
+  profilePic?: boolean
   status?: boolean
   joinedDate?: boolean
   waActive?: boolean
   lastReminderSentDate?: boolean
   lastAbsenteeSentDate?: boolean
+  isArchived?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["customer"]>
 
@@ -1435,17 +1564,20 @@ export type CustomerSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   nfcCardId?: boolean
   nfcCardId2?: boolean
   fingerprintId?: boolean
+  mantraFpData?: boolean
   planType?: boolean
   feeAmount?: boolean
   lastPaymentDate?: boolean
   nextDueDate?: boolean
   pendingBalance?: boolean
   balanceDueDate?: boolean
+  profilePic?: boolean
   status?: boolean
   joinedDate?: boolean
   waActive?: boolean
   lastReminderSentDate?: boolean
   lastAbsenteeSentDate?: boolean
+  isArchived?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["customer"]>
 
@@ -1458,20 +1590,23 @@ export type CustomerSelectScalar = {
   nfcCardId?: boolean
   nfcCardId2?: boolean
   fingerprintId?: boolean
+  mantraFpData?: boolean
   planType?: boolean
   feeAmount?: boolean
   lastPaymentDate?: boolean
   nextDueDate?: boolean
   pendingBalance?: boolean
   balanceDueDate?: boolean
+  profilePic?: boolean
   status?: boolean
   joinedDate?: boolean
   waActive?: boolean
   lastReminderSentDate?: boolean
   lastAbsenteeSentDate?: boolean
+  isArchived?: boolean
 }
 
-export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "memberId" | "gymId" | "name" | "phone" | "nfcCardId" | "nfcCardId2" | "fingerprintId" | "planType" | "feeAmount" | "lastPaymentDate" | "nextDueDate" | "pendingBalance" | "balanceDueDate" | "status" | "joinedDate" | "waActive" | "lastReminderSentDate" | "lastAbsenteeSentDate", ExtArgs["result"]["customer"]>
+export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "memberId" | "gymId" | "name" | "phone" | "nfcCardId" | "nfcCardId2" | "fingerprintId" | "mantraFpData" | "planType" | "feeAmount" | "lastPaymentDate" | "nextDueDate" | "pendingBalance" | "balanceDueDate" | "profilePic" | "status" | "joinedDate" | "waActive" | "lastReminderSentDate" | "lastAbsenteeSentDate" | "isArchived", ExtArgs["result"]["customer"]>
 export type CustomerInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
   attendance?: boolean | Prisma.Customer$attendanceArgs<ExtArgs>
@@ -1503,17 +1638,20 @@ export type $CustomerPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     nfcCardId: string
     nfcCardId2: string | null
     fingerprintId: string | null
+    mantraFpData: string | null
     planType: string
     feeAmount: number
     lastPaymentDate: string
     nextDueDate: string
     pendingBalance: number
     balanceDueDate: string | null
+    profilePic: string | null
     status: string
     joinedDate: string
     waActive: boolean
     lastReminderSentDate: string | null
     lastAbsenteeSentDate: string | null
+    isArchived: boolean
   }, ExtArgs["result"]["customer"]>
   composites: {}
 }
@@ -1949,17 +2087,20 @@ export interface CustomerFieldRefs {
   readonly nfcCardId: Prisma.FieldRef<"Customer", 'String'>
   readonly nfcCardId2: Prisma.FieldRef<"Customer", 'String'>
   readonly fingerprintId: Prisma.FieldRef<"Customer", 'String'>
+  readonly mantraFpData: Prisma.FieldRef<"Customer", 'String'>
   readonly planType: Prisma.FieldRef<"Customer", 'String'>
   readonly feeAmount: Prisma.FieldRef<"Customer", 'Int'>
   readonly lastPaymentDate: Prisma.FieldRef<"Customer", 'String'>
   readonly nextDueDate: Prisma.FieldRef<"Customer", 'String'>
   readonly pendingBalance: Prisma.FieldRef<"Customer", 'Int'>
   readonly balanceDueDate: Prisma.FieldRef<"Customer", 'String'>
+  readonly profilePic: Prisma.FieldRef<"Customer", 'String'>
   readonly status: Prisma.FieldRef<"Customer", 'String'>
   readonly joinedDate: Prisma.FieldRef<"Customer", 'String'>
   readonly waActive: Prisma.FieldRef<"Customer", 'Boolean'>
   readonly lastReminderSentDate: Prisma.FieldRef<"Customer", 'String'>
   readonly lastAbsenteeSentDate: Prisma.FieldRef<"Customer", 'String'>
+  readonly isArchived: Prisma.FieldRef<"Customer", 'Boolean'>
 }
     
 

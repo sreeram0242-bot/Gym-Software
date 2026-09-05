@@ -32,7 +32,9 @@ export type StaffMinAggregateOutputType = {
   role: string | null
   nfcCardId: string | null
   fingerprintId: string | null
+  mantraFpData: string | null
   status: string | null
+  isArchived: boolean | null
   joinedDate: string | null
 }
 
@@ -44,7 +46,9 @@ export type StaffMaxAggregateOutputType = {
   role: string | null
   nfcCardId: string | null
   fingerprintId: string | null
+  mantraFpData: string | null
   status: string | null
+  isArchived: boolean | null
   joinedDate: string | null
 }
 
@@ -56,7 +60,9 @@ export type StaffCountAggregateOutputType = {
   role: number
   nfcCardId: number
   fingerprintId: number
+  mantraFpData: number
   status: number
+  isArchived: number
   joinedDate: number
   _all: number
 }
@@ -70,7 +76,9 @@ export type StaffMinAggregateInputType = {
   role?: true
   nfcCardId?: true
   fingerprintId?: true
+  mantraFpData?: true
   status?: true
+  isArchived?: true
   joinedDate?: true
 }
 
@@ -82,7 +90,9 @@ export type StaffMaxAggregateInputType = {
   role?: true
   nfcCardId?: true
   fingerprintId?: true
+  mantraFpData?: true
   status?: true
+  isArchived?: true
   joinedDate?: true
 }
 
@@ -94,7 +104,9 @@ export type StaffCountAggregateInputType = {
   role?: true
   nfcCardId?: true
   fingerprintId?: true
+  mantraFpData?: true
   status?: true
+  isArchived?: true
   joinedDate?: true
   _all?: true
 }
@@ -179,7 +191,9 @@ export type StaffGroupByOutputType = {
   role: string
   nfcCardId: string | null
   fingerprintId: string | null
+  mantraFpData: string | null
   status: string
+  isArchived: boolean
   joinedDate: string
   _count: StaffCountAggregateOutputType | null
   _min: StaffMinAggregateOutputType | null
@@ -212,7 +226,9 @@ export type StaffWhereInput = {
   role?: Prisma.StringFilter<"Staff"> | string
   nfcCardId?: Prisma.StringNullableFilter<"Staff"> | string | null
   fingerprintId?: Prisma.StringNullableFilter<"Staff"> | string | null
+  mantraFpData?: Prisma.StringNullableFilter<"Staff"> | string | null
   status?: Prisma.StringFilter<"Staff"> | string
+  isArchived?: Prisma.BoolFilter<"Staff"> | boolean
   joinedDate?: Prisma.StringFilter<"Staff"> | string
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
   attendance?: Prisma.StaffAttendanceRecordListRelationFilter
@@ -226,7 +242,9 @@ export type StaffOrderByWithRelationInput = {
   role?: Prisma.SortOrder
   nfcCardId?: Prisma.SortOrderInput | Prisma.SortOrder
   fingerprintId?: Prisma.SortOrderInput | Prisma.SortOrder
+  mantraFpData?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
   gym?: Prisma.GymOrderByWithRelationInput
   attendance?: Prisma.StaffAttendanceRecordOrderByRelationAggregateInput
@@ -243,7 +261,9 @@ export type StaffWhereUniqueInput = Prisma.AtLeast<{
   role?: Prisma.StringFilter<"Staff"> | string
   nfcCardId?: Prisma.StringNullableFilter<"Staff"> | string | null
   fingerprintId?: Prisma.StringNullableFilter<"Staff"> | string | null
+  mantraFpData?: Prisma.StringNullableFilter<"Staff"> | string | null
   status?: Prisma.StringFilter<"Staff"> | string
+  isArchived?: Prisma.BoolFilter<"Staff"> | boolean
   joinedDate?: Prisma.StringFilter<"Staff"> | string
   gym?: Prisma.XOR<Prisma.GymScalarRelationFilter, Prisma.GymWhereInput>
   attendance?: Prisma.StaffAttendanceRecordListRelationFilter
@@ -257,7 +277,9 @@ export type StaffOrderByWithAggregationInput = {
   role?: Prisma.SortOrder
   nfcCardId?: Prisma.SortOrderInput | Prisma.SortOrder
   fingerprintId?: Prisma.SortOrderInput | Prisma.SortOrder
+  mantraFpData?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
   _count?: Prisma.StaffCountOrderByAggregateInput
   _max?: Prisma.StaffMaxOrderByAggregateInput
@@ -275,7 +297,9 @@ export type StaffScalarWhereWithAggregatesInput = {
   role?: Prisma.StringWithAggregatesFilter<"Staff"> | string
   nfcCardId?: Prisma.StringNullableWithAggregatesFilter<"Staff"> | string | null
   fingerprintId?: Prisma.StringNullableWithAggregatesFilter<"Staff"> | string | null
+  mantraFpData?: Prisma.StringNullableWithAggregatesFilter<"Staff"> | string | null
   status?: Prisma.StringWithAggregatesFilter<"Staff"> | string
+  isArchived?: Prisma.BoolWithAggregatesFilter<"Staff"> | boolean
   joinedDate?: Prisma.StringWithAggregatesFilter<"Staff"> | string
 }
 
@@ -286,7 +310,9 @@ export type StaffCreateInput = {
   role?: string
   nfcCardId?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   status?: string
+  isArchived?: boolean
   joinedDate: string
   gym: Prisma.GymCreateNestedOneWithoutStaffInput
   attendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutStaffInput
@@ -300,7 +326,9 @@ export type StaffUncheckedCreateInput = {
   role?: string
   nfcCardId?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   status?: string
+  isArchived?: boolean
   joinedDate: string
   attendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutStaffInput
 }
@@ -312,7 +340,9 @@ export type StaffUpdateInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   gym?: Prisma.GymUpdateOneRequiredWithoutStaffNestedInput
   attendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutStaffNestedInput
@@ -326,7 +356,9 @@ export type StaffUncheckedUpdateInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   attendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutStaffNestedInput
 }
@@ -339,7 +371,9 @@ export type StaffCreateManyInput = {
   role?: string
   nfcCardId?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   status?: string
+  isArchived?: boolean
   joinedDate: string
 }
 
@@ -350,7 +384,9 @@ export type StaffUpdateManyMutationInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
@@ -362,7 +398,9 @@ export type StaffUncheckedUpdateManyInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
@@ -384,7 +422,9 @@ export type StaffCountOrderByAggregateInput = {
   role?: Prisma.SortOrder
   nfcCardId?: Prisma.SortOrder
   fingerprintId?: Prisma.SortOrder
+  mantraFpData?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
 }
 
@@ -396,7 +436,9 @@ export type StaffMaxOrderByAggregateInput = {
   role?: Prisma.SortOrder
   nfcCardId?: Prisma.SortOrder
   fingerprintId?: Prisma.SortOrder
+  mantraFpData?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
 }
 
@@ -408,7 +450,9 @@ export type StaffMinOrderByAggregateInput = {
   role?: Prisma.SortOrder
   nfcCardId?: Prisma.SortOrder
   fingerprintId?: Prisma.SortOrder
+  mantraFpData?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
   joinedDate?: Prisma.SortOrder
 }
 
@@ -480,7 +524,9 @@ export type StaffCreateWithoutGymInput = {
   role?: string
   nfcCardId?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   status?: string
+  isArchived?: boolean
   joinedDate: string
   attendance?: Prisma.StaffAttendanceRecordCreateNestedManyWithoutStaffInput
 }
@@ -492,7 +538,9 @@ export type StaffUncheckedCreateWithoutGymInput = {
   role?: string
   nfcCardId?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   status?: string
+  isArchived?: boolean
   joinedDate: string
   attendance?: Prisma.StaffAttendanceRecordUncheckedCreateNestedManyWithoutStaffInput
 }
@@ -534,7 +582,9 @@ export type StaffScalarWhereInput = {
   role?: Prisma.StringFilter<"Staff"> | string
   nfcCardId?: Prisma.StringNullableFilter<"Staff"> | string | null
   fingerprintId?: Prisma.StringNullableFilter<"Staff"> | string | null
+  mantraFpData?: Prisma.StringNullableFilter<"Staff"> | string | null
   status?: Prisma.StringFilter<"Staff"> | string
+  isArchived?: Prisma.BoolFilter<"Staff"> | boolean
   joinedDate?: Prisma.StringFilter<"Staff"> | string
 }
 
@@ -545,7 +595,9 @@ export type StaffCreateWithoutAttendanceInput = {
   role?: string
   nfcCardId?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   status?: string
+  isArchived?: boolean
   joinedDate: string
   gym: Prisma.GymCreateNestedOneWithoutStaffInput
 }
@@ -558,7 +610,9 @@ export type StaffUncheckedCreateWithoutAttendanceInput = {
   role?: string
   nfcCardId?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   status?: string
+  isArchived?: boolean
   joinedDate: string
 }
 
@@ -585,7 +639,9 @@ export type StaffUpdateWithoutAttendanceInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   gym?: Prisma.GymUpdateOneRequiredWithoutStaffNestedInput
 }
@@ -598,7 +654,9 @@ export type StaffUncheckedUpdateWithoutAttendanceInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
@@ -609,7 +667,9 @@ export type StaffCreateManyGymInput = {
   role?: string
   nfcCardId?: string | null
   fingerprintId?: string | null
+  mantraFpData?: string | null
   status?: string
+  isArchived?: boolean
   joinedDate: string
 }
 
@@ -620,7 +680,9 @@ export type StaffUpdateWithoutGymInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   attendance?: Prisma.StaffAttendanceRecordUpdateManyWithoutStaffNestedInput
 }
@@ -632,7 +694,9 @@ export type StaffUncheckedUpdateWithoutGymInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
   attendance?: Prisma.StaffAttendanceRecordUncheckedUpdateManyWithoutStaffNestedInput
 }
@@ -644,7 +708,9 @@ export type StaffUncheckedUpdateManyWithoutGymInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   nfcCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fingerprintId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mantraFpData?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   joinedDate?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
@@ -687,7 +753,9 @@ export type StaffSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   role?: boolean
   nfcCardId?: boolean
   fingerprintId?: boolean
+  mantraFpData?: boolean
   status?: boolean
+  isArchived?: boolean
   joinedDate?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
   attendance?: boolean | Prisma.Staff$attendanceArgs<ExtArgs>
@@ -702,7 +770,9 @@ export type StaffSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   role?: boolean
   nfcCardId?: boolean
   fingerprintId?: boolean
+  mantraFpData?: boolean
   status?: boolean
+  isArchived?: boolean
   joinedDate?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["staff"]>
@@ -715,7 +785,9 @@ export type StaffSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   role?: boolean
   nfcCardId?: boolean
   fingerprintId?: boolean
+  mantraFpData?: boolean
   status?: boolean
+  isArchived?: boolean
   joinedDate?: boolean
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["staff"]>
@@ -728,11 +800,13 @@ export type StaffSelectScalar = {
   role?: boolean
   nfcCardId?: boolean
   fingerprintId?: boolean
+  mantraFpData?: boolean
   status?: boolean
+  isArchived?: boolean
   joinedDate?: boolean
 }
 
-export type StaffOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "name" | "phone" | "role" | "nfcCardId" | "fingerprintId" | "status" | "joinedDate", ExtArgs["result"]["staff"]>
+export type StaffOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "name" | "phone" | "role" | "nfcCardId" | "fingerprintId" | "mantraFpData" | "status" | "isArchived" | "joinedDate", ExtArgs["result"]["staff"]>
 export type StaffInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
   attendance?: boolean | Prisma.Staff$attendanceArgs<ExtArgs>
@@ -759,7 +833,9 @@ export type $StaffPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     role: string
     nfcCardId: string | null
     fingerprintId: string | null
+    mantraFpData: string | null
     status: string
+    isArchived: boolean
     joinedDate: string
   }, ExtArgs["result"]["staff"]>
   composites: {}
@@ -1193,7 +1269,9 @@ export interface StaffFieldRefs {
   readonly role: Prisma.FieldRef<"Staff", 'String'>
   readonly nfcCardId: Prisma.FieldRef<"Staff", 'String'>
   readonly fingerprintId: Prisma.FieldRef<"Staff", 'String'>
+  readonly mantraFpData: Prisma.FieldRef<"Staff", 'String'>
   readonly status: Prisma.FieldRef<"Staff", 'String'>
+  readonly isArchived: Prisma.FieldRef<"Staff", 'Boolean'>
   readonly joinedDate: Prisma.FieldRef<"Staff", 'String'>
 }
     

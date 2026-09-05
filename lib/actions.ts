@@ -441,7 +441,16 @@ export async function addCustomer(data: any) {
       where: { fingerprintId: data.fingerprintId, gymId: data.gymId }
     });
     if (existing) {
-      throw new Error(`Member ID ${data.fingerprintId} is already in use by ${existing.name}`);
+      throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by ${existing.name}`);
+    }
+  }
+
+  if (data.mantraFpData) {
+    const existingMantra = await prisma.customer.findFirst({
+      where: { mantraFpData: data.mantraFpData, gymId: data.gymId }
+    });
+    if (existingMantra) {
+      throw new Error(`Mantra Fingerprint is already registered to ${existingMantra.name}`);
     }
   }
 
@@ -541,6 +550,7 @@ export async function addCustomer(data: any) {
       nfcCardId: data.nfcCardId,
       nfcCardId2: data.nfcCardId2 || null,
       fingerprintId: data.fingerprintId || null,
+      mantraFpData: data.mantraFpData || null,
       planType: data.planType,
       feeAmount: data.feeAmount,
       pendingBalance: pendingBalance,
@@ -601,6 +611,11 @@ export async function findCustomerByFingerprint(gymId: string, fingerprintId: st
   return customers.find((c: any) => c.fingerprintId && c.fingerprintId.toLowerCase() === fingerprintId.toLowerCase());
 }
 
+export async function findCustomerByMantra(gymId: string, mantraFpData: string) {
+  const customers = await getCustomers(gymId);
+  return customers.find((c: any) => c.mantraFpData === mantraFpData);
+}
+
 export async function findStaffByNFC(gymId: string, nfcId: string) {
   const cleanId = nfcId.trim().toLowerCase();
   const strippedId = cleanId.replace(/^0+/, '');
@@ -616,6 +631,11 @@ export async function findStaffByFingerprint(gymId: string, fingerprintId: strin
   return staffs.find((s: any) => s.fingerprintId && s.fingerprintId.toLowerCase() === fingerprintId.toLowerCase());
 }
 
+export async function findStaffByMantra(gymId: string, mantraFpData: string) {
+  const staffs = await getStaffs(gymId);
+  return staffs.find((s: any) => s.mantraFpData === mantraFpData);
+}
+
 export async function updateCustomer(id: string, data: any) {
   const callerGymId = cookies().get('active_gym_id')?.value;
   if (!callerGymId) throw new Error("Unauthorized");
@@ -625,7 +645,16 @@ export async function updateCustomer(id: string, data: any) {
       where: { fingerprintId: data.fingerprintId, gymId: callerGymId, id: { not: id } }
     });
     if (existing) {
-      throw new Error(`Member ID ${data.fingerprintId} is already in use by ${existing.name}`);
+      throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by ${existing.name}`);
+    }
+  }
+
+  if (data.mantraFpData) {
+    const existingMantra = await prisma.customer.findFirst({
+      where: { mantraFpData: data.mantraFpData, gymId: callerGymId, id: { not: id } }
+    });
+    if (existingMantra) {
+      throw new Error(`Mantra Fingerprint is already registered to ${existingMantra.name}`);
     }
   }
 
@@ -1650,6 +1679,7 @@ export async function addStaff(data: any) {
     const cleanRole = String(data.role || 'Trainer').trim();
     const cleanNfc = data.nfcCardId && String(data.nfcCardId).trim() ? String(data.nfcCardId).trim() : null;
     const cleanFp = data.fingerprintId && String(data.fingerprintId).trim() ? String(data.fingerprintId).trim() : null;
+    const cleanMantraFp = data.mantraFpData && String(data.mantraFpData).trim() ? String(data.mantraFpData).trim() : null;
 
     // 1. Check duplicate phone
     const existingPhone = await prisma.staff.findFirst({
@@ -1669,13 +1699,21 @@ export async function addStaff(data: any) {
       }
     }
 
-    // 3. Check duplicate Fingerprint ID
     if (cleanFp) {
       const existingFp = await prisma.staff.findFirst({
         where: { gymId, fingerprintId: cleanFp }
       });
       if (existingFp) {
-        throw new Error(`Fingerprint ID "${cleanFp}" is already assigned to staff: ${existingFp.name}.`);
+        throw new Error(`ZKTeco ID "${cleanFp}" is already assigned to staff: ${existingFp.name}.`);
+      }
+    }
+
+    if (cleanMantraFp) {
+      const existingMantra = await prisma.staff.findFirst({
+        where: { gymId, mantraFpData: cleanMantraFp }
+      });
+      if (existingMantra) {
+        throw new Error(`Mantra Fingerprint is already assigned to staff: ${existingMantra.name}.`);
       }
     }
 
@@ -1686,6 +1724,7 @@ export async function addStaff(data: any) {
       role: cleanRole,
       nfcCardId: cleanNfc,
       fingerprintId: cleanFp,
+      mantraFpData: cleanMantraFp,
       status: data.status || 'active',
       joinedDate: data.joinedDate || today
     };
@@ -1706,6 +1745,7 @@ export async function updateStaff(id: string, data: any) {
     const cleanPhone = data.phone !== undefined ? String(data.phone).trim() : current.phone;
     const cleanNfc = data.nfcCardId !== undefined ? (data.nfcCardId ? String(data.nfcCardId).trim() : null) : current.nfcCardId;
     const cleanFp = data.fingerprintId !== undefined ? (data.fingerprintId ? String(data.fingerprintId).trim() : null) : current.fingerprintId;
+    const cleanMantraFp = data.mantraFpData !== undefined ? (data.mantraFpData ? String(data.mantraFpData).trim() : null) : current.mantraFpData;
 
     // Check duplicate phone for other staff
     if (cleanPhone !== current.phone) {
@@ -1727,13 +1767,21 @@ export async function updateStaff(id: string, data: any) {
       }
     }
 
-    // Check duplicate Fingerprint for other staff
     if (cleanFp && cleanFp !== current.fingerprintId) {
       const existingFp = await prisma.staff.findFirst({
         where: { gymId: current.gymId, fingerprintId: cleanFp, NOT: { id } }
       });
       if (existingFp) {
-        throw new Error(`Fingerprint ID "${cleanFp}" is already assigned to staff: ${existingFp.name}.`);
+        throw new Error(`ZKTeco ID "${cleanFp}" is already assigned to staff: ${existingFp.name}.`);
+      }
+    }
+
+    if (cleanMantraFp && cleanMantraFp !== current.mantraFpData) {
+      const existingMantra = await prisma.staff.findFirst({
+        where: { gymId: current.gymId, mantraFpData: cleanMantraFp, NOT: { id } }
+      });
+      if (existingMantra) {
+        throw new Error(`Mantra Fingerprint is already assigned to staff: ${existingMantra.name}.`);
       }
     }
 
@@ -1743,6 +1791,7 @@ export async function updateStaff(id: string, data: any) {
     if (data.role !== undefined) cleanData.role = String(data.role).trim();
     if (data.nfcCardId !== undefined) cleanData.nfcCardId = cleanNfc;
     if (data.fingerprintId !== undefined) cleanData.fingerprintId = cleanFp;
+    if (data.mantraFpData !== undefined) cleanData.mantraFpData = cleanMantraFp;
     if (data.status !== undefined) cleanData.status = data.status;
     if (data.joinedDate !== undefined) cleanData.joinedDate = data.joinedDate;
 
@@ -1811,6 +1860,7 @@ export async function toggleStaffCheckIn(staffId: string, isManual: boolean = fa
   if (!staff) throw new Error('Staff not found');
   if (staff.isArchived) throw new Error('Cannot check in a deleted staff member');
 
+  try {
     const todayStr = getLocalTodayDateString();
     const nowIso = new Date().toISOString();
     

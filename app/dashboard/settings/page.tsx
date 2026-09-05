@@ -776,34 +776,47 @@ export default function SettingsPage() {
           {activeTab === 'attendance' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-base font-bold text-slate-800 mb-1">Hardware & Check-in Modes</h3>
-                <p className="text-sm text-slate-500 mb-4">Enable any combination of check-in methods you want your gym to support simultaneously.</p>
+                <h3 className="text-base font-bold text-slate-800 mb-1">Check-in Devices & Methods</h3>
+                <p className="text-sm text-slate-500 mb-4">Enable any combination of software methods and physical hardware devices you want to support simultaneously.</p>
                 
-                <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
-                  <Toggle 
-                    enabled={attendanceManualEnabled} 
-                    label="Manual Name Search" 
-                    desc="Allow receptionist to type a member's name to check them in manually" 
-                    onChange={async (v) => { setAttendanceManualEnabled(v); await saveSetting({ attendanceManualEnabled: v }); }} 
-                  />
-                  <Toggle 
-                    enabled={attendanceNfcEnabled} 
-                    label="NFC Card Reader" 
-                    desc="Members tap NFC cards on a connected USB reader" 
-                    onChange={async (v) => { setAttendanceNfcEnabled(v); await saveSetting({ attendanceNfcEnabled: v }); }} 
-                  />
-                  <Toggle 
-                    enabled={attendanceMantraEnabled} 
-                    label="Mantra MFS100 (USB)" 
-                    desc="Members scan their fingerprint on a USB Mantra scanner at the desk" 
-                    onChange={async (v) => { setAttendanceMantraEnabled(v); await saveSetting({ attendanceMantraEnabled: v }); }} 
-                  />
-                  <Toggle 
-                    enabled={attendanceWallMountEnabled} 
-                    label="ZKTeco / eSSL Wall Terminal" 
-                    desc="Members scan their fingerprint/card on a wall-mounted ADMS terminal" 
-                    onChange={async (v) => { setAttendanceWallMountEnabled(v); await saveSetting({ attendanceWallMountEnabled: v }); }} 
-                  />
+                <div className="space-y-6">
+                  {/* Software Methods */}
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Software Check-in Methods</h4>
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
+                      <Toggle 
+                        enabled={attendanceManualEnabled} 
+                        label="Manual Name Search" 
+                        desc="Allow receptionist to type a member's name to check them in manually" 
+                        onChange={async (v) => { setAttendanceManualEnabled(v); await saveSetting({ attendanceManualEnabled: v }); }} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Hardware Devices */}
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Physical Hardware Devices</h4>
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
+                      <Toggle 
+                        enabled={attendanceNfcEnabled} 
+                        label="USB NFC Card Reader" 
+                        desc="Members tap NFC cards on a connected USB reader" 
+                        onChange={async (v) => { setAttendanceNfcEnabled(v); await saveSetting({ attendanceNfcEnabled: v }); }} 
+                      />
+                      <Toggle 
+                        enabled={attendanceMantraEnabled} 
+                        label="Mantra Fingerprint Scanner (USB)" 
+                        desc="Members scan their fingerprint on a local USB Mantra scanner" 
+                        onChange={async (v) => { setAttendanceMantraEnabled(v); await saveSetting({ attendanceMantraEnabled: v }); }} 
+                      />
+                      <Toggle 
+                        enabled={attendanceWallMountEnabled} 
+                        label="ZKTeco K40 Pro (Wall Terminal)" 
+                        desc="Members scan their fingerprint/card on a wall-mounted ADMS terminal" 
+                        onChange={async (v) => { setAttendanceWallMountEnabled(v); await saveSetting({ attendanceWallMountEnabled: v }); }} 
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

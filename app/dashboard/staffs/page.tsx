@@ -136,7 +136,34 @@ export default function StaffPage() {
       }
     }, 2000);
     return () => clearInterval(interval);
-  }, [fpPollStatus, cardPollStatus, fpCommandId, cardCommandId, fingerprintId]);
+  }, [fpPollStatus, cardPollStatus, fpCommandId, cardCommandId, fingerprintId, gymId]);
+
+  // Fix: Handle Ghost Fingerprint cleanup on tab close
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isEditingStaff && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS')) {
+        navigator.sendBeacon('/api/biometrics/delete', JSON.stringify({ gymId, pin: fingerprintId }));
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isEditingStaff, fingerprintId, fpPollStatus, gymId]);
+
+  // Handle centralized closing of the add/edit modal (to cleanup ghosts)
+  const closeStaffModal = async () => {
+    if (!isEditingStaff && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS')) {
+      try {
+        await fetch('/api/biometrics/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gymId, pin: fingerprintId })
+        });
+      } catch (e) {
+        console.error('Ghost cleanup failed', e);
+      }
+    }
+    setShowStaffModal(false);
+  };
 
   // Individual Staff Logs Panel State
   const [showExportModal, setShowExportModal] = useState(false);
@@ -1640,7 +1667,7 @@ export default function StaffPage() {
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                          <Fingerprint className="w-3.5 h-3.5 text-indigo-600" /> Fingerprint
+                          <Shield className="w-3.5 h-3.5 text-indigo-600" /> ZKTeco ID (Device PIN)
                         </label>
                         {fpPollStatus === 'SUCCESS' ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full">
@@ -1730,7 +1757,7 @@ export default function StaffPage() {
               <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setShowStaffModal(false)}
+                  onClick={closeStaffModal}
                   className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition-colors"
                 >
                   Cancel
@@ -1754,10 +1781,7 @@ export default function StaffPage() {
           </div>
         </div>
       )}
-
-    </div>
-      </>
-    }
+      </>}
     </div>
   );
 }

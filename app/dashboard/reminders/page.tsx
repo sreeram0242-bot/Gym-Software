@@ -324,8 +324,7 @@ export default function RemindersPage() {
           </div>
         )}
       </div>
-    </div>
-    </>)}
+      </>)}
     </div>
   );
 }

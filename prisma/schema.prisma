@@ -42,6 +42,7 @@ model Customer {
   nfcCardId       String
   nfcCardId2      String?
   fingerprintId   String?
+  mantraFpData    String?  @db.Text
   planType        String
   feeAmount       Int
   lastPaymentDate String
@@ -236,6 +237,7 @@ model Staff {
   role            String   @default("Trainer")
   nfcCardId       String?
   fingerprintId   String?
+  mantraFpData    String?  @db.Text
   status          String   @default("active")
   isArchived      Boolean  @default(false)
   joinedDate      String

@@ -3,9 +3,9 @@
 import React, { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
 import { Radio, Clock, UserCheck, Fingerprint, Search, Wifi, WifiOff, Briefcase, LogIn, LogOut, Shield, Users, FileText, FileSpreadsheet } from 'lucide-react';
 import { 
-  getCustomers, getAttendance, findCustomerByNFC, findCustomerByFingerprint, toggleCheckIn, 
+  getCustomers, getAttendance, findCustomerByNFC, findCustomerByFingerprint, findCustomerByMantra, toggleCheckIn, 
   getMemberMonthlyAvgHours, getGymSettings, getStaffs, getStaffAttendance, findStaffByNFC, 
-  findStaffByFingerprint, toggleStaffCheckIn, getGyms
+  findStaffByFingerprint, findStaffByMantra, toggleStaffCheckIn, getGyms
 } from '@/lib/actions';
 import { Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
@@ -246,13 +246,13 @@ export default function CheckInTerminal() {
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'scan' && data.fingerprintId) {
-            const matched = await findCustomerByFingerprint(currentGymId, data.fingerprintId);
+            const matched = await findCustomerByMantra(currentGymId, data.fingerprintId);
             if (matched) {
               await handleCheckInToggle(matched, currentGymId);
               setFpStatus(`Member Scan: ${matched.name}`);
               setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 30000);
             } else {
-              const matchedStaff = await findStaffByFingerprint(currentGymId, data.fingerprintId);
+              const matchedStaff = await findStaffByMantra(currentGymId, data.fingerprintId);
               if (matchedStaff) {
                 const staffRes = await toggleStaffCheckIn(matchedStaff.id);
                 const isPunchIn = staffRes?.action === 'checkin';
@@ -1107,9 +1107,7 @@ export default function CheckInTerminal() {
           </div>
         </>
       )}
-    </div>
-    </>
-    }
+      </>}
     </div>
   );
 }
