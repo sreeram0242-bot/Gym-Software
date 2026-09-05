@@ -1970,3 +1970,19 @@ export async function processDailyAutomatedReminders(gymId: string) {
     return { success: false, error: err?.message };
   }
 }
+
+export async function registerBiometricDevice(gymId: string, serialNumber: string) {
+  if (!serialNumber || !serialNumber.trim()) return null;
+  const cleanSn = serialNumber.trim();
+  const existing = await prisma.biometricDevice.findFirst({ where: { gymId } });
+  if (existing) {
+    return prisma.biometricDevice.update({ where: { id: existing.id }, data: { serialNumber: cleanSn } });
+  } else {
+    return prisma.biometricDevice.create({ data: { gymId, serialNumber: cleanSn, name: 'Cloud Device' } });
+  }
+}
+
+export async function getBiometricDevice(gymId: string) {
+  if (!gymId) return null;
+  return prisma.biometricDevice.findFirst({ where: { gymId } });
+}

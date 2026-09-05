@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getTemplate, TemplateType, DEFAULT_TEMPLATES } from '@/lib/templates';
-import { getGymSettings, updateGymSettings, getGyms, changeGymPassword } from '@/lib/actions';
+import { getGymSettings, updateGymSettings, getGyms, changeGymPassword, getBiometricDevice, registerBiometricDevice } from '@/lib/actions';
 
 type TabType = 'general' | 'whatsapp' | 'attendance' | 'store' | 'templates' | 'password';
 
@@ -83,6 +83,7 @@ export default function SettingsPage() {
   const [attendanceWallMountEnabled, setAttendanceWallMountEnabled] = useState(false);
   const [fpPort, setFpPort] = useState(8765);
   const [deviceIpAddress, setDeviceIpAddress] = useState('');
+  const [deviceSerialNumber, setDeviceSerialNumber] = useState('');
   const [memberCutoffHours, setMemberCutoffHours] = useState<number>(4);
   const [staffCutoffHours, setStaffCutoffHours] = useState<number>(12);
 
@@ -122,6 +123,8 @@ export default function SettingsPage() {
 
   const loadSettings = async (id: string) => {
     const data = await getGymSettings(id);
+    const device = await getBiometricDevice(id);
+    
     setSettings(data);
     setGymName(data.gymName || '');
     setOwnerName(data.ownerName || '');
@@ -147,6 +150,7 @@ export default function SettingsPage() {
     setStaffCutoffHours(data.staffCutoffHours ?? 12);
     setProductsEnabled(data.productsEnabled ?? false);
     setShowStoreInRevenue(data.showStoreInRevenue ?? true);
+    setDeviceSerialNumber(device?.serialNumber || '');
     
     if (typeof window !== 'undefined') {
       localStorage.setItem('show_store_in_revenue', String(data.showStoreInRevenue ?? true));
@@ -846,11 +850,27 @@ export default function SettingsPage() {
                     <Wifi className="w-5 h-5" /> eSSL / ZKTeco Configuration
                   </div>
                   <p className="text-sm text-emerald-700">
-                    To enable <strong>remote fingerprint enrollment</strong> from the dashboard, you must run the <strong>ZK Bridge Agent</strong> on the gym PC and enter the IP address of your biometric device below.
+                    To connect your machine to the cloud (ADMS), enter its Serial Number. If using local network enrollment, enter its IP address.
                   </p>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 max-w-sm">
-                      <label className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1.5">Device IP Address</label>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <label className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1.5">Cloud ADMS Serial Number</label>
+                      <input
+                        type="text"
+                        value={deviceSerialNumber}
+                        onChange={e => setDeviceSerialNumber(e.target.value)}
+                        onBlur={async () => {
+                          if (gymId) {
+                            await registerBiometricDevice(gymId, deviceSerialNumber);
+                            showSuccess('Device Serial Number saved!');
+                          }
+                        }}
+                        placeholder="e.g. CAJM214000123"
+                        className="w-full px-3.5 py-2.5 bg-white border border-emerald-200 rounded-lg text-sm font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none uppercase"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1.5">Local Device IP (Optional)</label>
                       <input
                         type="text"
                         value={deviceIpAddress}
