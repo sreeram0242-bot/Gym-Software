@@ -28,9 +28,9 @@ export default function BroadcastPage() {
 
   const getRecipientCount = () => {
     if (audience === 'custom') return selectedPhones.length;
-    const activeCustomers = customers.filter(c => c.waActive === true);
+    const activeCustomers = customers.filter((c: any) => c.waActive === true);
     if (audience === 'all') return activeCustomers.length;
-    return activeCustomers.filter(c => c.status === audience).length;
+    return activeCustomers.filter((c: any) => c.status === audience).length;
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

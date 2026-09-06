@@ -145,7 +145,7 @@ export default function RemindersPage() {
             <span className="text-xs font-bold text-slate-600 pl-2">Due Window:</span>
             <select
               value={reminderThresholdDays}
-              onChange={(e) => setReminderThresholdDays(Number(e.target.value))}
+              onChange={(e) => { /* setReminderThresholdDays(Number(e.target.value)) */ }}
               className="bg-white border border-slate-300 text-slate-800 font-bold text-xs rounded-lg py-1.5 px-2.5 focus:ring-2 focus:ring-amber-500 outline-none"
             >
               <option value={3}>Due in 3 Days (Default)</option>

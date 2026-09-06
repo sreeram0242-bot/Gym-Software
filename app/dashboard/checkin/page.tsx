@@ -181,7 +181,7 @@ export default function CheckInTerminal() {
   };
 
   // Connect to local MFS100 WebSocket bridge agent
-  const connectFingerprintBridge = (currentGymId: string, port: number) => {
+  const connectFingerprintBridge = (gymId: string, port: number) => {
     try {
       const ws = new WebSocket(`ws://localhost:${port}`);
       fpWsRef.current = ws;
@@ -196,13 +196,13 @@ export default function CheckInTerminal() {
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'scan' && data.fingerprintId) {
-            const matched = await findCustomerByMantra(currentGymId, data.fingerprintId);
+            const matched = await findCustomerByMantra(gymId, data.fingerprintId);
             if (matched) {
-              await handleCheckInToggle(matched, currentGymId);
+              await handleCheckInToggle(matched, gymId);
               setFpStatus(`Member Scan: ${matched.name}`);
               setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 30000);
             } else {
-              const matchedStaff = await findStaffByMantra(currentGymId, data.fingerprintId);
+              const matchedStaff = await findStaffByMantra(gymId, data.fingerprintId);
               if (matchedStaff) {
                 const staffRes = await toggleStaffCheckIn(matchedStaff.id);
                 const isPunchIn = staffRes?.action === 'checkin';
@@ -218,7 +218,7 @@ export default function CheckInTerminal() {
                   }));
                 }
                 setFpStatus(`Staff ${isPunchIn ? 'Punch IN' : 'Punch OUT'}: ${matchedStaff.name}`);
-                await mutate(['checkin', currentGymId]);
+                await mutate(['checkin', gymId]);
                 setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 30000);
               } else {
                 setFpStatus('Fingerprint not registered. Try again or check profile.');
@@ -242,7 +242,7 @@ export default function CheckInTerminal() {
         if (fpRetryCountRef.current < 3) {
           fpRetryCountRef.current += 1;
           setFpStatus(`Fingerprint agent offline. Retrying (${fpRetryCountRef.current}/3)...`);
-          setTimeout(() => connectFingerprintBridge(currentGymId, port), 5000);
+          setTimeout(() => connectFingerprintBridge(gymId, port), 5000);
         } else {
           setFpStatus('Fingerprint bridge offline. Click Reconnect when ready.');
         }
@@ -282,7 +282,7 @@ export default function CheckInTerminal() {
                 }
               }));
             }
-            await mutate(['checkin', currentGymId]);
+            await mutate(['checkin', gymId]);
           }
         }
       });
@@ -293,12 +293,12 @@ export default function CheckInTerminal() {
   };
 
   // Shared member check-in logic
-  const handleCheckInToggle = async (matched: any, currentGymId: string, isManual: boolean = false) => {
+  const handleCheckInToggle = async (matched: any, gymId: string, isManual: boolean = false) => {
     try {
       const { record, action } = await toggleCheckIn(matched.id, isManual);
-      await mutate(['checkin', currentGymId]);
+      await mutate(['checkin', gymId]);
 
-      const gymSettings = await getGymSettings(currentGymId);
+      const gymSettings = await getGymSettings(gymId);
       if (gymSettings?.waAttendanceMessages && matched.phone) {
         const templateName = action === 'checkin' ? 'checkin' : 'checkout';
         const rawTemplate = getTemplate(gymSettings, templateName);
@@ -312,7 +312,7 @@ export default function CheckInTerminal() {
         fetch('/api/whatsapp/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ gymId: currentGymId, phone: matched.phone, message })
+          body: JSON.stringify({ gymId: gymId, phone: matched.phone, message })
         }).catch(() => {});
       }
     } catch (err: any) {
@@ -340,7 +340,7 @@ export default function CheckInTerminal() {
           }
         }));
       }
-      await mutate(['checkin', currentGymId]);
+      await mutate(['checkin', gymId]);
     } catch (err: any) {
       alert(err?.message || 'Punch failed');
     } finally {
