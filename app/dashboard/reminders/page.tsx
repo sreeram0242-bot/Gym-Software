@@ -10,12 +10,9 @@ import { useRemindersData } from '@/lib/hooks';
 import { mutate } from 'swr';
 
 export default function RemindersPage() {
-  const [gymId, setGymId] = useState<string>('gym_1');
+  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
 
-  useEffect(() => {
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-    setGymId(savedId);
-  }, []);
+  
 
   const { data, isLoading } = useRemindersData(gymId);
   const customers = data?.custs || [];

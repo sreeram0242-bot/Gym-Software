@@ -22,7 +22,7 @@ type CartItem = {
 };
 
 export default function ProductsPage() {
-  const [gymId, setGymId] = useState('gym_1');
+  const [gymId, setGymId] = useState(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
   const [gymName, setGymName] = useState('Our Gym');
   const [activeTab, setActiveTab] = useState<'catalog' | 'pos' | 'sales'>('pos');
   const [searchQuery, setSearchQuery] = useState('');

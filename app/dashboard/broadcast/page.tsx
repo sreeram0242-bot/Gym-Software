@@ -5,12 +5,9 @@ import { Megaphone, Image as ImageIcon, Send, X, CheckCircle2, AlertTriangle, Us
 import { useBroadcastData } from '@/lib/hooks';
 
 export default function BroadcastPage() {
-  const [gymId, setGymId] = useState<string>('gym_1');
+  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
   
-  useEffect(() => {
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-    setGymId(savedId);
-  }, []);
+  
 
   const { data, isLoading } = useBroadcastData(gymId);
   const customers = data?.custs || [];

@@ -7,14 +7,11 @@ import { useOverviewData } from '@/lib/hooks';
 import { formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
 
 export default function DashboardOverview() {
-  const [gymId, setGymId] = useState<string>('gym_1');
+  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
   const [waStatus, setWaStatus] = useState<string>('initializing');
 
   // Load gymId from localstorage on mount
-  useEffect(() => {
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-    setGymId(savedId);
-  }, []);
+  
 
   // Fetch data with SWR
   const { data, isLoading } = useOverviewData(gymId);

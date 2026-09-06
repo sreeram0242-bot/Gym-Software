@@ -36,7 +36,7 @@ model Customer {
   id              String   @id @default(uuid())
   memberId        String?  @unique // Random unique ID (e.g. M-1234)
   gymId           String
-  gym             Gym      @relation(fields: [gymId], references: [id])
+  gym             Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
   name            String
   phone           String
   nfcCardId       String
@@ -67,7 +67,7 @@ model Customer {
 model AttendanceRecord {
   id            String   @id @default(uuid())
   gymId         String
-  gym           Gym      @relation(fields: [gymId], references: [id])
+  gym           Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
   customerId    String
   customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerName  String
@@ -85,7 +85,7 @@ model AttendanceRecord {
 model Transaction {
   id            String    @id @default(uuid())
   gymId         String
-  gym           Gym       @relation(fields: [gymId], references: [id])
+  gym           Gym       @relation(fields: [gymId], references: [id], onDelete: Cascade)
   type          String
   amount        Int
   category      String
@@ -110,7 +110,7 @@ model Transaction {
 model SubscriptionPlan {
   id             String @id @default(uuid())
   gymId          String
-  gym            Gym    @relation(fields: [gymId], references: [id])
+  gym            Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
   name           String
   durationMonths Int
   price          Int
@@ -128,7 +128,7 @@ model WhatsAppSession {
 model Product {
   id        String @id @default(uuid())
   gymId     String
-  gym       Gym    @relation(fields: [gymId], references: [id])
+  gym       Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
   name      String
   category  String @default("Supplement")
   price     Int
@@ -145,7 +145,7 @@ model Product {
 model ProductSale {
   id            String   @id @default(uuid())
   gymId         String
-  gym           Gym      @relation(fields: [gymId], references: [id])
+  gym           Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
   customerId    String?
   customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   customerName  String?
@@ -231,7 +231,7 @@ model Announcement {
 model Staff {
   id              String   @id @default(uuid())
   gymId           String
-  gym             Gym      @relation(fields: [gymId], references: [id])
+  gym             Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
   name            String
   phone           String
   role            String   @default("Trainer")
@@ -250,7 +250,7 @@ model Staff {
 model StaffAttendanceRecord {
   id            String   @id @default(uuid())
   gymId         String
-  gym           Gym      @relation(fields: [gymId], references: [id])
+  gym           Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
   staffId       String
   staff         Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
   staffName     String
@@ -268,7 +268,7 @@ model StaffAttendanceRecord {
 model BiometricDevice {
   id              String   @id @default(uuid())
   gymId           String
-  gym             Gym      @relation(fields: [gymId], references: [id])
+  gym             Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
   serialNumber    String   @unique
   name            String?
   lastActive      DateTime @default(now())

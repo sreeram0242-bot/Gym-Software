@@ -31,15 +31,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function RevenuePage() {
-  const [gymId, setGymId] = useState<string>('gym_1');
+  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE' | 'NEW_MEMBERS'>('ALL');
   const [paymentModeFilter, setPaymentModeFilter] = useState<'ALL' | 'CASH' | 'UPI' | 'CARD'>('ALL');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-    setGymId(savedId);
-  }, []);
+  
 
   const { data, isLoading } = useRevenueData(gymId);
   const transactions = data?.txs || [];

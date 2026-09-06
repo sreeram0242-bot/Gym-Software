@@ -2321,3 +2321,15 @@ export async function getNextAvailableZkTecoId(gymId: string): Promise<string> {
     return '001';
   }
 }
+
+export async function deleteGym(gymId: string) {
+  const authorizedGymId = verifyTenantAccess(gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  
+  // This will cascade delete all members, staff, transactions, attendance, settings, products etc.
+  await prisma.gym.delete({
+    where: { id: authorizedGymId }
+  });
+  
+  return { success: true };
+}

@@ -15,13 +15,10 @@ import { useCheckinData } from '@/lib/hooks';
 import { mutate } from 'swr';
 
 export default function CheckInTerminal() {
-  const [gymId, setGymId] = useState<string>('gym_1');
+  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
   const [activeTab, setActiveTab] = useState<'members' | 'staff'>('members');
   
-  useEffect(() => {
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-    setGymId(savedId);
-  }, []);
+  
 
   const { data, isLoading: isInitialLoad } = useCheckinData(gymId);
 

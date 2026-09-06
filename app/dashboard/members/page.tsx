@@ -12,7 +12,7 @@ import { exportToPDF } from '@/lib/exportPdf';
 import ImageCropper from '@/components/ImageCropper';
 
 export default function MemberManagementPage() {
-  const [gymId, setGymId] = useState<string>('gym_1');
+  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
 
 
 
@@ -20,10 +20,7 @@ export default function MemberManagementPage() {
 
 
 
-  useEffect(() => {
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-    // setGymId(savedId);
-  }, []);
+  
 
   const { data, isLoading } = useMembersData(gymId);
   const customers: any[] = data?.custs || [];

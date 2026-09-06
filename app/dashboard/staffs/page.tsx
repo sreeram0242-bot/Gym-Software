@@ -12,7 +12,10 @@ import { exportToPDF } from '@/lib/exportPdf';
 import { useStaffsData } from '@/lib/hooks';
 
 export default function StaffPage() {
-  const [gymId, setGymId] = useState<string>('gym_1');
+  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
+
+  
+
   const { data, isLoading, mutate } = useStaffsData(gymId);
   const staffs = data?.staffs || [];
   const attendance = data?.atts || [];

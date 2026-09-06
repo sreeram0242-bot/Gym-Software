@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getTemplate, TemplateType, DEFAULT_TEMPLATES } from '@/lib/templates';
-import { getGymSettings, updateGymSettings, getGyms, changeGymPassword, getBiometricDevice, registerBiometricDevice } from '@/lib/actions';
+import { getGymSettings, updateGymSettings, getGyms, changeGymPassword, getBiometricDevice, registerBiometricDevice, deleteGym } from '@/lib/actions';
 
 type TabType = 'general' | 'whatsapp' | 'attendance' | 'store' | 'templates' | 'password';
 
@@ -106,6 +106,11 @@ export default function SettingsPage() {
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   const [passLoading, setPassLoading] = useState(false);
+
+  // Danger Zone State
+  const [showDeleteGymModal, setShowDeleteGymModal] = useState(false);
+  const [deleteGymConfirmText, setDeleteGymConfirmText] = useState('');
+  const [deletingGym, setDeletingGym] = useState(false);
 
   useEffect(() => {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
@@ -376,6 +381,24 @@ export default function SettingsPage() {
     showSuccess(enabled ? 'UI Animations enabled.' : 'UI Animations disabled.');
   };
 
+
+  const handleDeleteGym = async () => {
+    if (deleteGymConfirmText !== gymName) return;
+    if (!gymId) return;
+    
+    setDeletingGym(true);
+    try {
+      await deleteGym(gymId);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('active_gym_id');
+        window.location.href = '/';
+      }
+    } catch (e) {
+      setDeletingGym(false);
+      setSaveMsg({ type: 'error', text: e.message || 'Failed to delete gym.' });
+    }
+  };
+
   const ATTENDANCE_MODES = [
     { key: 'MANUAL', label: 'Manual Search Only', icon: <Search className="w-4 h-4" />, desc: 'Staff searches by name to check-in. No hardware required.' },
     { key: 'NFC', label: 'NFC Card', icon: <Radio className="w-4 h-4" />, desc: 'Members tap their NFC card at the terminal.' },
@@ -544,6 +567,29 @@ export default function SettingsPage() {
                 </div>
               </form>
 
+              {/* Danger Zone */}
+              <div className="pt-6 border-t border-rose-200 mt-8">
+                <h3 className="text-base font-bold text-rose-700 mb-2 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" /> Danger Zone
+                </h3>
+                <div className="bg-rose-50/50 border border-rose-200 rounded-xl px-4 py-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold text-rose-900">Delete Gym</p>
+                    <p className="text-xs text-rose-700 mt-1">Permanently delete this gym and all of its data. This action cannot be undone.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteGymConfirmText('');
+                      setShowDeleteGymModal(true);
+                    }}
+                    className="px-4 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 border border-rose-300 rounded-lg text-xs font-bold transition-colors whitespace-nowrap"
+                  >
+                    Delete Gym
+                  </button>
+                </div>
+              </div>
+
               {/* UI Preferences */}
               <div className="pt-6 border-t border-slate-200">
                 <h3 className="text-base font-bold text-slate-800 mb-3">UI Preferences</h3>
@@ -557,6 +603,56 @@ export default function SettingsPage() {
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {/* ─── DELETE GYM MODAL ─── */}
+          {showDeleteGymModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-rose-50/50">
+                  <h3 className="font-bold text-rose-700 flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5" /> Danger Zone: Delete Gym
+                  </h3>
+                  <button onClick={() => setShowDeleteGymModal(false)} className="p-1 hover:bg-rose-100 rounded-lg text-rose-500 transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg">
+                    <p className="text-sm text-rose-800 font-bold mb-1">Are you absolutely sure?</p>
+                    <p className="text-xs text-rose-700">This action cannot be undone. This will permanently delete the gym <strong>{gymName}</strong>, along with all its members, staff, attendance logs, transactions, and settings.</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                      Type <strong>{gymName}</strong> to confirm
+                    </label>
+                    <input
+                      type="text"
+                      value={deleteGymConfirmText}
+                      onChange={(e) => setDeleteGymConfirmText(e.target.value)}
+                      placeholder={gymName}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 text-black"
+                    />
+                  </div>
+                  <div className="pt-2 flex justify-end gap-3">
+                    <button
+                      onClick={() => setShowDeleteGymModal(false)}
+                      className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-800"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleDeleteGym}
+                      disabled={deletingGym || deleteGymConfirmText !== gymName}
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      {deletingGym ? <RefreshCw className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
+                      <span>Delete Everything</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
