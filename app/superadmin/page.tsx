@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Plus, Search, Building2, UserPlus, Key, Phone, Mail, CheckCircle, AlertCircle, ArrowLeft, Users, Eye, EyeOff, Dumbbell, Lock, Sparkles, Filter, LogOut, Trash2 } from 'lucide-react';
-import { getGyms, getCustomers, addGym, toggleGymStatus, findCustomerByPhone, getMemberMonthlyAvgHours, getGlobalStats, getAnnouncements, createAnnouncement, deleteAnnouncement, updateGymStatus } from '@/lib/actions';
+import { getGyms, getCustomers, addGym, toggleGymStatus, findCustomerByPhone, getMemberMonthlyAvgHours, getGlobalStats, getAnnouncements, createAnnouncement, deleteAnnouncement, updateGymStatus, setSuperadminTenant } from '@/lib/actions';
 import { Gym, Customer } from '@/lib/types';
 import { formatDateDDMMYYYY } from '@/lib/utils';
 
@@ -136,10 +136,11 @@ export default function SuperAdminPage() {
     return 1.2; 
   };
 
-  const handleLoginAs = (gymId: string) => {
+  const handleLoginAs = async (gymId: string) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('active_gym_id', gymId);
     }
+    await setSuperadminTenant(gymId);
     router.push('/dashboard');
   };
 

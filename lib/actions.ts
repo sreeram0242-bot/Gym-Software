@@ -232,8 +232,37 @@ if (!globalAny.mockStore) {
 
 const store = globalAny.mockStore;
 
+// --- AUTHORIZATION HELPER ---
+function verifyTenantAccess(requestedGymId?: string) {
+  const isSuperadmin = cookies().get('is_superadmin')?.value === 'true';
+  const activeGymId = cookies().get('active_gym_id')?.value;
+
+  if (!isSuperadmin && !activeGymId) {
+    throw new Error('Unauthorized: No active session');
+  }
+
+  if (!isSuperadmin && requestedGymId && activeGymId !== requestedGymId) {
+    throw new Error('Unauthorized: Tenant mismatch');
+  }
+
+  return requestedGymId || activeGymId;
+}
+
+export async function setSuperadminTenant(gymId: string) {
+  const isSuperadmin = cookies().get('is_superadmin')?.value === 'true';
+  if (!isSuperadmin) throw new Error('Unauthorized');
+  
+  cookies().set('active_gym_id', gymId, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+  return { success: true };
+}
+
+
 // --- SETTINGS ---
 export async function getGymSettings(gymId: string) {
+  const authorizedGymId = verifyTenantAccess(gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  gymId = authorizedGymId;
+
   try {
     const [gym, settings] = await Promise.all([
       prisma.gym.findUnique({ where: { id: gymId } }),
@@ -289,6 +318,10 @@ export async function getGymSettings(gymId: string) {
 }
 
 export async function updateGymSettings(gymId: string, data: any) {
+  const authorizedGymId = verifyTenantAccess(data.gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  data.gymId = authorizedGymId;
+
   try {
     const gymUpdate: any = {};
     if (data.gymName !== undefined) gymUpdate.name = data.gymName;
@@ -408,6 +441,10 @@ export async function changeGymPassword(gymId: string, currentPassword: string, 
 
 // --- CUSTOMERS ---
 export async function getCustomers(gymId?: string) {
+  const authorizedGymId = verifyTenantAccess(gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  gymId = authorizedGymId;
+
   if (!gymId) return [];
   try {
     return await prisma.customer.findMany({
@@ -426,6 +463,10 @@ export async function getCustomers(gymId?: string) {
 }
 
 export async function addCustomer(data: any) {
+  const authorizedGymId = verifyTenantAccess(data.gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  data.gymId = authorizedGymId;
+
   const paidAmount = data.paidAmount !== undefined ? Number(data.paidAmount) : Number(data.feeAmount);
   const pendingBalance = data.pendingBalance !== undefined ? Number(data.pendingBalance) : 0;
   const discountAmount = data.discountAmount !== undefined ? Number(data.discountAmount) : 0;
@@ -661,7 +702,7 @@ export async function findStaffByMantra(gymId: string, mantraFpData: string) {
 }
 
 export async function updateCustomer(id: string, data: any) {
-  const callerGymId = cookies().get('active_gym_id')?.value;
+  const callerGymId = verifyTenantAccess();
   if (!callerGymId) throw new Error("Unauthorized");
 
   if (data.fingerprintId) {
@@ -775,7 +816,7 @@ export async function toggleCustomerWaStatus(id: string, waActive: boolean) {
 }
 
 export async function deleteCustomer(id: string) {
-  const callerGymId = cookies().get('active_gym_id')?.value;
+  const callerGymId = verifyTenantAccess();
   if (!callerGymId) throw new Error("Unauthorized");
   try {
     const cust = await prisma.customer.findUnique({
@@ -991,6 +1032,10 @@ export async function collectPendingBalance(
 
 // --- ATTENDANCE ---
 export async function getAttendance(gymId?: string) {
+  const authorizedGymId = verifyTenantAccess(gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  gymId = authorizedGymId;
+
   if (!gymId) return [];
   try {
     if (gymId) {
@@ -1160,6 +1205,10 @@ export async function getMemberMonthlyAvgHours(customerId: string) {
 
 // --- TRANSACTIONS ---
 export async function getTransactions(gymId?: string) {
+  const authorizedGymId = verifyTenantAccess(gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  gymId = authorizedGymId;
+
   if (!gymId) return [];
   try {
     return await prisma.transaction.findMany({
@@ -1219,7 +1268,7 @@ export async function addTransaction(tx: any) {
 }
 
 export async function updateTransaction(id: string, data: any) {
-  const callerGymId = cookies().get('active_gym_id')?.value;
+  const callerGymId = verifyTenantAccess();
   if (!callerGymId) throw new Error("Unauthorized");
   if (data.gymId && data.gymId !== callerGymId) throw new Error("Unauthorized tenant access");
 
@@ -1248,7 +1297,7 @@ export async function updateTransaction(id: string, data: any) {
 }
 
 export async function deleteTransaction(id: string) {
-  const callerGymId = cookies().get('active_gym_id')?.value;
+  const callerGymId = verifyTenantAccess();
   if (!callerGymId) throw new Error("Unauthorized");
   try {
     await prisma.transaction.deleteMany({ where: { id, gymId: callerGymId } });
@@ -1260,6 +1309,10 @@ export async function deleteTransaction(id: string) {
 
 // --- SUBSCRIPTION PLANS ---
 export async function getSubscriptionPlans(gymId?: string) {
+  const authorizedGymId = verifyTenantAccess(gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  gymId = authorizedGymId;
+
   if (!gymId) return [];
   try {
     return await prisma.subscriptionPlan.findMany({ where: { gymId } });
@@ -1323,6 +1376,10 @@ export async function deleteSubscriptionPlan(id: string) {
 
 // --- PRODUCTS / POS ---
 export async function getProducts(gymId: string) {
+  const authorizedGymId = verifyTenantAccess(gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  gymId = authorizedGymId;
+
   try {
     return await prisma.product.findMany({
       where: { gymId, active: true },
@@ -1334,6 +1391,10 @@ export async function getProducts(gymId: string) {
 }
 
 export async function addProduct(data: any) {
+  const authorizedGymId = verifyTenantAccess(data.gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  data.gymId = authorizedGymId;
+
   try {
     return await prisma.product.create({
       data: {
@@ -1365,7 +1426,7 @@ export async function addProduct(data: any) {
 }
 
 export async function updateProduct(id: string, data: any) {
-  const callerGymId = cookies().get('active_gym_id')?.value;
+  const callerGymId = verifyTenantAccess();
   if (!callerGymId) throw new Error("Unauthorized");
   try {
     return await prisma.product.updateMany({ where: { id, gymId: callerGymId }, data });
@@ -1375,7 +1436,7 @@ export async function updateProduct(id: string, data: any) {
 }
 
 export async function deleteProduct(id: string) {
-  const callerGymId = cookies().get('active_gym_id')?.value;
+  const callerGymId = verifyTenantAccess();
   if (!callerGymId) throw new Error("Unauthorized");
   try {
     await prisma.product.updateMany({ where: { id, gymId: callerGymId }, data: { active: false } });
@@ -1492,6 +1553,10 @@ export async function recordProductSale(data: {
 }
 
 export async function getProductSales(gymId: string) {
+  const authorizedGymId = verifyTenantAccess(gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  gymId = authorizedGymId;
+
   try {
     return await prisma.productSale.findMany({
       where: { gymId },
@@ -1716,6 +1781,7 @@ export async function authenticateSuperadmin(userId: string, passwordHash: strin
     (userId === 'admin' && passwordHash === 'admin');
 
   if (isValid) {
+    cookies().set('is_superadmin', 'true', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
     resetFailedAttempts(`superadmin_${userId}`);
     return { success: true };
   }
@@ -1726,6 +1792,10 @@ export async function authenticateSuperadmin(userId: string, passwordHash: strin
 
 // --- STAFF MANAGEMENT ---
 export async function getStaffs(gymId: string) {
+  const authorizedGymId = verifyTenantAccess(gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  gymId = authorizedGymId;
+
   try {
     return await prisma.staff.findMany({
       where: { gymId, isArchived: false },
@@ -1737,6 +1807,10 @@ export async function getStaffs(gymId: string) {
 }
 
 export async function addStaff(data: any) {
+  const authorizedGymId = verifyTenantAccess(data.gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  data.gymId = authorizedGymId;
+
   try {
     const today = getLocalTodayDateString();
     const gymId = data.gymId;
@@ -1820,7 +1894,7 @@ export async function addStaff(data: any) {
 }
 
 export async function updateStaff(id: string, data: any) {
-  const callerGymId = cookies().get('active_gym_id')?.value;
+  const callerGymId = verifyTenantAccess();
   if (!callerGymId) throw new Error("Unauthorized");
   try {
     const current = await prisma.staff.findUnique({ where: { id } });
@@ -1908,7 +1982,7 @@ export async function updateStaff(id: string, data: any) {
 }
 
 export async function deleteStaff(id: string) {
-  const callerGymId = cookies().get('active_gym_id')?.value;
+  const callerGymId = verifyTenantAccess();
   if (!callerGymId) throw new Error("Unauthorized");
   try {
     const current = await prisma.staff.findUnique({ 
@@ -1958,6 +2032,10 @@ export async function deleteStaff(id: string) {
 }
 
 export async function getStaffAttendance(gymId: string) {
+  const authorizedGymId = verifyTenantAccess(gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  gymId = authorizedGymId;
+
   try {
     // Auto-expire orphan staff shifts exceeding cutoff hours
     const gymSettings = await prisma.gymSettings.findUnique({ where: { gymId } });
@@ -2235,6 +2313,10 @@ export async function getNextAvailableZkTecoId(gymId: string): Promise<string> {
     const nextId = Math.max(...allIds) + 1;
     return nextId.toString().padStart(3, '0');
   } catch (e) {
+  const authorizedGymId = verifyTenantAccess(gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  gymId = authorizedGymId;
+
     return '001';
   }
 }
