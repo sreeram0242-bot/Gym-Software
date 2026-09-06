@@ -7,6 +7,8 @@ import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, up
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
+import { useRevenueData } from '@/lib/hooks';
+import { mutate } from 'swr';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -30,13 +32,20 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function RevenuePage() {
   const [gymId, setGymId] = useState<string>('gym_1');
-  const [isLoading, setIsLoading] = useState(true);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [gymSettings, setGymSettings] = useState<any>(null);
-  const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE' | 'NEW_MEMBERS'>('ALL');
   const [paymentModeFilter, setPaymentModeFilter] = useState<'ALL' | 'CASH' | 'UPI' | 'CARD'>('ALL');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
+    setGymId(savedId);
+  }, []);
+
+  const { data, isLoading } = useRevenueData(gymId);
+  const transactions = data?.txs || [];
+  const plans = data?.ps || [];
+  const allCustomers = data?.custs || [];
+  const gymSettings = data?.settings;
 
   // Global Filter State
   const [globalTimeFilter, setGlobalTimeFilter] = useState<'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'THIS_YEAR' | 'CUSTOM'>('ALL');
@@ -72,49 +81,11 @@ export default function RevenuePage() {
 
   // Settings Modal
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [plans, setPlans] = useState<any[]>([]);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanMonths, setNewPlanMonths] = useState<number | string>(1);
   const [newPlanPrice, setNewPlanPrice] = useState<number | string>(2500);
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [deletePlanDialog, setDeletePlanDialog] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadData();
-
-    const interval = setInterval(() => {
-      if (document.hidden) return;
-      loadData();
-    }, 30000);
-
-    const handleFocus = () => loadData();
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
-    };
-  }, []);
-
-  const loadData = async () => {
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-    setGymId(savedId);
-
-    const [txs, ps, custs, settings] = await Promise.all([
-      getTransactions(savedId),
-      getSubscriptionPlans(savedId),
-      getCustomers(savedId),
-      getGymSettings(savedId)
-    ]);
-    
-    setTransactions(txs);
-    setPlans(ps);
-    setAllCustomers(custs);
-    setGymSettings(settings);
-    setIsLoading(false);
-  };
 
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,7 +108,7 @@ export default function RevenuePage() {
     setExpenseAmount(5000);
     setExpenseUpiId('');
     setExpenseUpiPayee('');
-    loadData();
+    mutate(['revenue', gymId]);
   };
 
   const handleEditTxInit = (tx: any) => {
@@ -168,14 +139,14 @@ export default function RevenuePage() {
 
     setShowEditTxModal(false);
     setEditingTxId(null);
-    loadData();
+    mutate(['revenue', gymId]);
   };
 
   const handleDeleteTxConfirm = async () => {
     if (!deleteTxDialog) return;
     await deleteTransaction(deleteTxDialog.id);
     setDeleteTxDialog(null);
-    loadData();
+    mutate(['revenue', gymId]);
   };
 
   const handleAddPlan = async () => {
@@ -202,7 +173,7 @@ export default function RevenuePage() {
     setNewPlanName('');
     setNewPlanMonths(1);
     setNewPlanPrice(2500);
-    loadData();
+    mutate(['revenue', gymId]);
   };
 
   const handleEditPlanClick = (plan: any) => {
@@ -227,7 +198,7 @@ export default function RevenuePage() {
     if (!deletePlanDialog) return;
     await deleteSubscriptionPlan(deletePlanDialog);
     setDeletePlanDialog(null);
-    loadData();
+    mutate(['revenue', gymId]);
   };
 
   // Helper filter for global date toolbar

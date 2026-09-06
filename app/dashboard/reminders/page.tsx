@@ -6,55 +6,24 @@ import { getCustomers, renewMemberPayment, getGymSettings, getGyms } from '@/lib
 import { Customer } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 import { formatDateDDMMYYYY } from '@/lib/utils';
+import { useRemindersData } from '@/lib/hooks';
+import { mutate } from 'swr';
 
 export default function RemindersPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
-  const [isLoading, setIsLoading] = useState(true);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [settings, setSettings] = useState<any>(null);
-  const [gymName, setGymName] = useState<string>('Our Gym');
-  const [reminderThresholdDays, setReminderThresholdDays] = useState<number>(3); // 3 days default as requested
 
   useEffect(() => {
-    loadData();
-
-    const interval = setInterval(() => {
-      if (document.hidden) return;
-      loadData();
-    }, 30000);
-
-    const handleFocus = () => loadData();
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
-    };
-  }, []);
-
-  const loadData = async () => {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
     setGymId(savedId);
+  }, []);
 
-    const [custs, gymSettings, loadedGyms] = await Promise.all([
-      getCustomers(savedId),
-      getGymSettings(savedId),
-      getGyms()
-    ]);
-    
-    setCustomers(custs);
-    setSettings(gymSettings);
-    
-    const matchedGym = loadedGyms.find((g: any) => g.id === savedId);
-    if (matchedGym) setGymName(matchedGym.name);
-
-    if (gymSettings && gymSettings.waReminderWindowDays !== undefined) {
-      setReminderThresholdDays(gymSettings.waReminderWindowDays);
-    }
-    setIsLoading(false);
-  };
+  const { data, isLoading } = useRemindersData(gymId);
+  const customers = data?.custs || [];
+  const settings = data?.settings || null;
+  const gyms = data?.gyms || [];
+  const matchedGym = gyms.find((g: any) => g.id === gymId);
+  const gymName = matchedGym?.name || 'Our Gym';
+  const reminderThresholdDays = settings?.waReminderWindowDays ?? 3;
 
   const [batchSending, setBatchSending] = useState(false);
   const [batchSentCount, setBatchSentCount] = useState<number | null>(null);
@@ -109,7 +78,7 @@ export default function RemindersPage() {
 
   const handleRecordPayment = async (cust: any) => {
     const updated = await renewMemberPayment(cust.id, 1, cust.feeAmount);
-    loadData();
+    mutate(['reminders', gymId]);
     if (updated) {
       const autoMessagesEnabled = settings?.waAutoMessages ?? true;
       if (autoMessagesEnabled) {

@@ -6,7 +6,7 @@ let content = fs.readFileSync(filePath, 'utf8');
 
 const authCode = `
 // --- AUTHORIZATION HELPER ---
-export function verifyTenantAccess(requestedGymId?: string) {
+function verifyTenantAccess(requestedGymId?: string) {
   const isSuperadmin = cookies().get('is_superadmin')?.value === 'true';
   const activeGymId = cookies().get('active_gym_id')?.value;
 
@@ -63,8 +63,16 @@ content = content.replace(/const callerGymId = cookies\(\)\.get\('active_gym_id'
 // Same for others like deleteStaff
 content = content.replace(/const callerGymId = cookies\(\)\.get\('active_gym_id'\)\?\.value;/g, `const callerGymId = verifyTenantAccess();`);
 
-// Also update authenticateSuperadmin
+// Update authenticateSuperadmin
 content = content.replace(/(export async function authenticateSuperadmin[\s\S]*?if \(isValid\) \{[\s\S]*?)resetFailedAttempts/, `$1cookies().set('is_superadmin', 'true', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });\n    resetFailedAttempts`);
+
+// FIX: ensure the mock store fallback in authenticateGym also sets the active_gym_id cookie.
+// We target the specific return inside the catch block of authenticateGym.
+// The code looks like:
+// resetFailedAttempts(userId);
+// return { success: true, gym: { id: gym.id, userId: gym.userId } };
+content = content.replace(/resetFailedAttempts\(userId\);\n\s*return \{ success: true, gym: \{ id: gym\.id, userId: gym\.userId \} \};\n\s*\}/, `resetFailedAttempts(userId);\n    cookies().set('active_gym_id', gym.id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });\n    return { success: true, gym: { id: gym.id, userId: gym.userId } };\n  }`);
+
 
 fs.writeFileSync(filePath, content, 'utf8');
 console.log('Patched actions.ts');

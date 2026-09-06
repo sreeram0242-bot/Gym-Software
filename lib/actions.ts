@@ -1767,6 +1767,7 @@ export async function authenticateGym(userId: string, password: string) {
       return { success: false, error: 'Your account is locked due to too many failed attempts. Please contact the Master Admin.' };
     }
     resetFailedAttempts(userId);
+    cookies().set('active_gym_id', gym.id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
     return { success: true, gym: { id: gym.id, userId: gym.userId } };
   }
 }

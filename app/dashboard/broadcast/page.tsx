@@ -2,12 +2,18 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Megaphone, Image as ImageIcon, Send, X, CheckCircle2, AlertTriangle, Users } from 'lucide-react';
-import { getCustomers } from '@/lib/actions';
+import { useBroadcastData } from '@/lib/hooks';
 
 export default function BroadcastPage() {
   const [gymId, setGymId] = useState<string>('gym_1');
-  const [isLoading, setIsLoading] = useState(true);
-  const [customers, setCustomers] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
+    setGymId(savedId);
+  }, []);
+
+  const { data, isLoading } = useBroadcastData(gymId);
+  const customers = data?.custs || [];
   
   const [message, setMessage] = useState('');
   const [audience, setAudience] = useState('active');
@@ -19,33 +25,6 @@ export default function BroadcastPage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    loadData();
-
-    const interval = setInterval(() => {
-      if (document.hidden) return;
-      loadData();
-    }, 30000);
-
-    const handleFocus = () => loadData();
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
-    };
-  }, []);
-
-  const loadData = async () => {
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-    setGymId(savedId);
-    const custs = await getCustomers(savedId);
-    setCustomers(custs);
-    setIsLoading(false);
-  };
 
   const getRecipientCount = () => {
     if (audience === 'custom') return selectedPhones.length;

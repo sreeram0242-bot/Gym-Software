@@ -6,6 +6,8 @@ import { getProducts, addProduct, updateProduct, deleteProduct, recordProductSal
 import { formatDateDDMMYYYY, getLocalTodayDateString, exportToCSV } from '@/lib/utils';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 import { exportToPDF } from '@/lib/exportPdf';
+import { useProductsData } from '@/lib/hooks';
+import { mutate } from 'swr';
 
 const CATEGORIES = ['Supplement', 'Accessory', 'Drink', 'Snack', 'Apparel', 'Equipment', 'Other'];
 const UNITS = ['unit', 'kg', 'litre', 'pack', 'bottle', 'scoop'];
@@ -22,14 +24,26 @@ type CartItem = {
 export default function ProductsPage() {
   const [gymId, setGymId] = useState('gym_1');
   const [gymName, setGymName] = useState('Our Gym');
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'catalog' | 'pos' | 'sales'>('pos');
-  const [products, setProducts] = useState<any[]>([]);
-  const [productSales, setProductSales] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [gymSettings, setGymSettings] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+
+  useEffect(() => {
+    const id = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
+    setGymId(id);
+  }, []);
+
+  const { data, isLoading } = useProductsData(gymId);
+  const products = data?.prods || [];
+  const productSales = data?.sales || [];
+  const customers = data?.custs || [];
+  const gymSettings = data?.settings;
+  const gyms = data?.gyms || [];
+
+  useEffect(() => {
+    const matched = gyms.find((g: any) => g.id === gymId);
+    if (matched) setGymName(matched.name);
+  }, [gyms, gymId]);
 
   // Add/Edit Product Modal
   const [showProductModal, setShowProductModal] = useState(false);
@@ -56,50 +70,6 @@ export default function ProductsPage() {
 
   // Delete confirmation
   const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const id = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-    setGymId(id);
-    loadAll(id);
-
-    const interval = setInterval(() => {
-      if (document.hidden) return;
-      const currentId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-      loadAll(currentId);
-    }, 30000);
-
-    const handleFocus = () => {
-      const currentId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-      loadAll(currentId);
-    };
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
-    };
-  }, []);
-
-  const loadAll = async (id: string) => {
-    const [prods, sales, custs, settings, loadedGyms] = await Promise.all([
-      getProducts(id),
-      getProductSales(id),
-      getCustomers(id),
-      getGymSettings(id),
-      getGyms()
-    ]);
-    setProducts(prods);
-    setProductSales(sales);
-    setCustomers(custs);
-    setGymSettings(settings);
-    const matched = loadedGyms?.find((g: any) => g.id === id);
-    if (matched) setGymName(matched.name);
-    setIsLoading(false);
-  };
-
-  // ─── DUAL EXPORT HANDLERS (CSV & PDF) ───
   const exportSalesCSV = () => {
     const exportData = productSales.map(s => ({
       Date: formatDateDDMMYYYY(s.date),
@@ -161,7 +131,7 @@ export default function ProductsPage() {
       } else {
         await addProduct({ gymId, name: pName, category: pCategory, price: numPrice, stock: numStock, unit: pUnit });
       }
-      await loadAll(gymId);
+      await mutate(['products', gymId]);
       setShowProductModal(false);
     } finally { setSavingProduct(false); }
   };
@@ -169,7 +139,7 @@ export default function ProductsPage() {
   const handleDeleteProduct = async (id: string) => {
     await deleteProduct(id);
     setDeleteId(null);
-    await loadAll(gymId);
+    await mutate(['products', gymId]);
   };
 
   // POS Cart Actions
@@ -261,7 +231,7 @@ export default function ProductsPage() {
       setPosCustomer(null);
       setPosCustomerName('');
       setPosCustomerSearch('');
-      await loadAll(gymId);
+      await mutate(['products', gymId]);
       setTimeout(() => setLastSaleMsg(null), 5000);
     } finally { setCheckoutLoading(false); }
   };

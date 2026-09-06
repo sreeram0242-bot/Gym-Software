@@ -7,6 +7,7 @@ import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldC
 import { getGyms, findCustomerByNFC, findStaffByNFC, toggleCheckIn, toggleStaffCheckIn, getMemberMonthlyAvgHours, getCustomers, getGymSettings, getActiveAnnouncement } from '@/lib/actions';
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
+import { preloadOverview, preloadCheckin, preloadMembers, preloadStaffs, preloadReminders, preloadBroadcast, preloadRevenue, preloadProducts } from '@/lib/hooks';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -357,6 +358,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
+  const handlePrefetch = (href: string) => {
+    if (!currentGym) return;
+    switch (href) {
+      case '/dashboard': preloadOverview(currentGym.id); break;
+      case '/dashboard/checkin': preloadCheckin(currentGym.id); break;
+      case '/dashboard/members': preloadMembers(currentGym.id); break;
+      case '/dashboard/staffs': preloadStaffs(currentGym.id); break;
+      case '/dashboard/reminders': preloadReminders(currentGym.id); break;
+      case '/dashboard/broadcast': preloadBroadcast(currentGym.id); break;
+      case '/dashboard/revenue': preloadRevenue(currentGym.id); break;
+      case '/dashboard/products': preloadProducts(currentGym.id); break;
+    }
+  };
+
   const navItems = [
     { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Check-in Terminal', href: '/dashboard/checkin', icon: Smartphone },
@@ -484,6 +499,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.href}
                 href={item.href}
+                onMouseEnter={() => handlePrefetch(item.href)}
                 className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all ${
                   isActive
                     ? 'bg-blue-900 text-white shadow-md shadow-blue-900/20'
@@ -590,6 +606,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.href}
                 href={item.href}
+                onMouseEnter={() => handlePrefetch(item.href)}
                 className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all shrink-0 min-w-[54px] ${
                   isActive 
                     ? 'bg-blue-50 text-blue-900 font-black shadow-2xs border border-blue-200/60' 

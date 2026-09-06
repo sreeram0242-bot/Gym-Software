@@ -11,27 +11,36 @@ import { Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 import { getLocalTodayDateString, exportToCSV, formatDateDDMMYYYY } from '@/lib/utils';
 import { exportToPDF } from '@/lib/exportPdf';
+import { useCheckinData } from '@/lib/hooks';
+import { mutate } from 'swr';
 
 export default function CheckInTerminal() {
   const [gymId, setGymId] = useState<string>('gym_1');
-  const [gymName, setGymName] = useState<string>('Our Gym');
   const [activeTab, setActiveTab] = useState<'members' | 'staff'>('members');
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
-  // Members State
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [attendance, setAttendance] = useState<any[]>([]);
+  useEffect(() => {
+    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
+    setGymId(savedId);
+  }, []);
 
-  // Staff State
-  const [staffs, setStaffs] = useState<any[]>([]);
-  const [staffAttendance, setStaffAttendance] = useState<any[]>([]);
+  const { data, isLoading: isInitialLoad } = useCheckinData(gymId);
+
+  const customers = data?.custs || [];
+  const attendance = data?.atts || [];
+  const staffs = data?.staffs || [];
+  const staffAttendance = data?.stfAtts || [];
+  const gymSettings = data?.gymSettings;
+  const gyms = data?.gyms || [];
+
+  const matched = gyms.find((g: any) => g.id === gymId);
+  const gymName = matched?.name || 'Our Gym';
 
   // Attendance Modes from Settings
-  const [attendanceManualEnabled, setAttendanceManualEnabled] = useState<boolean>(true);
-  const [attendanceNfcEnabled, setAttendanceNfcEnabled] = useState<boolean>(true);
-  const [attendanceMantraEnabled, setAttendanceMantraEnabled] = useState<boolean>(false);
-  const [attendanceWallMountEnabled, setAttendanceWallMountEnabled] = useState<boolean>(false);
-  const [fpPort, setFpPort] = useState<number>(8765);
+  const attendanceManualEnabled = gymSettings?.attendanceManualEnabled ?? true;
+  const attendanceNfcEnabled = gymSettings?.attendanceNfcEnabled ?? true;
+  const attendanceMantraEnabled = gymSettings?.attendanceMantraEnabled ?? false;
+  const attendanceWallMountEnabled = gymSettings?.attendanceWallMountEnabled ?? false;
+  const fpPort = gymSettings?.fingerprintAgentPort || 8765;
 
   // Web NFC State
   const [nfcSupported, setNfcSupported] = useState<boolean>(false);
@@ -77,69 +86,10 @@ export default function CheckInTerminal() {
   }, [attendance]);
 
   useEffect(() => {
-    loadData();
-
-    const interval = setInterval(() => {
-      if (document.hidden) return;
-      loadData();
-    }, 1500);
-
-    const handleFocus = () => loadData();
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
-
     if (typeof window !== 'undefined' && 'NDEFReader' in window) {
       setNfcSupported(true);
     }
-    
-    const handleUpdate = () => loadData();
-    window.addEventListener('attendance_updated', handleUpdate);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
-      window.removeEventListener('attendance_updated', handleUpdate);
-    };
   }, []);
-
-  const loadData = async () => {
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-    setGymId(savedId);
-
-    const [custs, atts, stfs, stfAtts, gymSettings, loadedGyms] = await Promise.all([
-      getCustomers(savedId),
-      getAttendance(savedId),
-      getStaffs(savedId),
-      getStaffAttendance(savedId),
-      getGymSettings(savedId),
-      getGyms()
-    ]);
-    
-    setCustomers(custs || []);
-    setAttendance(atts || []);
-    setStaffs(stfs || []);
-    setStaffAttendance(stfAtts || []);
-
-    const manualEnabled = gymSettings?.attendanceManualEnabled ?? true;
-    const nfcEnabled = gymSettings?.attendanceNfcEnabled ?? true;
-    const mantraEnabled = gymSettings?.attendanceMantraEnabled ?? false;
-    const wallMountEnabled = gymSettings?.attendanceWallMountEnabled ?? false;
-    const port = gymSettings?.fingerprintAgentPort || 8765;
-    
-    setAttendanceManualEnabled(manualEnabled);
-    setAttendanceNfcEnabled(nfcEnabled);
-    setAttendanceMantraEnabled(mantraEnabled);
-    setAttendanceWallMountEnabled(wallMountEnabled);
-    setFpPort(port);
-    const matched = loadedGyms?.find((g: any) => g.id === savedId);
-    if (matched) setGymName(matched.name);
-    setIsInitialLoad(false);
-
-    // Connect fingerprint WebSocket if needed
-    if (mantraEnabled && !fpWsRef.current) {
-      connectFingerprintBridge(savedId, port);
-    }
-  };
 
   // ─── DUAL EXPORT HANDLERS (CSV & PDF) ───
   const exportMemberVisitsCSV = () => {
@@ -268,7 +218,7 @@ export default function CheckInTerminal() {
                   }));
                 }
                 setFpStatus(`Staff ${isPunchIn ? 'Punch IN' : 'Punch OUT'}: ${matchedStaff.name}`);
-                await loadData();
+                await mutate(['checkin', currentGymId]);
                 setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 30000);
               } else {
                 setFpStatus('Fingerprint not registered. Try again or check profile.');
@@ -332,7 +282,7 @@ export default function CheckInTerminal() {
                 }
               }));
             }
-            await loadData();
+            await mutate(['checkin', currentGymId]);
           }
         }
       });
@@ -346,7 +296,7 @@ export default function CheckInTerminal() {
   const handleCheckInToggle = async (matched: any, currentGymId: string, isManual: boolean = false) => {
     try {
       const { record, action } = await toggleCheckIn(matched.id, isManual);
-      await loadData();
+      await mutate(['checkin', currentGymId]);
 
       const gymSettings = await getGymSettings(currentGymId);
       if (gymSettings?.waAttendanceMessages && matched.phone) {
@@ -390,7 +340,7 @@ export default function CheckInTerminal() {
           }
         }));
       }
-      await loadData();
+      await mutate(['checkin', currentGymId]);
     } catch (err: any) {
       alert(err?.message || 'Punch failed');
     } finally {
@@ -556,7 +506,7 @@ export default function CheckInTerminal() {
       {/* Segmented Tab Switcher (Members vs Staff) - Sleek & Compact */}
       <div className="flex bg-slate-100/90 p-1 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-2xs gap-1 sm:gap-1.5">
         <button
-          onClick={() => { setActiveTab('members'); setManualSearch(''); loadData(); }}
+          onClick={() => { setActiveTab('members'); setManualSearch(''); }}
           className={`flex-1 py-1.5 px-2 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl font-black text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'members'
               ? 'bg-blue-600 text-white shadow-sm'
@@ -571,7 +521,7 @@ export default function CheckInTerminal() {
         </button>
 
         <button
-          onClick={() => { setActiveTab('staff'); setManualSearch(''); loadData(); }}
+          onClick={() => { setActiveTab('staff'); setManualSearch(''); }}
           className={`flex-1 py-1.5 px-2 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl font-black text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'staff'
               ? 'bg-blue-600 text-white shadow-sm'

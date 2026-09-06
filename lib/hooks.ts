@@ -1,4 +1,4 @@
-import useSWR from 'swr';
+import useSWR, { preload } from 'swr';
 import { 
   getGyms, 
   getCustomers, 
@@ -14,6 +14,7 @@ const SWR_CONFIG = {
   revalidateOnFocus: true,
   revalidateOnReconnect: true,
   dedupingInterval: 2000,
+  keepPreviousData: true,
 };
 
 // 1. Overview Page Data
@@ -26,7 +27,7 @@ const fetchOverview = async (gymId: string) => {
   ]);
   return { gyms, custs, atts, txs };
 };
-
+export const preloadOverview = (gymId: string) => preload(gymId ? ['overview', gymId] : null, () => fetchOverview(gymId));
 export function useOverviewData(gymId: string) {
   return useSWR(gymId ? ['overview', gymId] : null, () => fetchOverview(gymId), SWR_CONFIG);
 }
@@ -44,7 +45,7 @@ const fetchMembers = async (gymId: string) => {
   ]);
   return { gyms, custs, atts, ps, txs, gymSettings, nextId };
 };
-
+export const preloadMembers = (gymId: string) => preload(gymId ? ['members', gymId] : null, () => fetchMembers(gymId));
 export function useMembersData(gymId: string) {
   return useSWR(gymId ? ['members', gymId] : null, () => fetchMembers(gymId), SWR_CONFIG);
 }
@@ -60,35 +61,83 @@ const fetchStaffs = async (gymId: string) => {
   ]);
   return { gyms, staffs: staffsList, atts, gymSettings, nextId };
 };
-
+export const preloadStaffs = (gymId: string) => preload(gymId ? ['staffs', gymId] : null, () => fetchStaffs(gymId));
 export function useStaffsData(gymId: string) {
   return useSWR(gymId ? ['staffs', gymId] : null, () => fetchStaffs(gymId), SWR_CONFIG);
 }
 
 // 4. Checkin Terminal Data
 const fetchCheckin = async (gymId: string) => {
-  const [gyms, custs, staffsList, atts] = await Promise.all([
+  const [gyms, custs, staffsList, atts, stfAtts, gymSettings] = await Promise.all([
     getGyms(),
     getCustomers(gymId),
     getStaffs(gymId),
-    getAttendance(gymId)
+    getAttendance(gymId),
+    import('@/lib/actions').then(m => m.getStaffAttendance(gymId)),
+    import('@/lib/actions').then(m => m.getGymSettings(gymId))
   ]);
-  return { gyms, custs, staffs: staffsList, atts };
+  return { gyms, custs, staffs: staffsList, atts, stfAtts, gymSettings };
 };
-
+export const preloadCheckin = (gymId: string) => preload(gymId ? ['checkin', gymId] : null, () => fetchCheckin(gymId));
 export function useCheckinData(gymId: string) {
   return useSWR(gymId ? ['checkin', gymId] : null, () => fetchCheckin(gymId), SWR_CONFIG);
 }
 
 // 5. Revenue Page Data
 const fetchRevenue = async (gymId: string) => {
-  const [gyms, txs] = await Promise.all([
+  const [gyms, txs, ps, custs, settings] = await Promise.all([
     getGyms(),
-    getTransactions(gymId)
+    getTransactions(gymId),
+    import('@/lib/actions').then(m => m.getSubscriptionPlans(gymId)),
+    getCustomers(gymId),
+    getGymSettings(gymId)
   ]);
-  return { gyms, txs };
+  return { gyms, txs, ps, custs, settings };
 };
-
+export const preloadRevenue = (gymId: string) => preload(gymId ? ['revenue', gymId] : null, () => fetchRevenue(gymId));
 export function useRevenueData(gymId: string) {
   return useSWR(gymId ? ['revenue', gymId] : null, () => fetchRevenue(gymId), SWR_CONFIG);
+}
+
+// 6. Products Page Data
+const fetchProducts = async (gymId: string) => {
+  const [gyms, prods, sales, custs, settings] = await Promise.all([
+    getGyms(),
+    getProducts(gymId),
+    import('@/lib/actions').then(m => m.getProductSales(gymId)),
+    getCustomers(gymId),
+    getGymSettings(gymId)
+  ]);
+  return { gyms, prods, sales, custs, settings };
+};
+export const preloadProducts = (gymId: string) => preload(gymId ? ['products', gymId] : null, () => fetchProducts(gymId));
+export function useProductsData(gymId: string) {
+  return useSWR(gymId ? ['products', gymId] : null, () => fetchProducts(gymId), SWR_CONFIG);
+}
+
+// 7. Reminders Page Data
+const fetchReminders = async (gymId: string) => {
+  const [gyms, custs, settings] = await Promise.all([
+    getGyms(),
+    getCustomers(gymId),
+    getGymSettings(gymId)
+  ]);
+  return { gyms, custs, settings };
+};
+export const preloadReminders = (gymId: string) => preload(gymId ? ['reminders', gymId] : null, () => fetchReminders(gymId));
+export function useRemindersData(gymId: string) {
+  return useSWR(gymId ? ['reminders', gymId] : null, () => fetchReminders(gymId), SWR_CONFIG);
+}
+
+// 8. Broadcast Page Data
+const fetchBroadcast = async (gymId: string) => {
+  const [gyms, custs] = await Promise.all([
+    getGyms(),
+    getCustomers(gymId)
+  ]);
+  return { gyms, custs };
+};
+export const preloadBroadcast = (gymId: string) => preload(gymId ? ['broadcast', gymId] : null, () => fetchBroadcast(gymId));
+export function useBroadcastData(gymId: string) {
+  return useSWR(gymId ? ['broadcast', gymId] : null, () => fetchBroadcast(gymId), SWR_CONFIG);
 }
