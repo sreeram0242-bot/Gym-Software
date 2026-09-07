@@ -2002,7 +2002,7 @@ export async function addStaff(data: any) {
 
     // 1. Check duplicate phone
     const existingPhone = await prisma.staff.findFirst({
-      where: { gymId, phone: cleanPhone }
+      where: { gymId, phone: cleanPhone, isArchived: false }
     });
     if (existingPhone) {
       throw new Error(`Phone number "${cleanPhone}" is already registered for staff: ${existingPhone.name} (${existingPhone.role}).`);

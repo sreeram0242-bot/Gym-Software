@@ -335,7 +335,7 @@ export default function StaffPage() {
     }
 
     // 1. Check duplicate phone
-    const dupPhone = staffs.find(s => s.phone === cleanPhone && s.id !== editingStaffId);
+    const dupPhone = staffs.find(s => !s.isArchived && s.phone === cleanPhone && s.id !== editingStaffId);
     if (dupPhone) {
       setModalError(`Phone number "${cleanPhone}" is already assigned to staff: ${dupPhone.name} (${dupPhone.role}).`);
       return;
@@ -343,7 +343,7 @@ export default function StaffPage() {
 
     // 2. Check duplicate NFC Card ID
     if (cleanNfc) {
-      const dupNfc = staffs.find(s => s.nfcCardId && s.nfcCardId.toLowerCase() === cleanNfc.toLowerCase() && s.id !== editingStaffId);
+      const dupNfc = staffs.find(s => !s.isArchived && s.nfcCardId && s.nfcCardId.toLowerCase() === cleanNfc.toLowerCase() && s.id !== editingStaffId);
       if (dupNfc) {
         setModalError(`NFC Card ID "${cleanNfc}" is already assigned to staff: ${dupNfc.name}.`);
         return;
@@ -352,7 +352,13 @@ export default function StaffPage() {
 
     // 3. Check duplicate Fingerprint ID
     if (cleanFp) {
-      const dupFp = staffs.find(s => s.fingerprintId && s.fingerprintId.toLowerCase() === cleanFp.toLowerCase() && s.id !== editingStaffId);
+      const cleanFpNum = parseInt(cleanFp, 10);
+      const dupFp = staffs.find(s => {
+        if (s.isArchived || !s.fingerprintId || s.id === editingStaffId) return false;
+        if (s.fingerprintId.toLowerCase() === cleanFp.toLowerCase()) return true;
+        const sNum = parseInt(s.fingerprintId, 10);
+        return !isNaN(cleanFpNum) && !isNaN(sNum) && sNum === cleanFpNum;
+      });
       if (dupFp) {
         setModalError(`Fingerprint ID "${cleanFp}" is already assigned to staff: ${dupFp.name}.`);
         return;
@@ -1066,7 +1072,7 @@ export default function StaffPage() {
                         <button
                           onClick={async () => {
                             if (confirm(`Are you sure you want to remove ${staff.name}?`)) {
-                              await deleteStaff(staff.id);
+                              await deleteStaff(staff.id, gymId);
                               mutate();
                             }
                           }}
