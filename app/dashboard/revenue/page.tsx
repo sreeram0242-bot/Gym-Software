@@ -31,20 +31,24 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function RevenuePage() {
-  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
-  const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE' | 'NEW_MEMBERS'>('ALL');
-  const [paymentModeFilter, setPaymentModeFilter] = useState<'ALL' | 'CASH' | 'UPI' | 'CARD'>('ALL');
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 50;
+  const [gymId, setGymId] = useState<string>(''); // '' until useEffect loads real id
 
-  
+  useEffect(() => {
+    const saved = localStorage.getItem('active_gym_id');
+    if (saved) setGymId(saved);
+  }, []);
 
   const { data, isLoading } = useRevenueData(gymId);
   const transactions = data?.txs || [];
   const plans = data?.ps || [];
   const allCustomers = data?.custs || [];
   const gymSettings = data?.settings;
+
+  const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE' | 'NEW_MEMBERS'>('ALL');
+  const [paymentModeFilter, setPaymentModeFilter] = useState<'ALL' | 'CASH' | 'UPI' | 'CARD'>('ALL');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
 
   // Global Filter State
   const [globalTimeFilter, setGlobalTimeFilter] = useState<'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'THIS_YEAR' | 'CUSTOM'>('ALL');

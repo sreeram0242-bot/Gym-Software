@@ -13,9 +13,12 @@ import { exportToPDF } from '@/lib/exportPdf';
 import { useStaffsData } from '@/lib/hooks';
 
 export default function StaffPage() {
-  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
+  const [gymId, setGymId] = useState<string>(''); // '' until useEffect loads real id
 
-  
+  useEffect(() => {
+    const saved = localStorage.getItem('active_gym_id');
+    if (saved) setGymId(saved);
+  }, []);
 
   const { data, isLoading, mutate } = useStaffsData(gymId);
   const staffs = data?.staffs || [];

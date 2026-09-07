@@ -15,19 +15,20 @@ import { useCheckinData } from '@/lib/hooks';
 import { mutate } from 'swr';
 
 export default function CheckInTerminal() {
-  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
+  // Initialize as '' so SWR key is null and no fetch fires before we know the real gymId.
+  // The real gymId is always loaded from localStorage in the useEffect below.
+  const [gymId, setGymId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'members' | 'staff'>('members');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('active_gym_id');
-      if (saved && saved !== gymId) {
-        setGymId(saved);
-      }
+      if (saved) setGymId(saved);
     }
   }, []);
 
   const { data, isLoading: isInitialLoad, error, mutate: revalidateCheckin } = useCheckinData(gymId);
+
 
   const customers = data?.custs || [];
   const attendance = data?.atts || [];
@@ -502,7 +503,7 @@ export default function CheckInTerminal() {
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-20">
-      {isInitialLoad && !data && (
+      {(isInitialLoad || !gymId) && !data && (
         <div className="space-y-4 animate-pulse">
           <div className="h-28 bg-slate-200 rounded-2xl" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -524,7 +525,7 @@ export default function CheckInTerminal() {
           </button>
         </div>
       )}
-      {(!isInitialLoad || !!data) && <>
+      {(!!gymId && !isInitialLoad) || !!data ? <>
       {/* Header Banner */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -1158,7 +1159,7 @@ export default function CheckInTerminal() {
           </div>
         </>
       )}
-      </>}
+      </> : null}
     </div>
   );
 }

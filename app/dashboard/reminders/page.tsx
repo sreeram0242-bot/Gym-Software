@@ -131,7 +131,12 @@ function BatchSendButton({ dueCustomers, gymId, gymName, settings }: { dueCustom
 }
 
 export default function RemindersPage() {
-  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
+  const [gymId, setGymId] = useState<string>(''); // '' until useEffect loads real id
+
+  useEffect(() => {
+    const saved = localStorage.getItem('active_gym_id');
+    if (saved) setGymId(saved);
+  }, []);
 
   const { data, isLoading } = useRemindersData(gymId);
   const customers = data?.custs || [];

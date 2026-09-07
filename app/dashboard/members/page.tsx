@@ -12,15 +12,12 @@ import { exportToPDF } from '@/lib/exportPdf';
 import ImageCropper from '@/components/ImageCropper';
 
 export default function MemberManagementPage() {
-  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
+  const [gymId, setGymId] = useState<string>(''); // '' until useEffect loads real id
 
-
-
-
-
-
-
-  
+  useEffect(() => {
+    const saved = localStorage.getItem('active_gym_id');
+    if (saved) setGymId(saved);
+  }, []);
 
   const { data, isLoading } = useMembersData(gymId);
   const customers: any[] = data?.custs || [];
