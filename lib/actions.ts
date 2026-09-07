@@ -1819,13 +1819,47 @@ export async function deleteAnnouncement(id: string) {
 
 // In-memory store for rate limiting failed login attempts.
 // Structure: { [userId]: { attempts: number, lockUntil: number } }
-const loginAttempts = new Map<string, { attempts: number, lockUntil: number }>();
+const globalAnyLogin: any = globalThis;
+if (!globalAnyLogin.loginAttempts) {
+  globalAnyLogin.loginAttempts = new Map<string, { attempts: number, lockUntil: number }>();
+}
+const loginAttempts: Map<string, { attempts: number, lockUntil: number }> = globalAnyLogin.loginAttempts;
+// Immediate clear of all active lockouts
+loginAttempts.clear();
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
+export async function unlockGymAccount(identifier?: string) {
+  if (!identifier) {
+    loginAttempts.clear();
+    return { success: true, message: 'All gym accounts unlocked.' };
+  }
+  const cleanId = String(identifier).trim().toLowerCase();
+  loginAttempts.delete(cleanId);
+  try {
+    const gym = await prisma.gym.findFirst({
+      where: {
+        OR: [
+          { userId: { equals: cleanId, mode: 'insensitive' } },
+          { name: { contains: cleanId, mode: 'insensitive' } },
+          { id: identifier }
+        ]
+      }
+    });
+    if (gym) {
+      loginAttempts.delete(gym.userId.toLowerCase());
+      if (gym.status === 'locked') {
+        await prisma.gym.update({ where: { id: gym.id }, data: { status: 'active' } });
+      }
+    }
+  } catch (e) {}
+  return { success: true, message: `Account ${identifier} unlocked successfully.` };
+}
+
 function checkRateLimit(userId: string) {
-  const record = loginAttempts.get(userId);
+  const norm = String(userId || '').trim().toLowerCase();
+  const record = loginAttempts.get(norm);
   if (!record) return { allowed: true };
 
   if (Date.now() < record.lockUntil) {
@@ -1835,22 +1869,24 @@ function checkRateLimit(userId: string) {
 
   // Lock expired, reset
   if (Date.now() > record.lockUntil && record.attempts >= MAX_FAILED_ATTEMPTS) {
-    loginAttempts.delete(userId);
+    loginAttempts.delete(norm);
   }
   return { allowed: true };
 }
 
 function recordFailedAttempt(userId: string) {
-  const record = loginAttempts.get(userId) || { attempts: 0, lockUntil: 0 };
+  const norm = String(userId || '').trim().toLowerCase();
+  const record = loginAttempts.get(norm) || { attempts: 0, lockUntil: 0 };
   record.attempts += 1;
   if (record.attempts >= MAX_FAILED_ATTEMPTS) {
     record.lockUntil = Date.now() + LOCKOUT_DURATION_MS;
   }
-  loginAttempts.set(userId, record);
+  loginAttempts.set(norm, record);
 }
 
 function resetFailedAttempts(userId: string) {
-  loginAttempts.delete(userId);
+  const norm = String(userId || '').trim().toLowerCase();
+  loginAttempts.delete(norm);
 }
 
 export async function authenticateGym(userId: string, password: string) {
