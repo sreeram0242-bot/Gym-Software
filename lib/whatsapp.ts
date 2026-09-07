@@ -17,6 +17,7 @@ if (!globalAny.WhatsAppSessions) {
   // Anti-ban message queue
   globalAny.WhatsAppMessageQueue = [];
   globalAny.WhatsAppQueueProcessing = false;
+  globalAny.WhatsAppSessionCache = new Map<string, any>();
 }
 
 import db from './db';
@@ -29,14 +30,20 @@ async function usePrismaAuthState(gymId: string) {
   let creds: any;
   const credsId = `${gymId}-creds`;
   
-  const existingCreds = await db.whatsAppSession.findUnique({ where: { id: credsId } });
-  if (existingCreds) {
-    creds = JSON.parse(existingCreds.data, BufferJSON.reviver);
+  if (globalAny.WhatsAppSessionCache.has(credsId)) {
+    creds = globalAny.WhatsAppSessionCache.get(credsId);
   } else {
-    creds = initAuthCreds();
+    const existingCreds = await db.whatsAppSession.findUnique({ where: { id: credsId } });
+    if (existingCreds) {
+      creds = JSON.parse(existingCreds.data, BufferJSON.reviver);
+    } else {
+      creds = initAuthCreds();
+    }
+    globalAny.WhatsAppSessionCache.set(credsId, creds);
   }
 
   const saveCreds = async () => {
+    globalAny.WhatsAppSessionCache.set(credsId, creds);
     const data = JSON.stringify(creds, BufferJSON.replacer);
     await db.whatsAppSession.upsert({
       where: { id: credsId },
@@ -47,12 +54,20 @@ async function usePrismaAuthState(gymId: string) {
 
   const readData = async (type: string, id: string) => {
     const key = `${gymId}-${type}-${id}`;
+    if (globalAny.WhatsAppSessionCache.has(key)) {
+      return globalAny.WhatsAppSessionCache.get(key);
+    }
     const record = await db.whatsAppSession.findUnique({ where: { id: key } });
-    return record ? JSON.parse(record.data, BufferJSON.reviver) : null;
+    const parsed = record ? JSON.parse(record.data, BufferJSON.reviver) : null;
+    if (parsed) {
+      globalAny.WhatsAppSessionCache.set(key, parsed);
+    }
+    return parsed;
   };
 
   const writeData = async (data: any, type: string, id: string) => {
     const key = `${gymId}-${type}-${id}`;
+    globalAny.WhatsAppSessionCache.set(key, data);
     const value = JSON.stringify(data, BufferJSON.replacer);
     await db.whatsAppSession.upsert({
       where: { id: key },
@@ -63,6 +78,7 @@ async function usePrismaAuthState(gymId: string) {
 
   const removeData = async (type: string, id: string) => {
     const key = `${gymId}-${type}-${id}`;
+    globalAny.WhatsAppSessionCache.delete(key);
     try { await db.whatsAppSession.delete({ where: { id: key } }); } catch(e) {}
   };
 

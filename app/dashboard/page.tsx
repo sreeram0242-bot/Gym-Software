@@ -7,13 +7,20 @@ import { useOverviewData } from '@/lib/hooks';
 import { formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
 
 export default function DashboardOverview() {
-  const [gymId, setGymId] = useState<string>(''); // '' until useEffect loads real id from localStorage
+  const [gymId, setGymId] = useState<string>(
+    typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || '' : ''
+  );
   const [waStatus, setWaStatus] = useState<string>('initializing');
 
-  // Load gymId from localstorage on mount
+  // Load gymId from localstorage on mount and sync cookie
   useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
-    if (saved) setGymId(saved);
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('active_gym_id');
+      if (saved) {
+        if (saved !== gymId) setGymId(saved);
+        document.cookie = `active_gym_id=${saved}; path=/; max-age=31536000; SameSite=Lax`;
+      }
+    }
   }, []);
 
   // Fetch data with SWR

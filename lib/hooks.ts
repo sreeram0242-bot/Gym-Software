@@ -33,12 +33,7 @@ const fetchOverview = async (gymId: string) => {
 };
 export const preloadOverview = (gymId: string) => preload(gymId ? ['overview', gymId] : null, () => fetchOverview(gymId));
 export function useOverviewData(gymId: string) {
-  return useSWR(gymId ? ['overview', gymId] : null, () => fetchOverview(gymId), {
-    ...SWR_CONFIG,
-    refreshInterval: 5000,
-    dedupingInterval: 2000,
-    revalidateOnFocus: true
-  });
+  return useSWR(gymId ? ['overview', gymId] : null, () => fetchOverview(gymId), SWR_CONFIG);
 }
 
 // 2. Members Page Data
@@ -91,12 +86,7 @@ const fetchCheckin = async (gymId: string) => {
 };
 export const preloadCheckin = (gymId: string) => preload(gymId ? ['checkin', gymId] : null, () => fetchCheckin(gymId));
 export function useCheckinData(gymId: string) {
-  return useSWR(gymId ? ['checkin', gymId] : null, () => fetchCheckin(gymId), {
-    ...SWR_CONFIG,
-    refreshInterval: 3000,
-    dedupingInterval: 1000,
-    revalidateOnFocus: true
-  });
+  return useSWR(gymId ? ['checkin', gymId] : null, () => fetchCheckin(gymId), SWR_CONFIG);
 }
 
 // 5. Revenue Page Data

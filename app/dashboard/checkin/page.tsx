@@ -15,15 +15,18 @@ import { useCheckinData } from '@/lib/hooks';
 import { mutate } from 'swr';
 
 export default function CheckInTerminal() {
-  // Initialize as '' so SWR key is null and no fetch fires before we know the real gymId.
-  // The real gymId is always loaded from localStorage in the useEffect below.
-  const [gymId, setGymId] = useState<string>('');
+  const [gymId, setGymId] = useState<string>(
+    typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || '' : ''
+  );
   const [activeTab, setActiveTab] = useState<'members' | 'staff'>('members');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('active_gym_id');
-      if (saved) setGymId(saved);
+      if (saved) {
+        if (saved !== gymId) setGymId(saved);
+        document.cookie = `active_gym_id=${saved}; path=/; max-age=31536000; SameSite=Lax`;
+      }
     }
   }, []);
 

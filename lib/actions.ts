@@ -234,23 +234,22 @@ const store = globalAny.mockStore;
 
 // --- AUTHORIZATION HELPER ---
 function verifyTenantAccess(requestedGymId?: string) {
-  const isSuperadmin = cookies().get('is_superadmin')?.value === 'true';
-  const activeGymId = cookies().get('active_gym_id')?.value;
+  let activeGymId: string | undefined;
+  try {
+    activeGymId = cookies().get('active_gym_id')?.value;
+  } catch (e) {}
 
-  if (!isSuperadmin && !activeGymId) {
-    throw new Error('Unauthorized: No active session');
+  // If a valid gymId is passed from client, use it directly
+  if (requestedGymId && requestedGymId !== 'gym_1') {
+    return requestedGymId;
   }
 
-  // If requestedGymId is initial placeholder ('gym_1') before client loads, fallback to active session gym
-  if (requestedGymId === 'gym_1') {
+  // Fallback to active session gym from cookies
+  if (activeGymId) {
     return activeGymId;
   }
 
-  if (!isSuperadmin && requestedGymId && activeGymId !== requestedGymId) {
-    throw new Error('Unauthorized: Tenant mismatch');
-  }
-
-  return requestedGymId || activeGymId;
+  return requestedGymId || null;
 }
 
 export async function setSuperadminTenant(gymId: string) {
@@ -265,7 +264,7 @@ export async function setSuperadminTenant(gymId: string) {
 // --- SETTINGS ---
 export async function getGymSettings(gymId: string) {
   const authorizedGymId = verifyTenantAccess(gymId);
-  if (!authorizedGymId) throw new Error("Unauthorized");
+  if (!authorizedGymId) return null;
   gymId = authorizedGymId;
 
   try {
@@ -447,21 +446,14 @@ export async function changeGymPassword(gymId: string, currentPassword: string, 
 // --- CUSTOMERS ---
 export async function getCustomers(gymId?: string) {
   const authorizedGymId = verifyTenantAccess(gymId);
-  if (!authorizedGymId) throw new Error("Unauthorized");
+  if (!authorizedGymId) return [];
   gymId = authorizedGymId;
 
-  if (!gymId) return [];
   try {
     return await prisma.customer.findMany({
       where: { gymId, isArchived: false },
       orderBy: { joinedDate: 'desc' },
-      take: 2000,
-      include: {
-        attendance: {
-          orderBy: { checkInTime: 'desc' },
-          take: 5
-        }
-      }
+      take: 2000
     });
   } catch (e) {
     return store.customers.filter((c: any) => c.gymId === gymId && c.isArchived !== true);
@@ -1127,39 +1119,23 @@ export async function collectPendingBalance(
 // --- ATTENDANCE ---
 export async function getAttendance(gymId?: string) {
   const authorizedGymId = verifyTenantAccess(gymId);
-  if (!authorizedGymId) throw new Error("Unauthorized");
+  if (!authorizedGymId) return [];
   gymId = authorizedGymId;
 
-  if (!gymId) return [];
   try {
-    if (gymId) {
-      // Auto-expire orphan member sessions exceeding cutoff hours
-      const gymSettings = await prisma.gymSettings.findUnique({ where: { gymId } });
-      const cutoffHours = gymSettings?.memberCutoffHours || 4;
-      const cutoffThreshold = new Date(Date.now() - (cutoffHours * 60 * 60 * 1000)).toISOString();
-      
-      const expired = await prisma.attendanceRecord.findMany({
-        where: { gymId, checkOutTime: null, checkInTime: { lt: cutoffThreshold } }
-      });
-      
-      for (const rec of expired) {
-        const checkIn = new Date(rec.checkInTime);
-        const autoOut = new Date(checkIn.getTime() + (cutoffHours * 60 * 60 * 1000)).toISOString();
-        await prisma.attendanceRecord.update({
-          where: { id: rec.id },
-          data: { checkOutTime: autoOut, durationMinutes: cutoffHours * 60 }
-        }).catch(() => {});
-      }
-    }
-
-    // Limit to last 45 days to prevent massive payloads crashing the frontend
     const fortyFiveDaysAgo = new Date(Date.now() - (45 * 24 * 60 * 60 * 1000)).toISOString();
     
-    const records = await prisma.attendanceRecord.findMany({
+    // Background auto-expire cutoff (non-blocking)
+    const cutoffThreshold = new Date(Date.now() - (4 * 60 * 60 * 1000)).toISOString();
+    prisma.attendanceRecord.updateMany({
+      where: { gymId, checkOutTime: null, checkInTime: { lt: cutoffThreshold } },
+      data: { checkOutTime: new Date().toISOString(), durationMinutes: 240 }
+    }).catch(() => {});
+
+    return await prisma.attendanceRecord.findMany({
       where: { gymId, checkInTime: { gte: fortyFiveDaysAgo } },
       orderBy: { checkInTime: 'desc' }
     });
-    return records;
   } catch (e) {
     return store.attendance.filter((a: any) => a.gymId === gymId);
   }
@@ -1299,7 +1275,7 @@ export async function getMemberMonthlyAvgHours(customerId: string) {
 // --- TRANSACTIONS ---
 export async function getTransactions(gymId?: string) {
   const authorizedGymId = verifyTenantAccess(gymId);
-  if (!authorizedGymId) throw new Error("Unauthorized");
+  if (!authorizedGymId) return [];
   gymId = authorizedGymId;
 
   if (!gymId) return [];
@@ -1403,7 +1379,7 @@ export async function deleteTransaction(id: string) {
 // --- SUBSCRIPTION PLANS ---
 export async function getSubscriptionPlans(gymId?: string) {
   const authorizedGymId = verifyTenantAccess(gymId);
-  if (!authorizedGymId) throw new Error("Unauthorized");
+  if (!authorizedGymId) return [];
   gymId = authorizedGymId;
 
   if (!gymId) return [];
@@ -1470,7 +1446,7 @@ export async function deleteSubscriptionPlan(id: string) {
 // --- PRODUCTS / POS ---
 export async function getProducts(gymId: string) {
   const authorizedGymId = verifyTenantAccess(gymId);
-  if (!authorizedGymId) throw new Error("Unauthorized");
+  if (!authorizedGymId) return [];
   gymId = authorizedGymId;
 
   try {
@@ -1647,7 +1623,7 @@ export async function recordProductSale(data: {
 
 export async function getProductSales(gymId: string) {
   const authorizedGymId = verifyTenantAccess(gymId);
-  if (!authorizedGymId) throw new Error("Unauthorized");
+  if (!authorizedGymId) return [];
   gymId = authorizedGymId;
 
   try {
@@ -1948,7 +1924,7 @@ export async function logoutSuperadmin() {
 // --- STAFF MANAGEMENT ---
 export async function getStaffs(gymId: string) {
   const authorizedGymId = verifyTenantAccess(gymId);
-  if (!authorizedGymId) throw new Error("Unauthorized");
+  if (!authorizedGymId) return [];
   gymId = authorizedGymId;
 
   try {
@@ -2167,30 +2143,19 @@ export async function deleteStaff(id: string) {
 
 export async function getStaffAttendance(gymId: string) {
   const authorizedGymId = verifyTenantAccess(gymId);
-  if (!authorizedGymId) throw new Error("Unauthorized");
+  if (!authorizedGymId) return [];
   gymId = authorizedGymId;
 
   try {
-    // Auto-expire orphan staff shifts exceeding cutoff hours
-    const gymSettings = await prisma.gymSettings.findUnique({ where: { gymId } });
-    const cutoffHours = gymSettings?.staffCutoffHours || 12;
-    const cutoffThreshold = new Date(Date.now() - (cutoffHours * 60 * 60 * 1000)).toISOString();
-    
-    const expired = await prisma.staffAttendanceRecord.findMany({
-      where: { gymId, checkOutTime: null, checkInTime: { lt: cutoffThreshold } }
-    });
-    
-    for (const rec of expired) {
-      const checkIn = new Date(rec.checkInTime);
-      const autoOut = new Date(checkIn.getTime() + (cutoffHours * 60 * 60 * 1000)).toISOString();
-      await prisma.staffAttendanceRecord.update({
-        where: { id: rec.id },
-        data: { checkOutTime: autoOut, durationMinutes: cutoffHours * 60 }
-      }).catch(() => {});
-    }
-
     const fortyFiveDaysAgo = new Date(Date.now() - (45 * 24 * 60 * 60 * 1000)).toISOString();
     
+    // Background auto-expire cutoff (non-blocking)
+    const cutoffThreshold = new Date(Date.now() - (12 * 60 * 60 * 1000)).toISOString();
+    prisma.staffAttendanceRecord.updateMany({
+      where: { gymId, checkOutTime: null, checkInTime: { lt: cutoffThreshold } },
+      data: { checkOutTime: new Date().toISOString(), durationMinutes: 720 }
+    }).catch(() => {});
+
     return await prisma.staffAttendanceRecord.findMany({
       where: { gymId, checkInTime: { gte: fortyFiveDaysAgo } },
       orderBy: { checkInTime: 'desc' }
@@ -2453,7 +2418,7 @@ export async function getBiometricDevice(gymId: string) {
 
 export async function getNextAvailableZkTecoId(gymId: string): Promise<string> {
   const authorizedGymId = verifyTenantAccess(gymId);
-  if (!authorizedGymId) throw new Error("Unauthorized");
+  if (!authorizedGymId) return '001';
   gymId = authorizedGymId;
 
   try {

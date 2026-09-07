@@ -22,15 +22,22 @@ type CartItem = {
 };
 
 export default function ProductsPage() {
-  const [gymId, setGymId] = useState(''); // '' until useEffect loads real id
+  const [gymId, setGymId] = useState(
+    typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || '' : ''
+  );
   const [gymName, setGymName] = useState('Our Gym');
   const [activeTab, setActiveTab] = useState<'catalog' | 'pos' | 'sales'>('pos');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
 
   useEffect(() => {
-    const saved = localStorage.getItem('active_gym_id');
-    if (saved) setGymId(saved);
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('active_gym_id');
+      if (saved) {
+        if (saved !== gymId) setGymId(saved);
+        document.cookie = `active_gym_id=${saved}; path=/; max-age=31536000; SameSite=Lax`;
+      }
+    }
   }, []);
 
   const { data, isLoading } = useProductsData(gymId);

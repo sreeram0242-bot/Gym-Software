@@ -12,11 +12,18 @@ import { exportToPDF } from '@/lib/exportPdf';
 import ImageCropper from '@/components/ImageCropper';
 
 export default function MemberManagementPage() {
-  const [gymId, setGymId] = useState<string>(''); // '' until useEffect loads real id
+  const [gymId, setGymId] = useState<string>(
+    typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || '' : ''
+  );
 
   useEffect(() => {
-    const saved = localStorage.getItem('active_gym_id');
-    if (saved) setGymId(saved);
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('active_gym_id');
+      if (saved) {
+        if (saved !== gymId) setGymId(saved);
+        document.cookie = `active_gym_id=${saved}; path=/; max-age=31536000; SameSite=Lax`;
+      }
+    }
   }, []);
 
   const { data, isLoading } = useMembersData(gymId);
