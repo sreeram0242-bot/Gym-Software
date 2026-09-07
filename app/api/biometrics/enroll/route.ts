@@ -72,10 +72,19 @@ export async function POST(req: Request) {
     // before creating a new one. If left in DB, the device picks up the old command first
     // on the next heartbeat, activating the wrong enrollment slot.
     if (!isCard) {
+      const pinNum = parseInt(numericPin, 10);
+      const pinVariants = new Set<string>([numericPin]);
+      if (!isNaN(pinNum)) {
+        pinVariants.add(String(pinNum));
+        for (let len = 1; len <= 8; len++) {
+          pinVariants.add(String(pinNum).padStart(len, '0'));
+        }
+      }
       const cancelledCount = await prisma.biometricCommand.updateMany({
         where: {
           deviceId: device.id,
-        commandString: { contains: `ENROLL_FP:PIN=${numericPin}` },
+          commandString: { contains: 'ENROLL_FP' },
+          OR: Array.from(pinVariants).map(p => ({ commandString: { contains: `PIN=${p}` } })),
           status: { in: ['PENDING', 'SENT'] }
         },
         data: { status: 'FAILED', completedAt: new Date() }

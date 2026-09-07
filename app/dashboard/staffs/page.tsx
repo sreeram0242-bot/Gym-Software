@@ -109,14 +109,12 @@ export default function StaffPage() {
               setFpPollStatus('SUCCESS');
               setFpCommandId(null);
               showToast('Fingerprint Enrolled & Saved!', 'success');
-            } else if (data.status === 'ERROR' || data.status === 'FAILED') {
-              setFpPollStatus('ERROR');
-              setFpCommandId(null);
-              showToast('Fingerprint Enrollment Failed on Device. Please try again.', 'error');
             } else if (data.status === 'TIMEOUT') {
               setFpPollStatus('ERROR');
               setFpCommandId(null);
               showToast(data.message || 'Enrollment timed out. Device did not detect a scan.', 'error');
+            } else if (data.status === 'ERROR' || data.status === 'FAILED') {
+              // Ignore transient errors while user is tapping finger; TIMEOUT will handle expiration
             }
           }
         } catch (e) { console.error('Biometric poll error:', e); }

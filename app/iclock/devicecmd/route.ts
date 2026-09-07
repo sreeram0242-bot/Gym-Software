@@ -53,6 +53,11 @@ export async function POST(req: Request) {
 
       if (commandId) {
         const cmdNum = parseInt(commandId, 10);
+        let cmdType = '';
+        for (const part of parts) {
+          if (part.startsWith('CMD=')) cmdType = part.split('=')[1]?.trim() || '';
+        }
+
         let command = null;
         if (!isNaN(cmdNum) && device) {
           command = await prisma.biometricCommand.findFirst({
@@ -63,10 +68,12 @@ export async function POST(req: Request) {
           });
         }
 
-        if (!command && device) {
+        // If not found by numeric ID, ONLY fallback if cmdType matches or is explicitly ENROLL_FP
+        if (!command && device && cmdType === 'ENROLL_FP') {
           command = await prisma.biometricCommand.findFirst({
             where: {
               deviceId: device.id,
+              commandString: { contains: 'ENROLL_FP' },
               status: 'SENT'
             },
             orderBy: { sentAt: 'desc' }
@@ -84,14 +91,21 @@ export async function POST(req: Request) {
               finalStatus = 'SUCCESS';
               console.log(`[ADMS] ENROLL_FP command ${command.id} SUCCESS (Return=0)`);
             } else if (returnNum < 0) {
-              // Negative return code = actual failure (user cancelled, timeout, finger rejected)
-              // Only mark FAILED if it hasn't already been marked SUCCESS by cdata
-              if (command.status !== 'SUCCESS') {
-                finalStatus = 'FAILED';
-                console.log(`[ADMS] ENROLL_FP command ${command.id} FAILED with Return=${returnCode}`);
+              // Only mark FAILED if cmdType was explicitly ENROLL_FP or user cancelled,
+              // and only if command is not already SUCCESS
+              if (command.status !== 'SUCCESS' && (cmdType === 'ENROLL_FP' || !cmdType)) {
+                // If the command was sent less than 15s ago, negative return might just be command parsing ACK,
+                // do not prematurely fail before the user even has time to place finger
+                const ageMs = Date.now() - new Date(command.sentAt || command.createdAt).getTime();
+                if (ageMs > 20000) {
+                  finalStatus = 'FAILED';
+                  console.log(`[ADMS] ENROLL_FP command ${command.id} FAILED with Return=${returnCode}`);
+                } else {
+                  console.log(`[ADMS] ENROLL_FP command ${command.id} ignored early negative Return=${returnCode} (age ${Math.round(ageMs/1000)}s), awaiting user finger tap.`);
+                }
               }
             }
-            // Return=1 or other positive = intermediate acknowledgment, leave as SENT
+            // Return=1 or positive = intermediate acknowledgment, leave as SENT
           } else {
             if (returnCode === '0') {
               finalStatus = 'COMPLETED';

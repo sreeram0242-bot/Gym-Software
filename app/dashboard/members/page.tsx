@@ -324,20 +324,24 @@ export default function MemberManagementPage() {
               setFpCommandId(null);
               setEnrollingMemberId(null);
               showToast('Fingerprint Enrolled & Saved!', 'success');
-            } else if (data.status === 'ERROR' || data.status === 'FAILED') {
-              // Give 2 polling cycles before declaring error to prevent false negatives during multi-tap
-              fpFailCountRef.current = (fpFailCountRef.current || 0) + 1;
-              if (fpFailCountRef.current >= 3) {
-                setFpPollStatus('ERROR');
-                setFpCommandId(null);
-                setEnrollingMemberId(null);
-                showToast('Fingerprint Enrollment Failed on Device. Please try again.', 'error');
-              }
             } else if (data.status === 'TIMEOUT') {
               setFpPollStatus('ERROR');
               setFpCommandId(null);
               setEnrollingMemberId(null);
               showToast(data.message || 'Enrollment timed out. Device did not detect a scan.', 'error');
+            } else if (data.status === 'ERROR' || data.status === 'FAILED') {
+              // Only declare failure after sustained consecutive errors (10 polling cycles = 20s)
+              // to prevent false negatives during multi-tap scanning
+              fpFailCountRef.current = (fpFailCountRef.current || 0) + 1;
+              if (fpFailCountRef.current >= 10) {
+                setFpPollStatus('ERROR');
+                setFpCommandId(null);
+                setEnrollingMemberId(null);
+                showToast('Fingerprint Enrollment Failed on Device. Please try again.', 'error');
+              }
+            } else {
+              // Still POLLING / SENT / PENDING — reset transient error count
+              fpFailCountRef.current = 0;
             }
           }
         } catch (e) { }

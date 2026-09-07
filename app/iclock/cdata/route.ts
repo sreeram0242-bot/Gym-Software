@@ -76,15 +76,25 @@ export async function POST(req: Request) {
         const match = line.match(/PIN=(\d+)/);
         if (match) {
           const enrolledPin = match[1];
-          const strippedEnrolledPin = enrolledPin.replace(/^0+/, '') || enrolledPin;
-          // Only mark ENROLL_FP commands as SUCCESS — never card/delete commands
+          const pinNum = parseInt(enrolledPin, 10);
+          const pinVariants = new Set<string>([enrolledPin]);
+          if (!isNaN(pinNum)) {
+            pinVariants.add(String(pinNum));
+            for (let len = 1; len <= 8; len++) {
+              pinVariants.add(String(pinNum).padStart(len, '0'));
+            }
+          }
+          // Match ANY command format for ENROLL_FP (colons, spaces, tabs) with any variant of this PIN
           const updated = await prisma.biometricCommand.updateMany({
             where: {
               deviceId: existingDevice.id,
-              OR: [
-                { commandString: { contains: `ENROLL_FP:PIN=${enrolledPin}` } },
-                { commandString: { contains: `ENROLL_FP:PIN=${strippedEnrolledPin}` } }
-              ],
+              commandString: { contains: 'ENROLL_FP' },
+              OR: Array.from(pinVariants).flatMap(p => [
+                { commandString: { contains: `PIN=${p}:` } },
+                { commandString: { contains: `PIN=${p} ` } },
+                { commandString: { contains: `PIN=${p}\t` } },
+                { commandString: { contains: `PIN=${p}` } }
+              ]),
               status: { in: ['SENT', 'PENDING', 'FAILED'] }
             },
             data: { status: 'SUCCESS', completedAt: new Date() }
@@ -108,14 +118,20 @@ export async function POST(req: Request) {
         }
         
         if (enrolledPin) {
-          const stripped = enrolledPin.replace(/^0+/, '') || enrolledPin;
+          const cleanEnrolled = enrolledPin.replace(/\D/g, '');
+          const pinNum = parseInt(cleanEnrolled, 10);
+          const pinVariants = new Set<string>([enrolledPin, cleanEnrolled]);
+          if (!isNaN(pinNum)) {
+            pinVariants.add(String(pinNum));
+            for (let len = 1; len <= 8; len++) {
+              pinVariants.add(String(pinNum).padStart(len, '0'));
+            }
+          }
           await prisma.biometricCommand.updateMany({
             where: {
               deviceId: existingDevice.id,
-              OR: [
-                { commandString: { contains: `PIN=${enrolledPin}` } },
-                { commandString: { contains: `PIN=${stripped}` } }
-              ],
+              commandString: { contains: 'ENROLL_FP' },
+              OR: Array.from(pinVariants).map(p => ({ commandString: { contains: `PIN=${p}` } })),
               status: { in: ['SENT', 'PENDING', 'FAILED'] }
             },
             data: { status: 'SUCCESS', completedAt: new Date() }

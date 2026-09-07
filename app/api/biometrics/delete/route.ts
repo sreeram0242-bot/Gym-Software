@@ -18,15 +18,37 @@ export async function POST(req: Request) {
 
     console.log(`[Biometrics Delete] Attempting to delete PIN "${cleanPin}" (trimmed: "${trimmedPin}") for gym ${gymId}`);
 
-    // 1. Queue ADMS delete commands immediately so device picks them up on next heartbeat (2s)
+    // 1. Cancel in-flight enrollment and queue ADMS delete commands immediately
     const devices = await prisma.biometricDevice.findMany({
       where: { gymId }
     });
 
     if (devices.length > 0) {
-      const pinsToDelete = Array.from(new Set([cleanPin, trimmedPin])).filter(Boolean);
+      const pinNum = parseInt(numericPin, 10);
+      const pinVariants = new Set<string>([cleanPin, numericPin, trimmedPin]);
+      if (!isNaN(pinNum)) {
+        pinVariants.add(String(pinNum));
+        for (let len = 1; len <= 8; len++) {
+          pinVariants.add(String(pinNum).padStart(len, '0'));
+        }
+      }
+      const allPins = Array.from(pinVariants).filter(Boolean);
+
+      // Cancel any active/in-flight ENROLL_FP commands for this PIN
+      await prisma.biometricCommand.updateMany({
+        where: {
+          deviceId: { in: devices.map(d => d.id) },
+          commandString: { contains: 'ENROLL_FP' },
+          OR: allPins.map(p => ({ commandString: { contains: `PIN=${p}` } })),
+          status: { in: ['PENDING', 'SENT'] }
+        },
+        data: { status: 'FAILED', completedAt: new Date() }
+      }).catch(console.error);
+
+      // Queue user delete for cleanPin and trimmedPin so device wipes templates
+      const explicitPins = Array.from(new Set([cleanPin, trimmedPin])).filter(Boolean);
       for (const device of devices) {
-        for (const p of pinsToDelete) {
+        for (const p of explicitPins) {
           await prisma.biometricCommand.create({
             data: {
               deviceId: device.id,

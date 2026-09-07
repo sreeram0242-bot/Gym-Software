@@ -279,14 +279,20 @@ export async function POST(req: Request) {
       const stripped = uPin.replace(/^0+/, '') || uPin;
       const dev = await prisma.biometricDevice.findFirst({ where: { serialNumber: devId! } });
       if (dev) {
+        const pinNum = parseInt(uPin.replace(/\D/g, ''), 10);
+        const pinVariants = new Set<string>([uPin, stripped]);
+        if (!isNaN(pinNum)) {
+          pinVariants.add(String(pinNum));
+          for (let len = 1; len <= 8; len++) {
+            pinVariants.add(String(pinNum).padStart(len, '0'));
+          }
+        }
         await prisma.biometricCommand.updateMany({
           where: {
             deviceId: dev.id,
-            OR: [
-              { commandString: { contains: `PIN=${uPin}` } },
-              { commandString: { contains: `PIN=${stripped}` } }
-            ],
-            status: { in: ['SENT', 'PENDING'] }
+            commandString: { contains: 'ENROLL_FP' },
+            OR: Array.from(pinVariants).map(p => ({ commandString: { contains: `PIN=${p}` } })),
+            status: { in: ['SENT', 'PENDING', 'FAILED'] }
           },
           data: { status: 'SUCCESS', completedAt: new Date() }
         });
