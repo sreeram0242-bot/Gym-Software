@@ -91,21 +91,13 @@ export async function POST(req: Request) {
               finalStatus = 'SUCCESS';
               console.log(`[ADMS] ENROLL_FP command ${command.id} SUCCESS (Return=0)`);
             } else if (returnNum < 0) {
-              // Only mark FAILED if cmdType was explicitly ENROLL_FP or user cancelled,
-              // and only if command is not already SUCCESS
-              if (command.status !== 'SUCCESS' && (cmdType === 'ENROLL_FP' || !cmdType)) {
-                // If the command was sent less than 15s ago, negative return might just be command parsing ACK,
-                // do not prematurely fail before the user even has time to place finger
-                const ageMs = Date.now() - new Date(command.sentAt || command.createdAt).getTime();
-                if (ageMs > 20000) {
-                  finalStatus = 'FAILED';
-                  console.log(`[ADMS] ENROLL_FP command ${command.id} FAILED with Return=${returnCode}`);
-                } else {
-                  console.log(`[ADMS] ENROLL_FP command ${command.id} ignored early negative Return=${returnCode} (age ${Math.round(ageMs/1000)}s), awaiting user finger tap.`);
-                }
+              // Negative return code from machine = enrollment rejected (duplicate finger, timeout, or user cancelled)
+              if (command.status !== 'SUCCESS') {
+                finalStatus = 'FAILED';
+                console.log(`[ADMS] ENROLL_FP command ${command.id} REJECTED/FAILED on device with Return=${returnCode}`);
               }
             }
-            // Return=1 or positive = intermediate acknowledgment, leave as SENT
+            // Return > 0 (e.g. Return=1) = intermediate device progress ACK, leave as SENT
           } else {
             if (returnCode === '0') {
               finalStatus = 'COMPLETED';

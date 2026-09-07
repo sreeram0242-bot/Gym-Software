@@ -45,8 +45,18 @@ export async function POST(req: Request) {
         data: { status: 'FAILED', completedAt: new Date() }
       }).catch(console.error);
 
-      // Queue user delete for cleanPin and trimmedPin so device wipes templates
-      const explicitPins = Array.from(new Set([cleanPin, trimmedPin])).filter(Boolean);
+      // Queue user delete for clean, trimmed, and any legacy corrupted suffix pins so device completely wipes the ghost user and template
+      const explicitPins = Array.from(new Set([
+        cleanPin,
+        trimmedPin,
+        `${cleanPin}:FID=0:RETRY=3:OVERW`,
+        `${trimmedPin}:FID=0:RETRY=3:OVERW`,
+        `${cleanPin}:FID=0:RETRY=3`,
+        `${trimmedPin}:FID=0:RETRY=3`,
+        `${cleanPin}:FID=0`,
+        `${trimmedPin}:FID=0`
+      ])).filter(Boolean);
+
       for (const device of devices) {
         for (const p of explicitPins) {
           await prisma.biometricCommand.create({
@@ -56,7 +66,14 @@ export async function POST(req: Request) {
               status: 'PENDING'
             }
           });
-          console.log(`[Biometrics Delete] Queued ADMS delete for PIN ${p} on device ${device.id} (${device.serialNumber})`);
+          await prisma.biometricCommand.create({
+            data: {
+              deviceId: device.id,
+              commandString: `DATA DELETE FINGERTMP PIN=${p}\tFID=0`,
+              status: 'PENDING'
+            }
+          });
+          console.log(`[Biometrics Delete] Queued ADMS delete commands for PIN ${p} on device ${device.id} (${device.serialNumber})`);
         }
       }
     } else {

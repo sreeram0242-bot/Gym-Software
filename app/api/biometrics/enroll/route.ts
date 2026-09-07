@@ -92,9 +92,27 @@ export async function POST(req: Request) {
       if (cancelledCount.count > 0) {
         console.log(`[Enroll] Cancelled ${cancelledCount.count} stale ENROLL_FP command(s) for PIN ${numericPin} before creating new one.`);
       }
+
+      // Also clean up any legacy colon-corrupted ghost user on the device so it does not conflict
+      const trimmed = numericPin.replace(/^0+/, '') || numericPin;
+      const legacyGhostPins = Array.from(new Set([
+        `${numericPin}:FID=0:RETRY=3:OVERW`,
+        `${trimmed}:FID=0:RETRY=3:OVERW`,
+        `${numericPin}:FID=0:RETRY=3`,
+        `${trimmed}:FID=0:RETRY=3`
+      ]));
+      for (const gp of legacyGhostPins) {
+        await prisma.biometricCommand.create({
+          data: {
+            deviceId: device.id,
+            commandString: `DATA DELETE USERINFO PIN=${gp}`,
+            status: 'PENDING'
+          }
+        });
+      }
     }
 
-    const cmdStr = isCard ? `DATA UPDATE USERINFO PIN=${numericPin}\tCard=${cleanCard || ''}` : `ENROLL_FP:PIN=${numericPin}:FID=0:RETRY=3:OVERWRITE=1`;
+    const cmdStr = isCard ? `DATA UPDATE USERINFO PIN=${numericPin}\tCard=${cleanCard || ''}` : `ENROLL_FP PIN=${numericPin} FID=0 RETRY=3 OVERWRITE=1`;
 
     // Trigger enrollment exactly as per the Biomax SKILL
     const command = await prisma.biometricCommand.create({
