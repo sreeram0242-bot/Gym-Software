@@ -17,10 +17,17 @@ import { mutate } from 'swr';
 export default function CheckInTerminal() {
   const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
   const [activeTab, setActiveTab] = useState<'members' | 'staff'>('members');
-  
-  
 
-  const { data, isLoading: isInitialLoad } = useCheckinData(gymId);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('active_gym_id');
+      if (saved && saved !== gymId) {
+        setGymId(saved);
+      }
+    }
+  }, []);
+
+  const { data, isLoading: isInitialLoad, error, mutate: revalidateCheckin } = useCheckinData(gymId);
 
   const customers = data?.custs || [];
   const attendance = data?.atts || [];
@@ -431,7 +438,7 @@ export default function CheckInTerminal() {
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-20">
-      {isInitialLoad && (
+      {isInitialLoad && !data && (
         <div className="space-y-4 animate-pulse">
           <div className="h-28 bg-slate-200 rounded-2xl" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -441,7 +448,19 @@ export default function CheckInTerminal() {
           <div className="h-40 bg-slate-200 rounded-2xl" />
         </div>
       )}
-      {!isInitialLoad && <>
+      {error && !data && (
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-8 text-center space-y-3">
+          <p className="text-rose-800 font-bold text-sm">Unable to load check-in terminal data.</p>
+          <button 
+            type="button"
+            onClick={() => revalidateCheckin()}
+            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+          >
+            Retry Loading
+          </button>
+        </div>
+      )}
+      {(!isInitialLoad || !!data) && <>
       {/* Header Banner */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

@@ -6,7 +6,11 @@ import {
   getTransactions, 
   getStaffs, 
   getProducts,
-  getGymSettings
+  getGymSettings,
+  getSubscriptionPlans,
+  getNextAvailableZkTecoId,
+  getStaffAttendance,
+  getProductSales
 } from '@/lib/actions';
 
 // Default SWR config to ensure fast cache hits without background lag
@@ -38,10 +42,10 @@ const fetchMembers = async (gymId: string) => {
     getGyms(),
     getCustomers(gymId),
     getAttendance(gymId),
-    import('@/lib/actions').then(m => m.getSubscriptionPlans(gymId)),
+    getSubscriptionPlans(gymId),
     getTransactions(gymId),
-    import('@/lib/actions').then(m => m.getGymSettings(gymId)),
-    import('@/lib/actions').then(m => m.getNextAvailableZkTecoId(gymId))
+    getGymSettings(gymId),
+    getNextAvailableZkTecoId(gymId)
   ]);
   return { gyms, custs, atts, ps, txs, gymSettings, nextId };
 };
@@ -55,9 +59,9 @@ const fetchStaffs = async (gymId: string) => {
   const [gyms, staffsList, atts, gymSettings, nextId] = await Promise.all([
     getGyms(),
     getStaffs(gymId),
-    import('@/lib/actions').then(m => m.getStaffAttendance(gymId)),
-    import('@/lib/actions').then(m => m.getGymSettings(gymId)),
-    import('@/lib/actions').then(m => m.getNextAvailableZkTecoId(gymId))
+    getStaffAttendance(gymId),
+    getGymSettings(gymId),
+    getNextAvailableZkTecoId(gymId)
   ]);
   return { gyms, staffs: staffsList, atts, gymSettings, nextId };
 };
@@ -73,8 +77,8 @@ const fetchCheckin = async (gymId: string) => {
     getCustomers(gymId),
     getStaffs(gymId),
     getAttendance(gymId),
-    import('@/lib/actions').then(m => m.getStaffAttendance(gymId)),
-    import('@/lib/actions').then(m => m.getGymSettings(gymId))
+    getStaffAttendance(gymId),
+    getGymSettings(gymId)
   ]);
   return { gyms, custs, staffs: staffsList, atts, stfAtts, gymSettings };
 };
@@ -88,7 +92,7 @@ const fetchRevenue = async (gymId: string) => {
   const [gyms, txs, ps, custs, settings] = await Promise.all([
     getGyms(),
     getTransactions(gymId),
-    import('@/lib/actions').then(m => m.getSubscriptionPlans(gymId)),
+    getSubscriptionPlans(gymId),
     getCustomers(gymId),
     getGymSettings(gymId)
   ]);
@@ -104,7 +108,7 @@ const fetchProducts = async (gymId: string) => {
   const [gyms, prods, sales, custs, settings] = await Promise.all([
     getGyms(),
     getProducts(gymId),
-    import('@/lib/actions').then(m => m.getProductSales(gymId)),
+    getProductSales(gymId),
     getCustomers(gymId),
     getGymSettings(gymId)
   ]);

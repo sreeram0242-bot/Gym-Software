@@ -241,6 +241,11 @@ function verifyTenantAccess(requestedGymId?: string) {
     throw new Error('Unauthorized: No active session');
   }
 
+  // If requestedGymId is initial placeholder ('gym_1') before client loads, fallback to active session gym
+  if (requestedGymId === 'gym_1') {
+    return activeGymId;
+  }
+
   if (!isSuperadmin && requestedGymId && activeGymId !== requestedGymId) {
     throw new Error('Unauthorized: Tenant mismatch');
   }
