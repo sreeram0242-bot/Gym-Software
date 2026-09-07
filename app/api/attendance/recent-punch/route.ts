@@ -42,6 +42,18 @@ export async function GET(req: NextRequest) {
         }
       },
       orderBy: { checkInTime: 'desc' }
+    }).catch(err => {
+      console.error('Error fetching recentStaffs with include:', err);
+      return prisma.staffAttendanceRecord.findMany({
+        where: {
+          gymId,
+          OR: [
+            { checkInTime: { gte: sinceIso } },
+            { checkOutTime: { gte: sinceIso } }
+          ]
+        },
+        orderBy: { checkInTime: 'desc' }
+      });
     });
 
     let punches: any[] = [];

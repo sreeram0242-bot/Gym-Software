@@ -29,6 +29,7 @@ export default function MemberManagementPage() {
   const attendance: any[] = data?.atts || [];
   const settings = data?.gymSettings || null;
   const nextAvailableId = data?.nextId || '';
+  const staffs: any[] = data?.staffs || [];
 
   const gyms: any[] = data?.gyms || [];
   const matchedGym = gyms.find((g: any) => g.id === gymId);
@@ -103,13 +104,24 @@ export default function MemberManagementPage() {
     if (!fingerprintId.trim()) return null;
     const clean = fingerprintId.trim();
     const stripped = clean.replace(/^0+/, '') || clean;
-    return customers.find(c => {
+    const cust = customers.find(c => {
       if (!c.fingerprintId || c.id === editingMemberId) return false;
       const cf = String(c.fingerprintId).trim();
       const cfStripped = cf.replace(/^0+/, '') || cf;
       return cf === clean || cfStripped === stripped;
     });
-  }, [fingerprintId, customers, editingMemberId]);
+    if (cust) return { name: cust.name, type: 'Member' };
+
+    const staff = staffs.find((s: any) => {
+      if (!s.fingerprintId) return false;
+      const sf = String(s.fingerprintId).trim();
+      const sfStripped = sf.replace(/^0+/, '') || sf;
+      return sf === clean || sfStripped === stripped;
+    });
+    if (staff) return { name: staff.name, type: 'Staff' };
+
+    return null;
+  }, [fingerprintId, customers, staffs, editingMemberId]);
 
   // Helper to match card strings with or without leading zeros
   const matchCard = (a?: string | null, b?: string | null) => {
@@ -143,13 +155,22 @@ export default function MemberManagementPage() {
   }, [nfcCardId2, customers, editingMemberId]);
 
   const nextSuggestedId = useMemo(() => {
-    const existingIds = customers
+    const custIds = customers
       .map(c => parseInt(c.fingerprintId, 10))
       .filter(n => !isNaN(n) && n > 0);
-    if (existingIds.length === 0) return nextAvailableId || '001';
-    const nextNum = Math.max(...existingIds) + 1;
-    return String(nextNum).padStart(3, '0');
-  }, [customers, nextAvailableId]);
+    const staffIds = staffs
+      .map((s: any) => parseInt(s.fingerprintId, 10))
+      .filter((n: number) => !isNaN(n) && n > 0);
+    const allIds = [...custIds, ...staffIds];
+
+    if (allIds.length === 0) return nextAvailableId || '001';
+    const nextNum = Math.max(...allIds) + 1;
+    const computedNext = String(nextNum).padStart(3, '0');
+    if (nextAvailableId && parseInt(nextAvailableId, 10) > nextNum) {
+      return nextAvailableId;
+    }
+    return computedNext;
+  }, [customers, staffs, nextAvailableId]);
 
   // Collect Due Modal State
   const [showCollectDueModal, setShowCollectDueModal] = useState(false);
@@ -214,15 +235,16 @@ export default function MemberManagementPage() {
    * from the physical device so it doesn't block future enrollments.
    */
   const closeAddModal = async () => {
-    // If this is a NEW member form (not editing), and a fingerprint or card was sent to the device,
-    // delete the ghost record from the machine so it doesn't block future enrollments.
-    const pinToDelete = lastEnrolledDevicePinRef.current || (
-      !isEditingMember && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS' || fpPollStatus === 'ERROR' || cardPollStatus === 'POLLING' || cardPollStatus === 'SUCCESS')
-        ? fingerprintId.trim()
-        : null
+    // Only delete if a biometric enroll was actually triggered in this modal session and not yet saved
+    const pinToDelete = lastEnrolledDevicePinRef.current;
+    
+    // Safety: ensure this PIN does not belong to an already saved customer or staff
+    const isExistingMember = pinToDelete && customers.some((c: any) => 
+      c.fingerprintId && String(c.fingerprintId).trim() === String(pinToDelete).trim()
     );
-    if (!isEditingMember && pinToDelete) {
-      console.log(`[Ghost Cleanup] Cancelling modal with enrolled PIN ${pinToDelete}. Deleting from machine.`);
+
+    if (!isEditingMember && pinToDelete && !isExistingMember) {
+      console.log(`[Ghost Cleanup] Cancelling modal with unsaved enrolled PIN ${pinToDelete}. Cleaning up from device.`);
       fetch('/api/biometrics/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -247,13 +269,12 @@ export default function MemberManagementPage() {
   // Handle ghost fingerprint cleanup on browser tab close / refresh
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      const pinToDelete = lastEnrolledDevicePinRef.current || (
-        !isEditingMember && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS' || fpPollStatus === 'ERROR' || cardPollStatus === 'POLLING' || cardPollStatus === 'SUCCESS')
-          ? fingerprintId.trim()
-          : null
+      const pinToDelete = lastEnrolledDevicePinRef.current;
+      const isExistingMember = pinToDelete && customers.some((c: any) => 
+        c.fingerprintId && String(c.fingerprintId).trim() === String(pinToDelete).trim()
       );
-      if (!isEditingMember && pinToDelete) {
-        // keepalive: true ensures the request survives the page unload
+
+      if (!isEditingMember && pinToDelete && !isExistingMember && fpPollStatus === 'POLLING') {
         fetch('/api/biometrics/delete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -264,7 +285,7 @@ export default function MemberManagementPage() {
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isEditingMember, fingerprintId, fpPollStatus, cardPollStatus, gymId]);
+  }, [isEditingMember, fpPollStatus, gymId, customers]);
 
   const handleDeleteMember = (id: string) => {
     setConfirmDialog({
@@ -1081,7 +1102,7 @@ export default function MemberManagementPage() {
     setNfcCardId('');
     setNfcCardId2('');
     setShowSecondaryNfc(false);
-    setFingerprintId(nextSuggestedId);
+    setFingerprintId(nextAvailableId || nextSuggestedId);
     setFeeAmount(2500);
     setPaidAmount(2500);
     setInfoMsg('');
@@ -1657,17 +1678,17 @@ export default function MemberManagementPage() {
                       <div className="mt-1 flex flex-col gap-0.5 animate-in fade-in duration-150">
                         <p className="text-[11px] font-bold text-rose-600 flex items-center gap-1">
                           <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          Already assigned to {duplicateMember.name}!
+                          Already assigned to {duplicateMember.type}: {duplicateMember.name}!
                         </p>
                         <button
                           type="button"
                           onClick={() => {
-                            setFingerprintId(nextSuggestedId);
+                            setFingerprintId(nextAvailableId || nextSuggestedId);
                             if (fpPollStatus === 'SUCCESS') setFpPollStatus('IDLE');
                           }}
                           className="text-[10px] text-blue-700 hover:text-blue-900 font-bold underline text-left cursor-pointer"
                         >
-                          👉 Click to use next free ID: {nextSuggestedId}
+                          👉 Click to use next free ID: {nextAvailableId || nextSuggestedId}
                         </button>
                       </div>
                     )}

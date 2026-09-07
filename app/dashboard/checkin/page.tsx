@@ -94,6 +94,50 @@ export default function CheckInTerminal() {
     prevAttRef.current = attendance;
   }, [attendance]);
 
+  const prevStaffAttRef = useRef<any[]>([]);
+
+  useEffect(() => {
+    if (prevStaffAttRef.current.length > 0 && staffAttendance.length > 0) {
+      const prevIds = new Set(prevStaffAttRef.current.map(a => a.id));
+      const newPunches = staffAttendance.filter(a => !prevIds.has(a.id));
+
+      if (newPunches.length > 0) {
+        if (typeof window !== 'undefined') {
+          newPunches.forEach(punch => {
+            const staffObj = staffs.find(s => s.id === punch.staffId);
+            window.dispatchEvent(new CustomEvent('staff_punch_event', {
+              detail: {
+                staffName: punch.staffName,
+                staffRole: staffObj?.role || 'Staff',
+                action: 'checkin',
+                durationMinutes: null
+              }
+            }));
+          });
+        }
+      } else {
+        const prevActive = new Map(prevStaffAttRef.current.filter(a => !a.checkOutTime).map(a => [a.id, a]));
+        const checkedOut = staffAttendance.filter(a => a.checkOutTime && prevActive.has(a.id));
+        if (checkedOut.length > 0) {
+          if (typeof window !== 'undefined') {
+            checkedOut.forEach(checkout => {
+              const staffObj = staffs.find(s => s.id === checkout.staffId);
+              window.dispatchEvent(new CustomEvent('staff_punch_event', {
+                detail: {
+                  staffName: checkout.staffName,
+                  staffRole: staffObj?.role || 'Staff',
+                  action: 'checkout',
+                  durationMinutes: checkout.durationMinutes
+                }
+              }));
+            });
+          }
+        }
+      }
+    }
+    prevStaffAttRef.current = staffAttendance;
+  }, [staffAttendance, staffs]);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && 'NDEFReader' in window) {
       setNfcSupported(true);

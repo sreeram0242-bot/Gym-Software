@@ -250,12 +250,17 @@ export class WhatsAppManager {
       const footer = '\n\n---\nReply *start* to see the main menu anytime.';
       let replyText = '';
 
-      if (cleanText === '1') {
+      const isPlanOrDue = cleanText === 'plan' || cleanText === 'due date' || cleanText === 'due' || cleanText === '1';
+      const isPayment = cleanText === 'payment' || cleanText === 'payments' || cleanText === '2';
+      const isAttendance = cleanText === 'attendance' || cleanText === 'attend' || cleanText === '3';
+      const isStart = cleanText === 'start' || cleanText === 'menu' || cleanText === 'hi' || cleanText === 'hello';
+
+      if (isPlanOrDue) {
         const balanceNotice = (customer.pendingBalance || 0) > 0 
           ? `\n⏳ *Pending Balance:* ₹${customer.pendingBalance}${customer.balanceDueDate ? ` (Due by ${formatDateDDMMYYYY(customer.balanceDueDate)})` : ''}`
           : '';
         replyText = `📋 *Your Plan Details*\n\n*Name:* ${customer.name}\n*Plan:* ${customer.planType}\n*Fee Amount:* ₹${customer.feeAmount}${balanceNotice}\n*Next Due Date:* ${formatDateDDMMYYYY(customer.nextDueDate)}`;
-      } else if (cleanText === '2') {
+      } else if (isPayment) {
         const txs = await db.transaction.findMany({
           where: { customerId: customer.id, type: 'INCOME' },
           orderBy: { date: 'desc' },
@@ -269,7 +274,7 @@ export class WhatsAppManager {
             return `• ₹${t.amount}${methodTag} on ${formatDateDDMMYYYY(t.date)}`;
           }).join('\n');
         }
-      } else if (cleanText === '3') {
+      } else if (isAttendance) {
         const atts = await db.attendanceRecord.findMany({
           where: { customerId: customer.id, durationMinutes: { not: null } },
           orderBy: { checkInTime: 'desc' },
@@ -284,7 +289,7 @@ export class WhatsAppManager {
             return `• ${date}: ${hrs} hours`;
           }).join('\n');
         }
-      } else if (cleanText === 'start') {
+      } else if (isStart) {
         const rawTemplate = getTemplate(settings, 'welcome');
         
         let gymName = 'Our Gym';
@@ -306,7 +311,7 @@ export class WhatsAppManager {
         });
         
         // Append menu options to the welcome message
-        replyText += '\n\n---\nReply *1* to view your Plan Details\nReply *2* for Payment History\nReply *3* for Attendance Logs';
+        replyText += '\n\n---\nReply *plan* or *due date* to view your Plan Details\nReply *payment* for Payment History\nReply *attendance* for Attendance Logs';
       } else {
         console.log('[WA DEBUG] Keyword not matched. Ignore.');
         return; 
@@ -324,7 +329,7 @@ export class WhatsAppManager {
 
       // Send the auto-reply
       console.log('[WA DEBUG] Queuing message reply...');
-      const finalReply = cleanText === 'start' ? replyText : replyText + footer;
+      const finalReply = isStart ? replyText : replyText + footer;
       await WhatsAppManager.sendMessage(gymId, fullPhone, finalReply, undefined, true);
       console.log('[WA DEBUG] Message queued successfully');
       } catch (eventErr) {
@@ -384,7 +389,7 @@ export class WhatsAppManager {
       try {
         const settings = await db.gymSettings.findUnique({ where: { gymId } });
         if (settings?.waAutoReply) {
-          finalMessage += '\n\n---\nReply *1* to view your Plan Details\nReply *2* for Payment History\nReply *3* for Attendance Logs\nReply *start* to see this menu anytime!';
+          finalMessage += '\n\n---\nReply *plan* or *due date* to view your Plan Details\nReply *payment* for Payment History\nReply *attendance* for Attendance Logs\nReply *start* to see this menu anytime!';
         }
       } catch (e) {}
     }

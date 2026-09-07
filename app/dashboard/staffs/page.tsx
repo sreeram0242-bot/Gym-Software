@@ -19,6 +19,7 @@ export default function StaffPage() {
 
   const { data, isLoading, mutate } = useStaffsData(gymId);
   const staffs = data?.staffs || [];
+  const customers = data?.custs || [];
   const attendance = data?.atts || [];
   const gymSettings = data?.gymSettings || {};
   const nextAvailableId = data?.nextId || '';
@@ -64,8 +65,26 @@ export default function StaffPage() {
 
   const duplicateMember = useMemo(() => {
     if (!fingerprintId.trim()) return null;
-    return staffs.find(s => s.fingerprintId && String(s.fingerprintId).trim() === fingerprintId.trim() && s.id !== editingStaffId);
-  }, [fingerprintId, staffs, editingStaffId]);
+    const clean = fingerprintId.trim();
+    const stripped = clean.replace(/^0+/, '') || clean;
+    const staff = staffs.find(s => {
+      if (!s.fingerprintId || s.id === editingStaffId) return false;
+      const sf = String(s.fingerprintId).trim();
+      const sfStripped = sf.replace(/^0+/, '') || sf;
+      return sf === clean || sfStripped === stripped;
+    });
+    if (staff) return { name: staff.name, type: 'Staff' };
+
+    const cust = customers.find((c: any) => {
+      if (!c.fingerprintId) return false;
+      const cf = String(c.fingerprintId).trim();
+      const cfStripped = cf.replace(/^0+/, '') || cf;
+      return cf === clean || cfStripped === stripped;
+    });
+    if (cust) return { name: cust.name, type: 'Member' };
+
+    return null;
+  }, [fingerprintId, staffs, customers, editingStaffId]);
 
   const matchCard = (a?: string | null, b?: string | null) => {
     if (!a || !b) return false;
@@ -174,12 +193,12 @@ export default function StaffPage() {
   // Fix: Handle Ghost Fingerprint cleanup on tab close
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      const pinToDelete = lastEnrolledDevicePinRef.current || (
-        !isEditingStaff && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS' || fpPollStatus === 'ERROR' || cardPollStatus === 'POLLING' || cardPollStatus === 'SUCCESS')
-          ? fingerprintId.trim()
-          : null
+      const pinToDelete = lastEnrolledDevicePinRef.current;
+      const isExistingStaff = pinToDelete && staffs.some((s: any) => 
+        s.fingerprintId && String(s.fingerprintId).trim() === String(pinToDelete).trim()
       );
-      if (!isEditingStaff && pinToDelete) {
+
+      if (!isEditingStaff && pinToDelete && !isExistingStaff && fpPollStatus === 'POLLING') {
         fetch('/api/biometrics/delete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -190,16 +209,16 @@ export default function StaffPage() {
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isEditingStaff, fingerprintId, fpPollStatus, cardPollStatus, gymId]);
+  }, [isEditingStaff, fpPollStatus, gymId, staffs]);
 
   // Handle centralized closing of the add/edit modal (to cleanup ghosts)
   const closeStaffModal = async () => {
-    const pinToDelete = lastEnrolledDevicePinRef.current || (
-      !isEditingStaff && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS' || fpPollStatus === 'ERROR' || cardPollStatus === 'POLLING' || cardPollStatus === 'SUCCESS')
-        ? fingerprintId.trim()
-        : null
+    const pinToDelete = lastEnrolledDevicePinRef.current;
+    const isExistingStaff = pinToDelete && staffs.some((s: any) => 
+      s.fingerprintId && String(s.fingerprintId).trim() === String(pinToDelete).trim()
     );
-    if (!isEditingStaff && pinToDelete) {
+
+    if (!isEditingStaff && pinToDelete && !isExistingStaff) {
       fetch('/api/biometrics/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

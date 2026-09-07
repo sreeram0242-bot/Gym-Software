@@ -93,38 +93,6 @@ export async function POST(req: Request) {
         console.log(`[Enroll] Cancelled ${cancelledCount.count} stale ENROLL_FP command(s) for PIN ${numericPin} before creating new one.`);
       }
 
-      // Also clean up any existing user/template or legacy space/colon-corrupted ghost user on the device so it does not conflict
-      const trimmed = numericPin.replace(/^0+/, '') || numericPin;
-      const legacyGhostPins = Array.from(new Set([
-        numericPin,
-        trimmed,
-        `${numericPin} FID=0 RETRY=3 OVERW`,
-        `${trimmed} FID=0 RETRY=3 OVERW`,
-        `${numericPin} FID=0 RETRY=3`,
-        `${trimmed} FID=0 RETRY=3`,
-        `${numericPin}:FID=0:RETRY=3:OVERW`,
-        `${trimmed}:FID=0:RETRY=3:OVERW`,
-        `${numericPin}:FID=0:RETRY=3`,
-        `${trimmed}:FID=0:RETRY=3`,
-        `${numericPin}:FID=0`,
-        `${trimmed}:FID=0`
-      ]));
-      for (const gp of legacyGhostPins) {
-        await prisma.biometricCommand.create({
-          data: {
-            deviceId: device.id,
-            commandString: `DATA DELETE USERINFO PIN=${gp}`,
-            status: 'PENDING'
-          }
-        });
-        await prisma.biometricCommand.create({
-          data: {
-            deviceId: device.id,
-            commandString: `DATA DELETE FINGERTMP PIN=${gp}\tFID=0`,
-            status: 'PENDING'
-          }
-        });
-      }
     }
 
     // In ZKTeco ADMS protocol, parameters MUST be separated by tab (\t).

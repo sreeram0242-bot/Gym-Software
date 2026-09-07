@@ -887,14 +887,7 @@ async function queueBiometricUserDeletion(gymId: string, pin: string) {
   const cleanPin = String(pin).trim();
   const numericPin = cleanPin.replace(/\D/g, '');
   const trimmedPin = numericPin.replace(/^0+/, '') || numericPin;
-  const pinsToDelete = Array.from(new Set([
-    cleanPin, 
-    trimmedPin,
-    `${cleanPin} FID=0 RETRY=3 OVERW`,
-    `${trimmedPin} FID=0 RETRY=3 OVERW`,
-    `${cleanPin}:FID=0:RETRY=3:OVERW`,
-    `${trimmedPin}:FID=0:RETRY=3:OVERW`
-  ])).filter(Boolean);
+  const pinsToDelete = Array.from(new Set([cleanPin, numericPin, trimmedPin])).filter(Boolean);
 
   try {
     const devices = await prisma.biometricDevice.findMany({
@@ -2416,20 +2409,24 @@ export async function getBiometricDevice(gymId: string) {
 }
 
 export async function getNextAvailableZkTecoId(gymId: string): Promise<string> {
+  const authorizedGymId = verifyTenantAccess(gymId);
+  if (!authorizedGymId) throw new Error("Unauthorized");
+  gymId = authorizedGymId;
+
   try {
     const customers = await prisma.customer.findMany({
-      where: { gymId, fingerprintId: { not: null } },
+      where: { gymId, fingerprintId: { not: null }, isArchived: false },
       select: { fingerprintId: true }
     });
     
     const staffs = await prisma.staff.findMany({
-      where: { gymId, fingerprintId: { not: null } },
+      where: { gymId, fingerprintId: { not: null }, isArchived: false },
       select: { fingerprintId: true }
     });
 
     const allIds = [
-      ...customers.map(c => Number(c.fingerprintId)).filter(n => !isNaN(n)),
-      ...staffs.map(s => Number(s.fingerprintId)).filter(n => !isNaN(n))
+      ...customers.map(c => Number(c.fingerprintId)).filter(n => !isNaN(n) && n > 0),
+      ...staffs.map(s => Number(s.fingerprintId)).filter(n => !isNaN(n) && n > 0)
     ];
 
     if (allIds.length === 0) return '001';
@@ -2437,10 +2434,7 @@ export async function getNextAvailableZkTecoId(gymId: string): Promise<string> {
     const nextId = Math.max(...allIds) + 1;
     return nextId.toString().padStart(3, '0');
   } catch (e) {
-  const authorizedGymId = verifyTenantAccess(gymId);
-  if (!authorizedGymId) throw new Error("Unauthorized");
-  gymId = authorizedGymId;
-
+    console.error('Error in getNextAvailableZkTecoId:', e);
     return '001';
   }
 }

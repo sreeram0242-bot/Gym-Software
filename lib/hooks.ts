@@ -43,16 +43,17 @@ export function useOverviewData(gymId: string) {
 
 // 2. Members Page Data
 const fetchMembers = async (gymId: string) => {
-  const [gyms, custs, atts, ps, txs, gymSettings, nextId] = await Promise.all([
+  const [gyms, custs, atts, ps, txs, gymSettings, nextId, staffsList] = await Promise.all([
     getGyms(),
     getCustomers(gymId),
     getAttendance(gymId),
     getSubscriptionPlans(gymId),
     getTransactions(gymId),
     getGymSettings(gymId),
-    getNextAvailableZkTecoId(gymId)
+    getNextAvailableZkTecoId(gymId),
+    getStaffs(gymId)
   ]);
-  return { gyms, custs, atts, ps, txs, gymSettings, nextId };
+  return { gyms, custs, atts, ps, txs, gymSettings, nextId, staffs: staffsList };
 };
 export const preloadMembers = (gymId: string) => preload(gymId ? ['members', gymId] : null, () => fetchMembers(gymId));
 export function useMembersData(gymId: string) {
@@ -61,14 +62,15 @@ export function useMembersData(gymId: string) {
 
 // 3. Staffs Page Data
 const fetchStaffs = async (gymId: string) => {
-  const [gyms, staffsList, atts, gymSettings, nextId] = await Promise.all([
+  const [gyms, staffsList, atts, gymSettings, nextId, custs] = await Promise.all([
     getGyms(),
     getStaffs(gymId),
     getStaffAttendance(gymId),
     getGymSettings(gymId),
-    getNextAvailableZkTecoId(gymId)
+    getNextAvailableZkTecoId(gymId),
+    getCustomers(gymId)
   ]);
-  return { gyms, staffs: staffsList, atts, gymSettings, nextId };
+  return { gyms, staffs: staffsList, atts, gymSettings, nextId, custs };
 };
 export const preloadStaffs = (gymId: string) => preload(gymId ? ['staffs', gymId] : null, () => fetchStaffs(gymId));
 export function useStaffsData(gymId: string) {

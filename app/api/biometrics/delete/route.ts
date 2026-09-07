@@ -18,6 +18,41 @@ export async function POST(req: Request) {
 
     console.log(`[Biometrics Delete] Attempting to delete PIN "${cleanPin}" (trimmed: "${trimmedPin}") for gym ${gymId}`);
 
+    // SAFETY CHECK: Never delete from the machine if this PIN belongs to a saved, active customer or staff member!
+    const activeCustomer = await prisma.customer.findFirst({
+      where: {
+        gymId,
+        isArchived: false,
+        OR: [
+          { fingerprintId: cleanPin },
+          { fingerprintId: numericPin },
+          { fingerprintId: trimmedPin }
+        ]
+      }
+    });
+
+    const activeStaff = await prisma.staff.findFirst({
+      where: {
+        gymId,
+        isArchived: false,
+        OR: [
+          { fingerprintId: cleanPin },
+          { fingerprintId: numericPin },
+          { fingerprintId: trimmedPin }
+        ]
+      }
+    });
+
+    if (activeCustomer || activeStaff) {
+      const ownerName = activeCustomer ? `member "${activeCustomer.name}"` : `staff "${activeStaff?.name}"`;
+      console.warn(`[Biometrics Delete] BLOCKED deletion: PIN "${cleanPin}" belongs to active ${ownerName}. Will NOT delete from device.`);
+      return NextResponse.json({ 
+        success: false, 
+        blocked: true, 
+        message: `PIN ${cleanPin} belongs to saved active ${ownerName} and was preserved on machine.` 
+      });
+    }
+
     // 1. Cancel in-flight enrollment and queue ADMS delete commands immediately
     const devices = await prisma.biometricDevice.findMany({
       where: { gymId }
@@ -45,24 +80,11 @@ export async function POST(req: Request) {
         data: { status: 'FAILED', completedAt: new Date() }
       }).catch(console.error);
 
-      // Queue user delete for clean, trimmed, and any legacy space/colon-corrupted suffix pins so device completely wipes the ghost user and template
-      const explicitPins = Array.from(new Set([
-        cleanPin,
-        trimmedPin,
-        `${cleanPin} FID=0 RETRY=3 OVERW`,
-        `${trimmedPin} FID=0 RETRY=3 OVERW`,
-        `${cleanPin} FID=0 RETRY=3`,
-        `${trimmedPin} FID=0 RETRY=3`,
-        `${cleanPin}:FID=0:RETRY=3:OVERW`,
-        `${trimmedPin}:FID=0:RETRY=3:OVERW`,
-        `${cleanPin}:FID=0:RETRY=3`,
-        `${trimmedPin}:FID=0:RETRY=3`,
-        `${cleanPin}:FID=0`,
-        `${trimmedPin}:FID=0`
-      ])).filter(Boolean);
+      // Queue user and finger delete for clean and trimmed pin variants
+      const pinsToDelete = Array.from(new Set([cleanPin, numericPin, trimmedPin])).filter(Boolean);
 
       for (const device of devices) {
-        for (const p of explicitPins) {
+        for (const p of pinsToDelete) {
           await prisma.biometricCommand.create({
             data: {
               deviceId: device.id,

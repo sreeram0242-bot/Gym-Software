@@ -112,12 +112,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const processedPunchIds = new Set<string>();
       let punchQueue: any[] = [];
       let isShowingPopup = false;
+      let notificationTimeout: NodeJS.Timeout | undefined;
       let lastPollTime = Date.now() - 90000; // Start looking up to 1.5 mins ago for missed background punches
 
       const checkRecentPunch = async (id: string) => {
         if (typeof document !== 'undefined' && document.hidden) return;
         try {
-          const res = await fetch(`/api/attendance/recent-punch?gymId=${id}&since=${lastPollTime}`);
+          const fetchSince = Math.max(0, lastPollTime - 10000);
+          const res = await fetch(`/api/attendance/recent-punch?gymId=${id}&since=${fetchSince}`);
           lastPollTime = Date.now();
           if (res.ok) {
             const data = await res.json();
@@ -178,17 +180,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       runDailyReminders(matched.id);
 
       // Global NFC scanner keyboard listener
-      // Only active when the gym has USB NFC card attendance enabled.
-      // We read from localStorage (set above) because React state is stale in this closure.
-      const nfcEnabled = typeof window !== 'undefined'
-        ? localStorage.getItem('nfc_listener_enabled') !== 'false'
-        : true;
-      if (!nfcEnabled) return;
       let buffer = '';
       let lastKeyTime = Date.now();
-      let notificationTimeout: NodeJS.Timeout;
 
       const handleKeyDown = async (e: KeyboardEvent) => {
+        // Only active when the gym has USB NFC card attendance enabled
+        const isNfcActive = typeof window !== 'undefined'
+          ? localStorage.getItem('nfc_listener_enabled') !== 'false'
+          : true;
+        if (!isNfcActive) return;
+
         // Don't intercept if they are actively typing in an input/textarea
         const target = e.target as HTMLElement;
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
