@@ -1790,17 +1790,20 @@ export async function authenticateGym(userId: string, password: string) {
       return { success: false, error: 'Invalid Gym User ID or Password.' };
     }
 
-    if (gym.status === 'suspended') {
-      return { success: false, error: 'Your account has been suspended. Please contact the Master Admin.' };
-    }
-    
-    if (gym.status === 'locked') {
-      return { success: false, error: 'Your account is locked due to too many failed attempts. Please contact the Master Admin.' };
+    if (gym.status === 'suspended' || gym.status === 'locked') {
+      cookies().set('active_gym_id', gym.id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+      return { 
+        success: false, 
+        suspended: true, 
+        status: gym.status,
+        gym: { id: gym.id, userId: gym.userId, status: gym.status }, 
+        error: gym.status === 'locked' ? 'Your account is locked due to too many failed attempts. Please contact the Master Admin.' : 'Your account has been suspended. Please contact the Master Admin.' 
+      };
     }
 
     resetFailedAttempts(userId);
     cookies().set('active_gym_id', gym.id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
-    return { success: true, gym: { id: gym.id, userId: gym.userId } };
+    return { success: true, gym: { id: gym.id, userId: gym.userId, status: gym.status } };
   } catch (e) {
     // Fallback to mock store
     const rateLimit = checkRateLimit(userId);
@@ -1826,16 +1829,25 @@ export async function authenticateGym(userId: string, password: string) {
       return { success: false, error: 'Invalid Gym User ID or Password.' };
     }
     
-    if (gym.status === 'suspended') {
-      return { success: false, error: 'Your account has been suspended. Please contact the Master Admin.' };
-    }
-    if (gym.status === 'locked') {
-      return { success: false, error: 'Your account is locked due to too many failed attempts. Please contact the Master Admin.' };
+    if (gym.status === 'suspended' || gym.status === 'locked') {
+      cookies().set('active_gym_id', gym.id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
+      return { 
+        success: false, 
+        suspended: true, 
+        status: gym.status,
+        gym: { id: gym.id, userId: gym.userId, status: gym.status }, 
+        error: gym.status === 'locked' ? 'Your account is locked due to too many failed attempts. Please contact the Master Admin.' : 'Your account has been suspended. Please contact the Master Admin.' 
+      };
     }
     resetFailedAttempts(userId);
     cookies().set('active_gym_id', gym.id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
-    return { success: true, gym: { id: gym.id, userId: gym.userId } };
+    return { success: true, gym: { id: gym.id, userId: gym.userId, status: gym.status } };
   }
+}
+
+export async function logoutGym() {
+  cookies().delete('active_gym_id');
+  return { success: true };
 }
 
 export async function authenticateSuperadmin(userId: string, passwordHash: string) {

@@ -31,6 +31,12 @@ export default function LandingPage() {
           localStorage.setItem('active_gym_user_id', response.gym.userId);
         }
         router.push('/dashboard');
+      } else if (response.suspended && response.gym) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('active_gym_id', response.gym.id);
+          localStorage.setItem('active_gym_user_id', response.gym.userId);
+        }
+        router.push('/dashboard');
       } else {
         setErrorMsg(response.error || 'Invalid Gym User ID or Password.');
       }

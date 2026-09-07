@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle, Megaphone, Lock, CheckCircle, Store, Briefcase, UserCheck } from 'lucide-react';
+import { LayoutDashboard, Smartphone, Users, Bell, CreditCard, Dumbbell, ShieldCheck, ChevronDown, LogOut, Sparkles, X, Settings, AlertTriangle, AlertCircle, Megaphone, Lock, CheckCircle, Store, Briefcase, UserCheck } from 'lucide-react';
 import { getGyms, findCustomerByNFC, findStaffByNFC, toggleCheckIn, toggleStaffCheckIn, getMemberMonthlyAvgHours, getCustomers, getGymSettings, getActiveAnnouncement } from '@/lib/actions';
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
@@ -45,8 +45,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
 
-      // Find gym. Master admins can view suspended gyms.
-      const matched = loadedGyms.find((g: any) => g.id === savedId && (g.status === 'active' || isMasterAdmin));
+      // Find gym
+      const matched = loadedGyms.find((g: any) => g.id === savedId);
       
       if (!matched) {
         if (typeof window !== 'undefined') {
@@ -57,6 +57,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
       
       setCurrentGym(matched);
+
+      // If gym is suspended or locked and user is NOT a superadmin impersonating,
+      // halt layout initialization immediately so the full-screen blocker is shown.
+      if ((matched.status === 'suspended' || matched.status === 'locked') && !isMasterAdmin) {
+        return;
+      }
 
       // Load gym settings for feature toggles
       try {
@@ -395,31 +401,91 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     };
     window.addEventListener('settings_updated', handleSettingsUpdate);
-    return () => window.removeEventListener('settings_updated', handleSettingsUpdate);
+
+    // Periodic status check (every 3 seconds) to detect real-time suspension or reactivation
+    const pollInterval = setInterval(async () => {
+      const activeId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
+      if (!activeId) return;
+      try {
+        const latestGyms = await getGyms();
+        const current = latestGyms.find((g: any) => g.id === activeId);
+        if (current) {
+          setCurrentGym(prev => {
+            if (!prev || prev.status !== current.status) {
+              return current;
+            }
+            return prev;
+          });
+        }
+      } catch (e) {}
+    }, 3000);
+
+    return () => {
+      window.removeEventListener('settings_updated', handleSettingsUpdate);
+      clearInterval(pollInterval);
+    };
   }, []);
 
   if (!currentGym) return null; // Loading or unauthorized
 
-  // Handle suspended gym state for normal users
-  if (currentGym.status === 'suspended' && !isMasterAdmin) {
+  // Handle suspended or locked gym state for normal users (BLOCKS ALL PAGES & ALL OPTIONS)
+  if ((currentGym.status === 'suspended' || currentGym.status === 'locked') && !isMasterAdmin) {
+    const isLocked = currentGym.status === 'locked';
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-full max-w-md bg-white border border-rose-200 rounded-2xl shadow-xl overflow-hidden p-8">
-          <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Lock className="w-8 h-8 text-rose-600" />
+      <div className="fixed inset-0 z-[99999] bg-slate-950/85 backdrop-blur-xl flex flex-col items-center justify-center p-4 sm:p-6 text-center select-none overflow-y-auto">
+        <div className="w-full max-w-lg bg-white border border-rose-200 rounded-3xl shadow-2xl p-6 sm:p-10 animate-in zoom-in-95 duration-200 relative overflow-hidden">
+          {/* Top Red Accent Stripe */}
+          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500" />
+          
+          <div className="w-20 h-20 bg-rose-100 text-rose-600 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-inner border border-rose-200">
+            <Lock className="w-10 h-10 text-rose-600" />
           </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2">Account Suspended</h2>
-          <p className="text-slate-500 mb-8">
-            Your gym platform access has been temporarily suspended due to billing or policy violations. Please contact the platform administrator to restore your access.
+
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200 mb-3 shadow-2xs">
+            <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+            {isLocked ? 'Account Locked' : 'Account Suspended'}
+          </span>
+
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3 tracking-tight">
+            {isLocked ? 'Account Temporarily Locked' : 'Your Account Has Been Suspended'}
+          </h2>
+
+          <p className="text-slate-600 text-sm leading-relaxed mb-6 font-medium">
+            Access to all dashboard pages, member records, attendance terminals, and settings for{' '}
+            <span className="font-bold text-slate-900">{currentGym.name || 'your gym'}</span> has been suspended by the platform administrator.
           </p>
+
+          <div className="bg-rose-50/70 border border-rose-200/90 rounded-2xl p-4 mb-6 text-left space-y-2 text-xs text-slate-700 shadow-inner">
+            <p className="font-bold text-rose-900 flex items-center gap-1.5 text-xs">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" /> Why is my account suspended?
+            </p>
+            <p className="text-slate-600 pl-5 leading-normal">
+              {isLocked 
+                ? 'Your account was locked due to multiple consecutive failed login attempts.' 
+                : 'Suspension usually occurs due to pending software subscription payments, billing expiration, or policy violation.'}
+            </p>
+            <p className="font-bold pt-1 pl-5 text-rose-700">
+              Please contact the Super Admin / Platform Owner to reactivate access to your gym platform.
+            </p>
+          </div>
+
           <button
-            onClick={() => {
-              if (typeof window !== 'undefined') localStorage.removeItem('active_gym_id');
+            type="button"
+            onClick={async () => {
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('active_gym_id');
+                localStorage.removeItem('active_gym_user_id');
+              }
+              try {
+                const { logoutGym } = await import('@/lib/actions');
+                await logoutGym();
+              } catch(e) {}
               router.push('/');
             }}
-            className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-md"
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-md text-sm cursor-pointer flex items-center justify-center gap-2"
           >
-            Return to Login
+            <LogOut className="w-4 h-4" />
+            <span>Logout & Return to Login</span>
           </button>
         </div>
       </div>

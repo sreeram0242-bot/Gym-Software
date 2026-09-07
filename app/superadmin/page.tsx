@@ -36,6 +36,7 @@ export default function SuperAdminPage() {
   // Global Customer Search State
   const [searchPhoneQuery, setSearchPhoneQuery] = useState('');
   const [searchedCustomer, setSearchedCustomer] = useState<any | null>(null);
+  const [actionFeedback, setActionFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Load Data
   useEffect(() => {
@@ -135,8 +136,17 @@ export default function SuperAdminPage() {
 
   const handleToggleSuspend = async (gymId: string, currentStatus: string) => {
     const newStatus = (currentStatus === 'suspended' || currentStatus === 'locked') ? 'active' : 'suspended';
-    await updateGymStatus(gymId, newStatus);
-    loadData();
+    try {
+      await updateGymStatus(gymId, newStatus);
+      setActionFeedback({
+        message: `Gym status updated to ${newStatus.toUpperCase()}! Any active session for this gym will be ${newStatus === 'suspended' ? 'immediately blocked' : 'restored'}.`,
+        type: newStatus === 'active' ? 'success' : 'error'
+      });
+      setTimeout(() => setActionFeedback(null), 5000);
+      await loadData();
+    } catch (e: any) {
+      setActionFeedback({ message: `Failed to update gym status: ${e.message}`, type: 'error' });
+    }
   };
 
   const handleCreateAnnouncement = async (e: React.FormEvent) => {
@@ -277,6 +287,18 @@ export default function SuperAdminPage() {
         {/* TAB 1: MANAGE GYMS LIST */}
         {activeTab === 'gyms' && (
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            {actionFeedback && (
+              <div className={`p-4 border-b text-xs sm:text-sm font-bold flex items-center justify-between animate-in slide-in-from-top duration-200 ${
+                actionFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
+              }`}>
+                <div className="flex items-center space-x-2">
+                  {actionFeedback.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" /> : <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />}
+                  <span>{actionFeedback.message}</span>
+                </div>
+                <button onClick={() => setActionFeedback(null)} className="text-slate-400 hover:text-slate-600 font-bold ml-3 text-xs">Dismiss</button>
+              </div>
+            )}
+
             <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-slate-50/50">
               <div>
                 <h2 className="font-bold text-slate-900 text-base">Registered Gym Partners</h2>
@@ -340,16 +362,16 @@ export default function SuperAdminPage() {
 
                       <td className="py-3 px-4 text-center">
                         {gym.status === 'active' ? (
-                          <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-md flex items-center w-fit mx-auto">
-                            <CheckCircle className="w-3 h-3 mr-1" /> Active
+                          <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold flex items-center w-fit mx-auto">
+                            <CheckCircle className="w-3.5 h-3.5 mr-1" /> Active
                           </span>
                         ) : gym.status === 'locked' ? (
-                          <span className="px-2 py-1 bg-rose-100 text-rose-700 rounded-md flex items-center w-fit mx-auto font-bold animate-pulse">
-                            <Lock className="w-3 h-3 mr-1" /> Locked
+                          <span className="px-2.5 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-bold flex items-center w-fit mx-auto animate-pulse">
+                            <Lock className="w-3.5 h-3.5 mr-1" /> Locked
                           </span>
                         ) : (
-                          <span className="px-2 py-1 bg-rose-100 text-rose-700 rounded-md flex items-center w-fit mx-auto">
-                            <AlertCircle className="w-3 h-3 mr-1" /> Suspended
+                          <span className="px-2.5 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-bold flex items-center w-fit mx-auto border border-rose-200">
+                            <AlertCircle className="w-3.5 h-3.5 mr-1 text-rose-600" /> Suspended
                           </span>
                         )}
                       </td>
@@ -358,17 +380,22 @@ export default function SuperAdminPage() {
                         <div className="flex items-center justify-end space-x-2">
                           <button 
                             onClick={() => handleLoginAs(gym.id)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="Login as Gym"
+                            className="p-1.5 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
+                            title="Login as Gym (Admin Mode)"
                           >
                             <Sparkles className="w-4 h-4" />
                           </button>
                           <button 
                             onClick={() => handleToggleSuspend(gym.id, gym.status)}
-                            className={`p-1.5 rounded transition-colors ${gym.status === 'active' ? 'text-rose-600 hover:bg-rose-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
-                            title={gym.status === 'active' ? 'Suspend Gym' : 'Reactivate Gym'}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs ${
+                              gym.status === 'active' 
+                                ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200' 
+                                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                            }`}
+                            title={gym.status === 'active' ? 'Suspend Gym Access' : 'Reactivate Gym Access'}
                           >
-                            {gym.status === 'active' ? <Lock className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                            {gym.status === 'active' ? <Lock className="w-3.5 h-3.5 text-rose-600" /> : <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />}
+                            <span>{gym.status === 'active' ? 'Suspend' : 'Reactivate'}</span>
                           </button>
                         </div>
                       </td>
