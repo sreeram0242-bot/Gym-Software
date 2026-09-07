@@ -65,89 +65,87 @@ export async function POST(req: Request) {
     for (let line of lines) {
       line = line.trim();
       if (!line) continue;
-      // Newer ZKTeco firmwares send Fingerprint 10.0 data as "BIODATA PIN=" 
-      // instead of "FP PIN=". Some send "USER PIN=". 
-      // We look for fingerprint enrollment data lines containing "PIN=" followed by digits.
-      // IMPORTANT: We must NOT match "DATA DELETE USERINFO PIN=" lines (delete ACKs from device)
-      // as those would falsely mark an ENROLL_FP command as SUCCESS.
-      const isDeleteAck = line.includes('DATA DELETE') || line.includes('DELETE USERINFO');
-      const isUpdateAck = line.includes('DATA UPDATE') || line.includes('UPDATE USERINFO');
-      if (!isDeleteAck && !isUpdateAck && line.includes('PIN=')) {
-        const match = line.match(/PIN=(\d+)/);
-        if (match) {
-          const enrolledPin = match[1];
-          const pinNum = parseInt(enrolledPin, 10);
-          const pinVariants = new Set<string>([enrolledPin]);
+      // Strictly match fingerprint template pushes:
+      // Must start with FP PIN=, BIODATA PIN=, or contain PIN= with TMP= (the biometric template)
+      const isFpTemplate = (line.startsWith('FP PIN=') || line.startsWith('BIODATA PIN=') || (line.includes('PIN=') && line.includes('TMP=')))
+        && !line.includes('DATA DELETE') && !line.includes('DATA UPDATE');
+
+      if (isFpTemplate) {
+        const pinMatch = line.match(/PIN=([^\t\r\n]+)/);
+        if (pinMatch) {
+          const rawPin = pinMatch[1].split('\t')[0].trim();
+          // Extract the leading numeric PIN, cleanly ignoring any legacy suffixes like " FID=0..." or ":FID=0..."
+          const cleanEnrolled = rawPin.split(/[\s:]/)[0].replace(/\D/g, '');
+          if (cleanEnrolled) {
+            const pinNum = parseInt(cleanEnrolled, 10);
+            const pinVariants = new Set<string>([cleanEnrolled]);
+            if (!isNaN(pinNum)) {
+              pinVariants.add(String(pinNum));
+              for (let len = 1; len <= 8; len++) {
+                pinVariants.add(String(pinNum).padStart(len, '0'));
+              }
+            }
+            const updated = await prisma.biometricCommand.updateMany({
+              where: {
+                deviceId: existingDevice.id,
+                commandString: { contains: 'ENROLL_FP' },
+                OR: Array.from(pinVariants).flatMap(p => [
+                  { commandString: { contains: `PIN=${p}` } }
+                ]),
+                status: { in: ['SENT', 'PENDING', 'FAILED'] }
+              },
+              data: { status: 'SUCCESS', completedAt: new Date() }
+            });
+            fs.appendFileSync('biometric.log', `[FP ENROLL SUCCESS] Captured template for PIN: ${cleanEnrolled} (updated ${updated.count} command(s))\n`);
+            console.log(`[ADMS] Fingerprint Template received for PIN: ${cleanEnrolled}. Command marked SUCCESS.`);
+            continue; // Skip regular punch logic
+          }
+        }
+      }
+
+      const parts = line.split(/\s+/);
+
+      // Catch ZKTeco OPLOG 6 (Fingerprint Enrolled audit log)
+      if (parts[0] === 'OPLOG' && parts[1] === '6') {
+        let rawPin = parts[5] || parts[4] || '';
+        const cleanEnrolled = rawPin.split(/[\s:]/)[0].replace(/\D/g, '');
+        if (cleanEnrolled) {
+          const pinNum = parseInt(cleanEnrolled, 10);
+          const pinVariants = new Set<string>([cleanEnrolled]);
           if (!isNaN(pinNum)) {
             pinVariants.add(String(pinNum));
             for (let len = 1; len <= 8; len++) {
               pinVariants.add(String(pinNum).padStart(len, '0'));
             }
           }
-          // Match ANY command format for ENROLL_FP (colons, spaces, tabs) with any variant of this PIN
           const updated = await prisma.biometricCommand.updateMany({
             where: {
               deviceId: existingDevice.id,
               commandString: { contains: 'ENROLL_FP' },
               OR: Array.from(pinVariants).flatMap(p => [
-                { commandString: { contains: `PIN=${p}:` } },
-                { commandString: { contains: `PIN=${p} ` } },
-                { commandString: { contains: `PIN=${p}\t` } },
                 { commandString: { contains: `PIN=${p}` } }
               ]),
               status: { in: ['SENT', 'PENDING', 'FAILED'] }
             },
             data: { status: 'SUCCESS', completedAt: new Date() }
           });
-          fs.appendFileSync('biometric.log', `Enrollment Success callback processed for PIN: ${enrolledPin} (updated ${updated.count} command(s))\n`);
-          continue; // Skip regular punch logic
-        }
-      }
-
-
-      const parts = line.split(/\s+/);
-
-      // Catch ZKTeco OPLOG 4 or 6 (New User Enrolled)
-      if (parts[0] === 'OPLOG' && (parts[1] === '4' || parts[1] === '6')) {
-        // OPLOG 4 has PIN at parts[6]. OPLOG 6 has PIN inside parts[5]
-        let enrolledPin = null;
-        if (parts[1] === '4' && parts.length > 6) {
-          enrolledPin = parts[6];
-        } else if (parts[1] === '6' && parts.length > 5) {
-          enrolledPin = parts[5].split(':')[0]; // Extracts 111 from 111:FID=0...
-        }
-        
-        if (enrolledPin) {
-          const cleanEnrolled = enrolledPin.replace(/\D/g, '');
-          const pinNum = parseInt(cleanEnrolled, 10);
-          const pinVariants = new Set<string>([enrolledPin, cleanEnrolled]);
-          if (!isNaN(pinNum)) {
-            pinVariants.add(String(pinNum));
-            for (let len = 1; len <= 8; len++) {
-              pinVariants.add(String(pinNum).padStart(len, '0'));
-            }
-          }
-          await prisma.biometricCommand.updateMany({
-            where: {
-              deviceId: existingDevice.id,
-              commandString: { contains: 'ENROLL_FP' },
-              OR: Array.from(pinVariants).map(p => ({ commandString: { contains: `PIN=${p}` } })),
-              status: { in: ['SENT', 'PENDING', 'FAILED'] }
-            },
-            data: { status: 'SUCCESS', completedAt: new Date() }
-          });
-          fs.appendFileSync('biometric.log', `Enrollment Success (OPLOG ${parts[1]}) processed for PIN: ${enrolledPin}\n`);
+          fs.appendFileSync('biometric.log', `[OPLOG 6 ENROLL SUCCESS] Confirmed for PIN: ${cleanEnrolled} (updated ${updated.count} command(s))\n`);
+          console.log(`[ADMS] OPLOG 6 Fingerprint Enrollment confirmed for PIN: ${cleanEnrolled}. Command marked SUCCESS.`);
         }
         continue;
       }
-      if (parts.length >= 2) {
-        let pin = parts[0].trim();
-        // Clean up malformed PINs (e.g. if the device literally saved "101:FID=0:RETRY=3" as the ID)
-        if (pin.includes(':')) {
-           pin = pin.split(':')[0];
+
+      // Check for attendance punch: tab-delimited (PIN \t Time \t State \t VerifyMode)
+      const tabParts = line.split('\t');
+      if (tabParts.length >= 2) {
+        const rawFirstCol = tabParts[0].trim();
+        // Skip OPLOG, USER, BIODATA, or FP metadata lines
+        if (rawFirstCol.startsWith('OPLOG') || rawFirstCol.startsWith('USER') || rawFirstCol.startsWith('FP') || rawFirstCol.startsWith('BIODATA')) {
+          continue;
         }
-        // Also strip any non-numeric garbage just to be safe
-        pin = pin.replace(/\D/g, '');
+
+        let pin = rawFirstCol.split(/[\s:]/)[0].replace(/\D/g, '');
+        if (!pin) continue;
         
         fs.appendFileSync('biometric.log', `Parsed PIN: '${pin}'\n`);
         

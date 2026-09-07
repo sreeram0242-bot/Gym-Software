@@ -51,16 +51,17 @@ export async function GET(req: Request) {
       data: { status: 'PENDING', sentAt: null }
     });
 
-    // Check for pending commands
-    const pendingCommand = await prisma.biometricCommand.findFirst({
+    // Check for pending commands (batch up to 10 data commands, or 1 enroll command)
+    const pendingCommands = await prisma.biometricCommand.findMany({
       where: { 
         deviceId: device.id,
         status: 'PENDING'
       },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
+      take: 10
     });
 
-    if (!pendingCommand) {
+    if (pendingCommands.length === 0) {
       // No commands waiting for this device
       const res = "OK";
       return new NextResponse(res, { 
@@ -73,29 +74,29 @@ export async function GET(req: Request) {
       });
     }
 
-    // Try to claim the command atomically
-    const claim = await prisma.biometricCommand.updateMany({
-      where: { id: pendingCommand.id, status: 'PENDING' },
+    // If first command is ENROLL_FP, send it alone so device can prompt user cleanly.
+    // If first command is DATA (e.g. DELETE or UPDATE), batch all consecutive DATA commands up to the first ENROLL_FP.
+    const commandsToSend: typeof pendingCommands = [];
+    if (pendingCommands[0].commandString.includes('ENROLL_FP')) {
+      commandsToSend.push(pendingCommands[0]);
+    } else {
+      for (const cmd of pendingCommands) {
+        if (cmd.commandString.includes('ENROLL_FP')) break;
+        commandsToSend.push(cmd);
+      }
+    }
+
+    // Try to claim the commands atomically
+    const idsToClaim = commandsToSend.map(c => c.id);
+    await prisma.biometricCommand.updateMany({
+      where: { id: { in: idsToClaim }, status: 'PENDING' },
       data: { status: 'SENT', sentAt: new Date() }
     });
 
-    if (claim.count === 0) {
-      // Another thread already claimed it. Return "OK" and let them handle it.
-      const res = "OK";
-      return new NextResponse(res, { 
-        status: 200, 
-        headers: { 
-          'Content-Type': 'text/plain',
-          'Connection': 'close',
-          'Content-Length': res.length.toString()
-        } 
-      });
-    }
-
-    // We have a command! Format it for ZKTeco ADMS.
-    // ZKTeco expects: C:<CommandId>:<CommandString>
-    // e.g., C:1:ENROLL_FP PIN=105 FID=0 RETRY=3 OVERWRITE=1
-    const commandPayload = `C:${pendingCommand.deviceCommandId}:${pendingCommand.commandString}\n`;
+    // Format for ZKTeco ADMS (separated by newlines)
+    const commandPayload = commandsToSend
+      .map(c => `C:${c.deviceCommandId}:${c.commandString}`)
+      .join('\n') + '\n';
 
     console.log(`\n========================================`);
     console.log(`🚀 [ADMS COMMAND SENT to ${serialNumber}]`);

@@ -90,14 +90,17 @@ export async function POST(req: Request) {
               // Return=0 from devicecmd = enrollment completed successfully on device
               finalStatus = 'SUCCESS';
               console.log(`[ADMS] ENROLL_FP command ${command.id} SUCCESS (Return=0)`);
+            } else if (returnNum === -1003 || returnNum > 0) {
+              // Return=-1003 or Return > 0 = Device acknowledged command and entered enrollment mode on screen (waiting for finger)
+              console.log(`[ADMS] ENROLL_FP command ${command.id} acknowledged by device with Return=${returnCode} (awaiting finger on scanner)`);
+              // Leave status as SENT so UI continues waiting for user to place finger
             } else if (returnNum < 0) {
-              // Negative return code from machine = enrollment rejected (duplicate finger, timeout, or user cancelled)
+              // Other negative return codes (-1, -2, -1004) = actual failure/cancellation on machine
               if (command.status !== 'SUCCESS') {
                 finalStatus = 'FAILED';
                 console.log(`[ADMS] ENROLL_FP command ${command.id} REJECTED/FAILED on device with Return=${returnCode}`);
               }
             }
-            // Return > 0 (e.g. Return=1) = intermediate device progress ACK, leave as SENT
           } else {
             if (returnCode === '0') {
               finalStatus = 'COMPLETED';

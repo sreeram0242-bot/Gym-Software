@@ -93,13 +93,21 @@ export async function POST(req: Request) {
         console.log(`[Enroll] Cancelled ${cancelledCount.count} stale ENROLL_FP command(s) for PIN ${numericPin} before creating new one.`);
       }
 
-      // Also clean up any legacy colon-corrupted ghost user on the device so it does not conflict
+      // Also clean up any existing user/template or legacy space/colon-corrupted ghost user on the device so it does not conflict
       const trimmed = numericPin.replace(/^0+/, '') || numericPin;
       const legacyGhostPins = Array.from(new Set([
+        numericPin,
+        trimmed,
+        `${numericPin} FID=0 RETRY=3 OVERW`,
+        `${trimmed} FID=0 RETRY=3 OVERW`,
+        `${numericPin} FID=0 RETRY=3`,
+        `${trimmed} FID=0 RETRY=3`,
         `${numericPin}:FID=0:RETRY=3:OVERW`,
         `${trimmed}:FID=0:RETRY=3:OVERW`,
         `${numericPin}:FID=0:RETRY=3`,
-        `${trimmed}:FID=0:RETRY=3`
+        `${trimmed}:FID=0:RETRY=3`,
+        `${numericPin}:FID=0`,
+        `${trimmed}:FID=0`
       ]));
       for (const gp of legacyGhostPins) {
         await prisma.biometricCommand.create({
@@ -109,16 +117,26 @@ export async function POST(req: Request) {
             status: 'PENDING'
           }
         });
+        await prisma.biometricCommand.create({
+          data: {
+            deviceId: device.id,
+            commandString: `DATA DELETE FINGERTMP PIN=${gp}\tFID=0`,
+            status: 'PENDING'
+          }
+        });
       }
     }
 
-    const cmdStr = isCard ? `DATA UPDATE USERINFO PIN=${numericPin}\tCard=${cleanCard || ''}` : `ENROLL_FP PIN=${numericPin} FID=0 RETRY=3 OVERWRITE=1`;
+    // In ZKTeco ADMS protocol, parameters MUST be separated by tab (\t).
+    // Using spaces causes the firmware to treat everything up to 24 chars as the PIN string.
+    const cmdStr = isCard 
+      ? `DATA UPDATE USERINFO PIN=${numericPin}\tCard=${cleanCard || ''}` 
+      : `ENROLL_FP PIN=${numericPin}\tFID=0\tRETRY=3`;
 
-    // Trigger enrollment exactly as per the Biomax SKILL
+    // Trigger enrollment exactly as per the Biomax/ZKTeco ADMS specification
     const command = await prisma.biometricCommand.create({
       data: {
         deviceId: device.id,
-        // MUST exactly match SKILL structure
         commandString: cmdStr,
         status: 'PENDING'
       }

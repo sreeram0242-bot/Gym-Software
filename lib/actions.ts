@@ -867,7 +867,14 @@ async function queueBiometricUserDeletion(gymId: string, pin: string) {
   const cleanPin = String(pin).trim();
   const numericPin = cleanPin.replace(/\D/g, '');
   const trimmedPin = numericPin.replace(/^0+/, '') || numericPin;
-  const pinsToDelete = Array.from(new Set([cleanPin, trimmedPin])).filter(Boolean);
+  const pinsToDelete = Array.from(new Set([
+    cleanPin, 
+    trimmedPin,
+    `${cleanPin} FID=0 RETRY=3 OVERW`,
+    `${trimmedPin} FID=0 RETRY=3 OVERW`,
+    `${cleanPin}:FID=0:RETRY=3:OVERW`,
+    `${trimmedPin}:FID=0:RETRY=3:OVERW`
+  ])).filter(Boolean);
 
   try {
     const devices = await prisma.biometricDevice.findMany({
@@ -879,6 +886,13 @@ async function queueBiometricUserDeletion(gymId: string, pin: string) {
           data: {
             deviceId: device.id,
             commandString: `DATA DELETE USERINFO PIN=${p}`,
+            status: 'PENDING'
+          }
+        });
+        await prisma.biometricCommand.create({
+          data: {
+            deviceId: device.id,
+            commandString: `DATA DELETE FINGERTMP PIN=${p}\tFID=0`,
             status: 'PENDING'
           }
         });
