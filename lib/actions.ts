@@ -1692,6 +1692,49 @@ export async function updateGymStatus(gymId: string, status: string) {
   }
 }
 
+// Superadmin-only gym deletion — no tenant check required.
+// Reuses the same biometric cleanup + cascade delete flow as deleteGym().
+export async function deleteGymAsSuperadmin(gymId: string) {
+  if (!gymId) throw new Error('gymId is required');
+
+  // Verify gym exists first
+  const gym = await prisma.gym.findUnique({ where: { id: gymId }, select: { id: true, name: true } });
+  if (!gym) throw new Error('Gym not found');
+
+  // ── Step 1: Wipe enrolled users from the physical biometric device ──
+  try {
+    const enrolledMembers = await prisma.customer.findMany({
+      where: { gymId, fingerprintId: { not: null } },
+      select: { fingerprintId: true }
+    });
+    const enrolledStaff = await prisma.staff.findMany({
+      where: { gymId, fingerprintId: { not: null } },
+      select: { fingerprintId: true }
+    });
+
+    const pins = [
+      ...enrolledMembers.map((m) => m.fingerprintId!),
+      ...enrolledStaff.map((s) => s.fingerprintId!),
+    ].filter(Boolean);
+
+    for (const pin of pins) {
+      await queueBiometricUserDeletion(gymId, pin);
+    }
+    if (pins.length > 0) {
+      console.log(`[deleteGymAsSuperadmin] Queued biometric deletion for ${pins.length} user(s) in gym ${gymId}`);
+    }
+  } catch (e) {
+    console.error('[deleteGymAsSuperadmin] Biometric cleanup error (non-fatal):', e);
+  }
+
+  // ── Step 2: Cascade delete all DB records ──
+  await prisma.gym.delete({ where: { id: gymId } });
+
+  console.log(`[deleteGymAsSuperadmin] Gym "${gym.name}" (${gymId}) permanently deleted.`);
+  return { success: true };
+}
+
+
 // --- ANNOUNCEMENTS ---
 export async function getAnnouncements() {
   try {

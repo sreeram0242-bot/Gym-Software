@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Plus, Search, Building2, UserPlus, Key, Phone, Mail, CheckCircle, AlertCircle, ArrowLeft, Users, Eye, EyeOff, Dumbbell, Lock, Sparkles, Filter, LogOut, Trash2 } from 'lucide-react';
-import { getGyms, getCustomers, addGym, toggleGymStatus, findCustomerByPhone, getMemberMonthlyAvgHours, getGlobalStats, getAnnouncements, createAnnouncement, deleteAnnouncement, updateGymStatus, setSuperadminTenant, logoutSuperadmin } from '@/lib/actions';
+import { getGyms, getCustomers, addGym, toggleGymStatus, findCustomerByPhone, getMemberMonthlyAvgHours, getGlobalStats, getAnnouncements, createAnnouncement, deleteAnnouncement, updateGymStatus, setSuperadminTenant, logoutSuperadmin, deleteGymAsSuperadmin } from '@/lib/actions';
 import { Gym, Customer } from '@/lib/types';
 import { formatDateDDMMYYYY } from '@/lib/utils';
 
@@ -37,6 +37,11 @@ export default function SuperAdminPage() {
   const [searchPhoneQuery, setSearchPhoneQuery] = useState('');
   const [searchedCustomer, setSearchedCustomer] = useState<any | null>(null);
   const [actionFeedback, setActionFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Delete Gym Modal State
+  const [gymToDelete, setGymToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Load Data
   useEffect(() => {
@@ -146,6 +151,26 @@ export default function SuperAdminPage() {
       await loadData();
     } catch (e: any) {
       setActionFeedback({ message: `Failed to update gym status: ${e.message}`, type: 'error' });
+    }
+  };
+
+  const handleDeleteGym = async () => {
+    if (!gymToDelete || deleteConfirmText !== gymToDelete.name) return;
+    setIsDeleting(true);
+    try {
+      await deleteGymAsSuperadmin(gymToDelete.id);
+      setActionFeedback({
+        message: `Gym "${gymToDelete.name}" has been permanently deleted along with all its data.`,
+        type: 'success'
+      });
+      setTimeout(() => setActionFeedback(null), 6000);
+      setGymToDelete(null);
+      setDeleteConfirmText('');
+      await loadData();
+    } catch (e: any) {
+      setActionFeedback({ message: `Failed to delete gym: ${e.message}`, type: 'error' });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -396,6 +421,13 @@ export default function SuperAdminPage() {
                           >
                             {gym.status === 'active' ? <Lock className="w-3.5 h-3.5 text-rose-600" /> : <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />}
                             <span>{gym.status === 'active' ? 'Suspend' : 'Reactivate'}</span>
+                          </button>
+                          <button
+                            onClick={() => { setGymToDelete({ id: gym.id, name: gym.name }); setDeleteConfirmText(''); }}
+                            className="p-1.5 text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors border border-rose-200"
+                            title="Permanently Delete Gym"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -759,6 +791,88 @@ export default function SuperAdminPage() {
           </div>
         )}
       </main>
+
+      {/* ── Delete Gym Confirmation Modal ── */}
+      {gymToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-rose-200 overflow-hidden">
+            {/* Header */}
+            <div className="bg-rose-50 border-b border-rose-200 px-6 py-5 flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h2 className="font-extrabold text-rose-900 text-base">Permanently Delete Gym</h2>
+                <p className="text-xs text-rose-600 font-medium">This action is irreversible.</p>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-800 space-y-1.5">
+                <p className="font-bold">⚠️ You are about to permanently delete:</p>
+                <p className="font-extrabold text-rose-900 text-base">{gymToDelete.name}</p>
+                <ul className="mt-2 space-y-1 text-xs font-medium list-disc list-inside text-rose-700">
+                  <li>All members, staff and their attendance records</li>
+                  <li>All transactions and payment history</li>
+                  <li>All subscription plans, products and sales</li>
+                  <li>WhatsApp session and all settings</li>
+                  <li>Fingerprint data wiped from biometric device</li>
+                </ul>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Type the gym name to confirm:
+                  <span className="ml-1 text-rose-600 font-extrabold normal-case">{gymToDelete.name}</span>
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder={`Type "${gymToDelete.name}" exactly`}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-rose-400 focus:bg-white outline-none transition-colors"
+                  autoFocus
+                />
+                {deleteConfirmText.length > 0 && deleteConfirmText !== gymToDelete.name && (
+                  <p className="mt-1 text-xs text-rose-600 font-semibold">Name doesn't match. Please type it exactly.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-5 flex items-center justify-end space-x-3">
+              <button
+                onClick={() => { setGymToDelete(null); setDeleteConfirmText(''); }}
+                disabled={isDeleting}
+                className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteGym}
+                disabled={deleteConfirmText !== gymToDelete.name || isDeleting}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+              >
+                {isDeleting ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete Permanently</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
