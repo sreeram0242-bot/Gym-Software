@@ -913,10 +913,6 @@ export default function SettingsPage() {
                         label="ZKTeco K40 Pro (Wall Terminal)" 
                         desc="Members scan their fingerprint/card on a wall-mounted ADMS terminal" 
                         onChange={async (v) => {
-                          if (v && !deviceSerialNumber.trim()) {
-                            showError('Please enter the Cloud ADMS Serial Number before enabling the wall-mount terminal.');
-                            return;
-                          }
                           setAttendanceWallMountEnabled(v);
                           await saveSetting({ attendanceWallMountEnabled: v });
                         }} 
@@ -962,75 +958,95 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* eSSL/ZKTeco Device IP Config */}
-              {attendanceWallMountEnabled && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 space-y-4">
+              {/* eSSL/ZKTeco Device Serial Number & Cloud ADMS Config (Always Accessible) */}
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 space-y-4">
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-emerald-800 font-bold">
-                    <Wifi className="w-5 h-5" /> eSSL / ZKTeco Configuration
+                    <Wifi className="w-5 h-5" /> eSSL / ZKTeco Cloud ADMS Configuration
                   </div>
-                  <p className="text-sm text-emerald-700">
-                    To connect your machine to the cloud (ADMS), enter its Serial Number. If using local network enrollment, enter its IP address.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1">
-                      <label className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1.5">Cloud ADMS Serial Number *</label>
-                      <input
-                        type="text"
-                        required
-                        value={deviceSerialNumber}
-                        onChange={e => setDeviceSerialNumber(e.target.value)}
-                        placeholder="e.g. CAJM214000123"
-                        className={`w-full px-3.5 py-2.5 bg-white border rounded-lg text-sm font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none uppercase ${!deviceSerialNumber.trim() ? 'border-rose-400 ring-1 ring-rose-200' : 'border-emerald-200'}`}
-                      />
-                      {!deviceSerialNumber.trim() && (
-                        <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" /> Serial Number is required to connect the device.
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1.5">Local Device IP (Optional)</label>
-                      <input
-                        type="text"
-                        value={deviceIpAddress}
-                        onChange={e => setDeviceIpAddress(e.target.value)}
-                        placeholder="e.g. 192.168.1.50"
-                        className="w-full px-3.5 py-2.5 bg-white border border-emerald-200 rounded-lg text-sm font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none"
-                      />
-                    </div>
+                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                    attendanceWallMountEnabled 
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+                      : 'bg-slate-100 text-slate-600 border-slate-300'
+                  }`}>
+                    {attendanceWallMountEnabled ? '● Device Active' : '○ Disabled'}
+                  </span>
+                </div>
+                <p className="text-sm text-emerald-700">
+                  To connect your biometric machine to GymFlow, enter the <strong>Serial Number</strong> printed on the device sticker or in its system menu.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1.5">
+                      Device Serial Number (SN) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={deviceSerialNumber}
+                      onChange={e => setDeviceSerialNumber(e.target.value)}
+                      placeholder="e.g. CAJM214000123"
+                      className={`w-full px-3.5 py-2.5 bg-white border rounded-lg text-sm font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none uppercase shadow-xs ${
+                        !deviceSerialNumber.trim() ? 'border-amber-400 ring-1 ring-amber-200' : 'border-emerald-300'
+                      }`}
+                    />
+                    {!deviceSerialNumber.trim() && (
+                      <p className="text-xs text-amber-700 font-medium mt-1 flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Enter the Serial Number found on your device sticker or in Menu &gt; System &gt; Device Info.
+                      </p>
+                    )}
                   </div>
-                  <div className="pt-1">
-                    <button
-                      type="button"
-                      disabled={!deviceSerialNumber.trim()}
-                      onClick={async () => {
-                        if (!deviceSerialNumber.trim()) {
-                          showError('Please enter the device Serial Number before saving.');
-                          return;
-                        }
-                        if (gymId) {
-                          await registerBiometricDevice(gymId, deviceSerialNumber.trim());
-                          if (deviceIpAddress.trim()) {
-                            await saveSetting({ deviceIpAddress: deviceIpAddress.trim() });
-                          }
-                          showSuccess('Wall-mount device saved successfully!');
-                        }
-                      }}
-                      className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-lg transition-colors shadow-sm flex items-center gap-2"
-                    >
-                      <Save className="w-4 h-4" /> Save Device
-                    </button>
-                  </div>
-                  <div className="bg-emerald-100/60 rounded-lg p-3">
-                    <p className="text-xs text-emerald-700 font-semibold mb-2">Requirements:</p>
-                    <ul className="text-xs text-emerald-600 space-y-1 list-disc list-inside">
-                      <li>Ensure device is on the same WiFi network as the gym PC.</li>
-                      <li>Ensure the device has ZEM500, ZEM600, or ZEM800 firmware.</li>
-                      <li>Run <code>node resources/zk_agent.js</code> locally to bridge the connection.</li>
-                    </ul>
+                  <div className="flex-1">
+                    <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1.5">
+                      Local Device IP (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={deviceIpAddress}
+                      onChange={e => setDeviceIpAddress(e.target.value)}
+                      placeholder="e.g. 192.168.1.50"
+                      className="w-full px-3.5 py-2.5 bg-white border border-emerald-200 rounded-lg text-sm font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none shadow-xs"
+                    />
                   </div>
                 </div>
-              )}
+                <div className="pt-1 flex items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={!deviceSerialNumber.trim()}
+                    onClick={async () => {
+                      if (!deviceSerialNumber.trim()) {
+                        showError('Please enter the device Serial Number before saving.');
+                        return;
+                      }
+                      if (gymId) {
+                        await registerBiometricDevice(gymId, deviceSerialNumber.trim());
+                        setAttendanceWallMountEnabled(true);
+                        await saveSetting({ 
+                          attendanceWallMountEnabled: true,
+                          ...(deviceIpAddress.trim() ? { deviceIpAddress: deviceIpAddress.trim() } : {})
+                        });
+                        showSuccess('Wall-mount device registered and activated successfully!');
+                      }
+                    }}
+                    className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-lg transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" /> Save Device Serial Number
+                  </button>
+                  {deviceSerialNumber.trim() && (
+                    <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Ready to pair
+                    </span>
+                  )}
+                </div>
+                <div className="bg-emerald-100/60 rounded-lg p-3">
+                  <p className="text-xs text-emerald-800 font-semibold mb-2">How to configure the biometric device:</p>
+                  <ul className="text-xs text-emerald-700 space-y-1 list-disc list-inside">
+                    <li>On the machine keypad, open <strong>Menu &gt; Comm. &gt; Cloud Server / ADMS Server</strong>.</li>
+                    <li>Set <strong>Server Address</strong> to your server domain (or IP) and Port <strong>80 / 443</strong>.</li>
+                    <li>Ensure <strong>Enable Cloud Server / ADMS</strong> is turned ON.</li>
+                  </ul>
+                </div>
+              </div>
 
               {/* ⏱️ Auto-Checkout & Shift Cut-off Timers */}
               <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 space-y-6 shadow-sm">
