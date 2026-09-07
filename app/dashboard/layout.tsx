@@ -108,6 +108,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       checkWaStatus(matched.id);
       const waInterval = setInterval(() => checkWaStatus(matched.id), 60000);
 
+      // ── Live Suspension Check ──────────────────────────────────────────────
+      // Re-fetch the gym's status every 30s so that if the superadmin suspends
+      // this gym while the admin already has an active session, they are kicked
+      // out immediately without needing a page refresh.
+      let gymStatusInterval: NodeJS.Timeout | null = null;
+      const checkGymStatus = async () => {
+        if (isMasterAdmin) return; // superadmin is never blocked
+        try {
+          const res = await fetch(`/api/gyms/status?gymId=${matched.id}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.status === 'suspended' || data.status === 'locked') {
+              // Update in-memory gym so the full-screen blocker renders
+              setCurrentGym((prev: any) => prev ? { ...prev, status: data.status } : prev);
+              // Stop all background polling — admin is blocked
+              clearInterval(gymStatusInterval!);
+              clearInterval(waInterval);
+              clearInterval(punchInterval);
+            }
+          }
+        } catch (e) {
+          // Network error — do nothing, try again next tick
+        }
+      };
+      gymStatusInterval = setInterval(checkGymStatus, 30000);
+
       // Global Polling for Recent Punches (for ADMS hardware and cross-tab sync)
       const processedPunchIds = new Set<string>();
       let punchQueue: any[] = [];
@@ -367,6 +393,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (notificationTimeout) clearTimeout(notificationTimeout);
         clearInterval(waInterval);
         clearInterval(punchInterval);
+        if (gymStatusInterval) clearInterval(gymStatusInterval);
       };
     };
 

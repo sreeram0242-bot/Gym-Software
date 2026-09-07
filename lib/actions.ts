@@ -2442,11 +2442,42 @@ export async function getNextAvailableZkTecoId(gymId: string): Promise<string> {
 export async function deleteGym(gymId: string) {
   const authorizedGymId = verifyTenantAccess(gymId);
   if (!authorizedGymId) throw new Error("Unauthorized");
-  
-  // This will cascade delete all members, staff, transactions, attendance, settings, products etc.
+
+  // ── Step 1: Wipe all enrolled members from the physical biometric device ──
+  // This MUST happen before the cascade delete, because BiometricDevice and
+  // BiometricCommand rows are also cascade-deleted when the Gym is deleted.
+  // After deletion we'd have no device records left to send commands to.
+  try {
+    const enrolledMembers = await prisma.customer.findMany({
+      where: { gymId: authorizedGymId, fingerprintId: { not: null } },
+      select: { fingerprintId: true }
+    });
+    const enrolledStaff = await prisma.staff.findMany({
+      where: { gymId: authorizedGymId, fingerprintId: { not: null } },
+      select: { fingerprintId: true }
+    });
+
+    const pins = [
+      ...enrolledMembers.map((m) => m.fingerprintId!),
+      ...enrolledStaff.map((s) => s.fingerprintId!),
+    ].filter(Boolean);
+
+    if (pins.length > 0) {
+      for (const pin of pins) {
+        await queueBiometricUserDeletion(authorizedGymId, pin);
+      }
+      console.log(`[deleteGym] Queued biometric deletion for ${pins.length} enrolled user(s) in gym ${authorizedGymId}`);
+    }
+  } catch (e) {
+    // Don't block gym deletion if biometric cleanup fails
+    console.error('[deleteGym] Biometric cleanup error (non-fatal):', e);
+  }
+
+  // ── Step 2: Cascade delete all DB records for this gym ──
+  // Removes customers, staff, attendance, transactions, settings, devices, commands, etc.
   await prisma.gym.delete({
     where: { id: authorizedGymId }
   });
-  
+
   return { success: true };
 }
