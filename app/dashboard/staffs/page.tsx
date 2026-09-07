@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   UserPlus, Download, Trash2, Search, Briefcase, LogIn, LogOut, Clock, 
-  UserCheck, Calendar, Filter, Edit, Radio, Fingerprint, Phone, CheckCircle, 
-  AlertCircle, ChevronRight, X, Sparkles, Shield, Users, FileText, FileSpreadsheet
+  UserCheck, Calendar, Filter, Edit, Radio, Fingerprint, Phone, CheckCircle, CheckCircle2, 
+  AlertCircle, ChevronRight, X, Sparkles, Shield, Users, FileText, FileSpreadsheet,
+  CreditCard, RefreshCw
 } from 'lucide-react';
 import { getStaffs, getStaffAttendance, addStaff, updateStaff, deleteStaff, toggleStaffCheckIn, getGymSettings, getGyms, getNextAvailableZkTecoId } from '@/lib/actions';
 import { exportToCSV, formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
@@ -53,7 +54,7 @@ export default function StaffPage() {
   const [joinedDate, setJoinedDate] = useState(getLocalTodayDateString());
   const [modalError, setModalError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-
+  const lastEnrolledDevicePinRef = React.useRef<string | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     if (typeof window !== 'undefined') {
@@ -173,30 +174,44 @@ export default function StaffPage() {
   // Fix: Handle Ghost Fingerprint cleanup on tab close
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!isEditingStaff && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS')) {
+      const pinToDelete = lastEnrolledDevicePinRef.current || (
+        !isEditingStaff && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS' || fpPollStatus === 'ERROR' || cardPollStatus === 'POLLING' || cardPollStatus === 'SUCCESS')
+          ? fingerprintId.trim()
+          : null
+      );
+      if (!isEditingStaff && pinToDelete) {
         fetch('/api/biometrics/delete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ gymId, pin: fingerprintId }),
+          body: JSON.stringify({ gymId, pin: pinToDelete }),
           keepalive: true
         }).catch(() => {});
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isEditingStaff, fingerprintId, fpPollStatus, gymId]);
+  }, [isEditingStaff, fingerprintId, fpPollStatus, cardPollStatus, gymId]);
 
   // Handle centralized closing of the add/edit modal (to cleanup ghosts)
   const closeStaffModal = async () => {
-    if (!isEditingStaff && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS')) {
+    const pinToDelete = lastEnrolledDevicePinRef.current || (
+      !isEditingStaff && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS' || fpPollStatus === 'ERROR' || cardPollStatus === 'POLLING' || cardPollStatus === 'SUCCESS')
+        ? fingerprintId.trim()
+        : null
+    );
+    if (!isEditingStaff && pinToDelete) {
       fetch('/api/biometrics/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gymId, pin: fingerprintId })
+        body: JSON.stringify({ gymId, pin: pinToDelete }),
+        keepalive: true
       }).catch(e => console.error('Ghost cleanup failed', e));
     }
+    lastEnrolledDevicePinRef.current = null;
     setFpPollStatus('IDLE');
+    setFpCommandId(null);
     setCardPollStatus('IDLE');
+    setCardCommandId(null);
     setShowStaffModal(false);
   };
 
@@ -319,6 +334,7 @@ export default function StaffPage() {
 
     
     // Optimistic UI Update & Close
+    lastEnrolledDevicePinRef.current = null;
     setShowStaffModal(false);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Staff ${cleanName} ${isEditingStaff ? 'updated' : 'added'} successfully!`, type: 'success' } }));
@@ -1646,31 +1662,79 @@ export default function StaffPage() {
                           )}
                         </div>
                       )}
+                      {attendanceWallMountEnabled && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!fingerprintId) {
+                              showToast('Please enter Staff ID first', 'error');
+                              return;
+                            }
+                            if (duplicateMember) {
+                              showToast(`Staff ID ${fingerprintId} is already assigned to ${duplicateMember.name}. Please enter a new ID.`, 'error');
+                              return;
+                            }
+                            if (!nfcCardId.trim()) {
+                              showToast('Please enter or tap an NFC Card number first', 'error');
+                              return;
+                            }
+                            if (duplicateNfcMember) {
+                              showToast(`Card ${nfcCardId} is already assigned to ${duplicateNfcMember.name}. Duplicate cards are not allowed.`, 'error');
+                              return;
+                            }
+                            lastEnrolledDevicePinRef.current = fingerprintId.trim();
+                            setCardPollStatus('POLLING');
+                            try {
+                              const res = await fetch('/api/biometrics/enroll', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ gymId, memberId: 'temp', nfcCardId: fingerprintId, actualCardNumber: nfcCardId.trim(), enrollType: 'card' })
+                              });
+                              if (res.ok) {
+                                const data = await res.json();
+                                if (data.directSync) {
+                                  setCardPollStatus('SUCCESS');
+                                  showToast('Card saved directly to device!', 'success');
+                                } else if (data.commandId) {
+                                  setCardCommandId(data.commandId);
+                                }
+                              } else {
+                                setCardPollStatus('ERROR');
+                                showToast('Failed to send card to device', 'error');
+                              }
+                            } catch (e) {
+                              setCardPollStatus('ERROR');
+                              showToast('Failed to send card to device', 'error');
+                            }
+                          }}
+                          disabled={cardPollStatus === 'POLLING'}
+                          className="w-full mt-2.5 py-2 px-3 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                          title="Send Card to Device"
+                        >
+                          <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                          {cardPollStatus === 'POLLING' ? 'Syncing...' : 'Send Card to Device'}
+                        </button>
+                      )}
                     </div>
 
                   </div>
                 )}
 
                 {/* CARD 2: FINGERPRINT & FP TICK */}
-                {/* Show when ZKTeco wall-mount OR Mantra USB FP is enabled — both use a numeric Staff ID */}
                 {(attendanceWallMountEnabled || attendanceMantraEnabled) && (
-
                   <div className="bg-white p-3 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-2.5">
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                          <Shield className="w-3.5 h-3.5 text-indigo-600" /> Member ID
+                          <Fingerprint className="w-3.5 h-3.5 text-indigo-600" /> Fingerprint
                         </label>
-                        <span className="text-[10px] font-medium text-slate-400">
-                          {nextAvailableId && !isEditingStaff ? `Next Available: ${nextAvailableId}` : 'Numeric Only'}
-                        </span>
                         {fpPollStatus === 'SUCCESS' ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full">
-                            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> FP Saved
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> FP Saved
                           </span>
                         ) : fpPollStatus === 'POLLING' ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-300 px-2 py-0.5 rounded-full animate-pulse">
-                            <Clock className="w-3 h-3 animate-spin text-blue-600" /> Place finger 3x...
+                            <RefreshCw className="w-3 h-3 animate-spin text-blue-600" /> Place finger 3x...
                           </span>
                         ) : fpPollStatus === 'ERROR' ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-full">
@@ -1683,17 +1747,85 @@ export default function StaffPage() {
                         )}
                       </div>
 
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1">
+                        <span className="font-semibold text-slate-700">Staff Biometric ID</span>
+                        <span className="text-[10px] font-medium text-slate-400">
+                          {nextAvailableId && !isEditingStaff ? `Next Available: ${nextAvailableId}` : 'Numeric Only'}
+                        </span>
+                      </div>
+
                       <div className="relative mb-2">
                         <Shield className="absolute left-3 top-2.5 w-3.5 h-3.5 text-emerald-600" />
                         <input 
                           type="text" 
                           value={fingerprintId}
-                          onChange={e => setFingerprintId(e.target.value)}
+                          onChange={e => {
+                            setFingerprintId(e.target.value);
+                            if (fpPollStatus === 'ERROR' || fpPollStatus === 'SUCCESS') setFpPollStatus('IDLE');
+                          }}
                           placeholder={`Enter ID (e.g. ${nextAvailableId})`}
                           className="w-full pl-9 pr-3 py-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-600 outline-none text-xs font-mono font-bold bg-white" 
                         />
                       </div>
+
+                      <p className="text-[11px] text-slate-500 leading-normal">
+                        {fpPollStatus === 'POLLING' 
+                          ? 'Device is waiting! Touch staff finger 3 times on the scanner.'
+                          : fpPollStatus === 'SUCCESS'
+                          ? 'Fingerprint enrolled & registered on the machine.'
+                          : 'Click below to start 3-tap fingerprint enrollment on wall machine.'}
+                      </p>
                     </div>
+
+                    {attendanceWallMountEnabled && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!fingerprintId) {
+                            showToast('Please enter Staff ID first (e.g. 004)', 'error');
+                            return;
+                          }
+                          if (duplicateMember) {
+                            showToast(`Staff ID ${fingerprintId} is already assigned to ${duplicateMember.name}. Please enter a new ID.`, 'error');
+                            return;
+                          }
+                          lastEnrolledDevicePinRef.current = fingerprintId.trim();
+                          setFpPollStatus('POLLING');
+                          try {
+                            const res = await fetch('/api/biometrics/enroll', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ gymId, memberId: 'temp', nfcCardId: fingerprintId, enrollType: 'fp' })
+                            });
+                            if (res.ok) {
+                              const data = await res.json();
+                              if (data.commandId) setFpCommandId(data.commandId);
+                            } else {
+                              setFpPollStatus('ERROR');
+                              showToast('Failed to send enroll command', 'error');
+                            }
+                          } catch (e) {
+                            setFpPollStatus('ERROR');
+                            showToast('Failed to send enroll command', 'error');
+                          }
+                        }}
+                        disabled={fpPollStatus === 'POLLING'}
+                        className={`w-full py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 ${
+                          fpPollStatus === 'SUCCESS'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
+                            : fpPollStatus === 'POLLING'
+                            ? 'bg-blue-50 text-blue-900 border border-blue-300 animate-pulse'
+                            : 'bg-indigo-50 text-indigo-900 hover:bg-indigo-100 border border-indigo-300'
+                        }`}
+                      >
+                        <Fingerprint className="w-3.5 h-3.5 text-indigo-600" />
+                        {fpPollStatus === 'POLLING' 
+                          ? 'Waiting for Finger (3x)...' 
+                          : fpPollStatus === 'SUCCESS' 
+                          ? 'Re-enroll Fingerprint' 
+                          : 'Enroll Fingerprint on Device'}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
