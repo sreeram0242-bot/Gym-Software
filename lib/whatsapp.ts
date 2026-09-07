@@ -407,35 +407,14 @@ export class WhatsAppManager {
   static async sendMessage(gymId: string, phone: string, text: string, mediaBase64?: string, isAutoReply: boolean = false) {
     const sock = globalAny.WhatsAppSessions.get(gymId);
     if (!sock) return false;
-    
-    let finalMessage = text;
-    if (!isAutoReply) {
-      try {
-        const cleanDigits = phone.replace(/[^0-9]/g, '');
-        const shortPhone = cleanDigits.length === 12 && cleanDigits.startsWith('91') ? cleanDigits.substring(2) : cleanDigits;
 
-        // Check if recipient is a member of this gym
-        const member = await db.customer.findFirst({
-          where: { gymId, phone: { contains: shortPhone } },
-          select: { id: true, name: true, waActive: true }
-        });
+    // NOTE: waActive checks are done upstream (API route + page level).
+    // Do NOT add DB queries here — this function is called per-message and any
+    // DB fetch here would slow down every page that triggers a WhatsApp send.
 
-        // Outbound WhatsApp services work ONLY if member has sent 'start' (waActive: true)
-        if (member && !member.waActive) {
-          console.log(`[WA] Outbound message skipped for ${member.name} (${phone}) — member has not sent 'start' yet.`);
-          return false;
-        }
-
-        const settings = await db.gymSettings.findUnique({ where: { gymId } });
-        if (settings?.waAutoReply) {
-          finalMessage += '\n\n---\nReply *plan* or *due date* to view your Plan Details\nReply *payment* for Payment History\nReply *attendance* for Attendance Logs\nReply *start* to see this menu anytime!';
-        }
-      } catch (e) {}
-    }
-
-    // Add to global queue
+    // Add to global queue immediately (fire-and-forget safe)
     return new Promise((resolve) => {
-      globalAny.WhatsAppMessageQueue.push({ gymId, phone, text: finalMessage, mediaBase64, resolve });
+      globalAny.WhatsAppMessageQueue.push({ gymId, phone, text, mediaBase64, resolve });
       this.processQueue();
     });
   }
