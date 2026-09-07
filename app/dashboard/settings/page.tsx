@@ -966,20 +966,20 @@ export default function SettingsPage() {
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1">
-                      <label className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1.5">Cloud ADMS Serial Number</label>
+                      <label className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1.5">Cloud ADMS Serial Number *</label>
                       <input
                         type="text"
+                        required
                         value={deviceSerialNumber}
                         onChange={e => setDeviceSerialNumber(e.target.value)}
-                        onBlur={async () => {
-                          if (gymId) {
-                            await registerBiometricDevice(gymId, deviceSerialNumber);
-                            showSuccess('Device Serial Number saved!');
-                          }
-                        }}
                         placeholder="e.g. CAJM214000123"
-                        className="w-full px-3.5 py-2.5 bg-white border border-emerald-200 rounded-lg text-sm font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none uppercase"
+                        className={`w-full px-3.5 py-2.5 bg-white border rounded-lg text-sm font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none uppercase ${!deviceSerialNumber.trim() ? 'border-rose-400 ring-1 ring-rose-200' : 'border-emerald-200'}`}
                       />
+                      {!deviceSerialNumber.trim() && (
+                        <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" /> Serial Number is required to connect the device.
+                        </p>
+                      )}
                     </div>
                     <div className="flex-1">
                       <label className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1.5">Local Device IP (Optional)</label>
@@ -987,11 +987,32 @@ export default function SettingsPage() {
                         type="text"
                         value={deviceIpAddress}
                         onChange={e => setDeviceIpAddress(e.target.value)}
-                        onBlur={async () => { await saveSetting({ deviceIpAddress }); showSuccess('Device IP saved!'); }}
                         placeholder="e.g. 192.168.1.50"
                         className="w-full px-3.5 py-2.5 bg-white border border-emerald-200 rounded-lg text-sm font-mono text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none"
                       />
                     </div>
+                  </div>
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      disabled={!deviceSerialNumber.trim()}
+                      onClick={async () => {
+                        if (!deviceSerialNumber.trim()) {
+                          showError('Please enter the device Serial Number before saving.');
+                          return;
+                        }
+                        if (gymId) {
+                          await registerBiometricDevice(gymId, deviceSerialNumber.trim());
+                          if (deviceIpAddress.trim()) {
+                            await saveSetting({ deviceIpAddress: deviceIpAddress.trim() });
+                          }
+                          showSuccess('Wall-mount device saved successfully!');
+                        }
+                      }}
+                      className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-lg transition-colors shadow-sm flex items-center gap-2"
+                    >
+                      <Save className="w-4 h-4" /> Save Device
+                    </button>
                   </div>
                   <div className="bg-emerald-100/60 rounded-lg p-3">
                     <p className="text-xs text-emerald-700 font-semibold mb-2">Requirements:</p>
