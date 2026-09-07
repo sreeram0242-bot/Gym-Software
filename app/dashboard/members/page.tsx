@@ -53,6 +53,7 @@ export default function MemberManagementPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const modalSessionIdRef = React.useRef(0);
   const lastEnrolledDevicePinRef = React.useRef<string | null>(null);
+  const fpFailCountRef = React.useRef(0);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [nfcCardId, setNfcCardId] = useState('');
@@ -310,15 +311,20 @@ export default function MemberManagementPage() {
           if (res.ok && isMounted) {
             const data = await res.json();
             if (data.status === 'SUCCESS') {
+              fpFailCountRef.current = 0;
               setFpPollStatus('SUCCESS');
               setFpCommandId(null);
               setEnrollingMemberId(null);
               showToast('Fingerprint Enrolled & Saved!', 'success');
             } else if (data.status === 'ERROR' || data.status === 'FAILED') {
-              setFpPollStatus('ERROR');
-              setFpCommandId(null);
-              setEnrollingMemberId(null);
-              showToast('Fingerprint Enrollment Failed on Device. Please try again.', 'error');
+              // Give 2 polling cycles before declaring error to prevent false negatives during multi-tap
+              fpFailCountRef.current = (fpFailCountRef.current || 0) + 1;
+              if (fpFailCountRef.current >= 3) {
+                setFpPollStatus('ERROR');
+                setFpCommandId(null);
+                setEnrollingMemberId(null);
+                showToast('Fingerprint Enrollment Failed on Device. Please try again.', 'error');
+              }
             } else if (data.status === 'TIMEOUT') {
               setFpPollStatus('ERROR');
               setFpCommandId(null);
@@ -1864,6 +1870,7 @@ export default function MemberManagementPage() {
                             return;
                           }
                           lastEnrolledDevicePinRef.current = fingerprintId.trim();
+                          fpFailCountRef.current = 0;
                           setFpPollStatus('POLLING');
                           try {
                             const res = await fetch('/api/biometrics/enroll', {

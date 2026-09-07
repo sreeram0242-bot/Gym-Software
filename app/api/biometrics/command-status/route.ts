@@ -52,16 +52,32 @@ export async function GET(req: Request) {
     }
 
     const isEnrollFp = command.commandString?.includes('ENROLL_FP');
-    // For ENROLL_FP: only 'SUCCESS' (set by cdata/hdata when fingerprint data arrives) counts.
-    // 'COMPLETED' (set by devicecmd Return=0) is NOT a real success for fingerprint enrollment.
-    let isSuccess = command.status === 'SUCCESS';
-    // For non-FP commands (card sync, user data update), COMPLETED = success
-    if (!isEnrollFp && command.status === 'COMPLETED') isSuccess = true;
-    let isError = command.status === 'FAILED' || command.status === 'ERROR';
+    let isSuccess = command.status === 'SUCCESS' || command.status === 'COMPLETED';
+    let isError = !isSuccess && (command.status === 'FAILED' || command.status === 'ERROR');
 
-    // For ENROLL_FP: if still SENT/PENDING after ENROLL_TIMEOUT_SECONDS without fingerprint data,
+    // If polling specific command didn't mark success yet, check if any recent ENROLL_FP for this PIN succeeded
+    if (isEnrollFp && !isSuccess && pin) {
+      const cleanPin = pin.replace(/\D/g, '');
+      const pinSuccessCmd = await prisma.biometricCommand.findFirst({
+        where: {
+          device: { gymId },
+          AND: [
+            { commandString: { contains: `PIN=${cleanPin}` } },
+            { commandString: { contains: 'ENROLL_FP' } },
+          ],
+          status: { in: ['SUCCESS', 'COMPLETED'] },
+          createdAt: { gte: new Date(Date.now() - 3 * 60 * 1000) }
+        }
+      });
+      if (pinSuccessCmd) {
+        isSuccess = true;
+        isError = false;
+      }
+    }
+
+    // For ENROLL_FP: if still SENT/PENDING after ENROLL_TIMEOUT_SECONDS without confirmation,
     // declare TIMEOUT so the UI shows a real failure instead of spinning forever.
-    if (isEnrollFp && !isSuccess && !isError && (command.status === 'SENT' || command.status === 'PENDING' || command.status === 'COMPLETED')) {
+    if (isEnrollFp && !isSuccess && !isError && (command.status === 'SENT' || command.status === 'PENDING')) {
       const ageSeconds = (Date.now() - new Date(command.createdAt).getTime()) / 1000;
       if (ageSeconds > ENROLL_TIMEOUT_SECONDS) {
         console.log(`[ENROLL TIMEOUT] Command ${command.id} for PIN ${pin} timed out after ${Math.round(ageSeconds)}s. Device never confirmed fingerprint data.`);
@@ -75,11 +91,6 @@ export async function GET(req: Request) {
         });
       }
     }
-
-    // TCP Fallback removed — verifyUserExistsOnZkDevice only checks if the user PIN
-    // exists on the device, NOT whether a fingerprint was actually enrolled. This caused
-    // false "SUCCESS" when the device rejected a duplicate finger but the user already
-    // existed from a prior enrollment or card registration.
 
     return NextResponse.json({ status: isSuccess ? 'SUCCESS' : isError ? 'ERROR' : command.status });
   } catch (error) {
