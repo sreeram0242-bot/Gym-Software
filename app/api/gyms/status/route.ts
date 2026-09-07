@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 // Lightweight endpoint — returns only the gym's current status.
 // Polled every 30s by the dashboard layout to detect live suspension.
 export async function GET(request: Request) {

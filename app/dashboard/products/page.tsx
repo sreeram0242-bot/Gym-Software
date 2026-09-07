@@ -247,7 +247,7 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
-      {isLoading ? (
+      {(isLoading || !gymId) && !data ? (
         <div className="space-y-4 animate-pulse">
           <div className="h-24 bg-slate-200 rounded-2xl" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -54,7 +54,7 @@ export default function DashboardOverview() {
 
   return (
     <div className="space-y-4">
-      {isLoading && (
+      {(isLoading || !gymId) && !data && (
         <div className="space-y-4 animate-pulse">
           <div className="h-32 bg-slate-200 rounded-2xl" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -63,7 +63,7 @@ export default function DashboardOverview() {
           <div className="h-40 bg-slate-200 rounded-2xl" />
         </div>
       )}
-      {!isLoading && <>
+      {(!!gymId && !isLoading) || !!data ? <>
       {/* WhatsApp Disconnected Banner */}
       {(waStatus === 'disconnected' || waStatus === 'scan_qr') && (
         <Link 
@@ -337,8 +337,7 @@ export default function DashboardOverview() {
           </div>
         </div>
       </div>
-      </>
-    }
+      </> : null}
     </div>
   );
 }

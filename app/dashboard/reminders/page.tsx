@@ -198,7 +198,7 @@ export default function RemindersPage() {
 
   return (
     <div className="space-y-4">
-      {isLoading ? (
+      {(isLoading || !gymId) && !data ? (
         <div className="space-y-4 animate-pulse">
           <div className="h-28 bg-slate-200 rounded-2xl" />
           <div className="h-16 bg-slate-200 rounded-2xl" />

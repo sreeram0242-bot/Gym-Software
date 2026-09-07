@@ -673,7 +673,7 @@ export default function StaffPage() {
 
   return (
     <div className="space-y-4">
-      {isLoading && (
+      {(isLoading || !gymId) && !data && (
         <div className="space-y-4 animate-pulse">
           <div className="h-20 bg-slate-200 rounded-2xl" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -682,7 +682,7 @@ export default function StaffPage() {
           <div className="h-48 bg-slate-200 rounded-2xl" />
         </div>
       )}
-      {!isLoading && <>
+      {(!!gymId && !isLoading) || !!data ? <>
       
       {/* ─── PAGE HEADER & SUBPAGE TAB SWITCHER ─── */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1879,10 +1879,10 @@ export default function StaffPage() {
           </div>
         </div>
       )}
-      </>}
+      </> : null}
 
       {/* MOBILE FLOATING ACTION BUTTON */}
-      {!isLoading && (
+      {((!!gymId && !isLoading) || !!data) && (
         <button
           onClick={openAddModal}
           className="md:hidden fixed bottom-24 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-95 transition-transform"

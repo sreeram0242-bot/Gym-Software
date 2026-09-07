@@ -3,6 +3,8 @@ import prisma from '@/lib/db';
 import { WhatsAppManager } from '@/lib/whatsapp';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 
+export const dynamic = 'force-dynamic';
+
 function getLocalTodayStr() {
   const now = new Date();
   // Use IST (UTC+5:30)
