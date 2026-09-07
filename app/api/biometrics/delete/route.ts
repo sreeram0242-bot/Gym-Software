@@ -12,42 +12,44 @@ export async function POST(req: Request) {
       return new NextResponse('Missing required fields', { status: 400 });
     }
 
-    console.log(`[Biometrics Delete] Attempting to delete PIN ${pin} for gym ${gymId}`);
+    const cleanPin = String(pin).trim();
+    const numericPin = cleanPin.replace(/\D/g, '');
+    const trimmedPin = numericPin.replace(/^0+/, '') || numericPin;
 
-    // 1. Look up the gym's actual device IP from GymSettings
-    const gymSettings = await prisma.gymSettings.findFirst({ where: { gymId } });
-    const deviceIp = gymSettings?.deviceIpAddress || process.env.ZK_DEVICE_IP || '192.168.137.188';
+    console.log(`[Biometrics Delete] Attempting to delete PIN "${cleanPin}" (trimmed: "${trimmedPin}") for gym ${gymId}`);
 
-    // 2. Direct TCP delete — uses the correct per-gym device IP
-    try {
-      const result = await deleteUserFromZkDevice(String(pin), deviceIp);
-      if (result.success) {
-        console.log(`[Biometrics Delete] TCP delete succeeded for PIN ${pin} on ${deviceIp}`);
-      } else {
-        console.warn(`[Biometrics Delete] TCP delete returned failure for PIN ${pin}:`, result.error);
-      }
-    } catch (e) {
-      console.error('[Biometrics Delete] Direct TCP delete threw exception, falling back to ADMS queue:', e);
-    }
-
-    // 3. Also queue ADMS delete command as a secondary/backup mechanism
-    // (executes on the next device heartbeat even if TCP failed or device was temporarily offline)
-    const device = await prisma.biometricDevice.findFirst({
-      where: { gymId },
-      orderBy: { lastActive: 'desc' }
+    // 1. Queue ADMS delete commands immediately so device picks them up on next heartbeat (2s)
+    const devices = await prisma.biometricDevice.findMany({
+      where: { gymId }
     });
 
-    if (device) {
-      await prisma.biometricCommand.create({
-        data: {
-          deviceId: device.id,
-          commandString: `DATA DELETE USERINFO PIN=${pin}`,
-          status: 'PENDING'
+    if (devices.length > 0) {
+      const pinsToDelete = Array.from(new Set([cleanPin, trimmedPin])).filter(Boolean);
+      for (const device of devices) {
+        for (const p of pinsToDelete) {
+          await prisma.biometricCommand.create({
+            data: {
+              deviceId: device.id,
+              commandString: `DATA DELETE USERINFO PIN=${p}`,
+              status: 'PENDING'
+            }
+          });
+          console.log(`[Biometrics Delete] Queued ADMS delete for PIN ${p} on device ${device.id} (${device.serialNumber})`);
         }
-      });
-      console.log(`[Biometrics Delete] Queued ADMS delete command for PIN ${pin} on device ${device.id}`);
+      }
     } else {
-      console.warn(`[Biometrics Delete] No active device found for gym ${gymId} — ADMS fallback skipped`);
+      console.warn(`[Biometrics Delete] No registered devices found for gym ${gymId}`);
+    }
+
+    // 2. Direct TCP delete — only if gym has an explicit local device IP configured
+    const gymSettings = await prisma.gymSettings.findFirst({ where: { gymId } });
+    if (gymSettings?.deviceIpAddress) {
+      deleteUserFromZkDevice(cleanPin, gymSettings.deviceIpAddress).catch(e => {
+        console.error('[Biometrics Delete] Direct TCP delete threw exception:', e);
+      });
+      if (trimmedPin !== cleanPin) {
+        deleteUserFromZkDevice(trimmedPin, gymSettings.deviceIpAddress).catch(() => {});
+      }
     }
 
     return NextResponse.json({ success: true });

@@ -52,6 +52,7 @@ export default function MemberManagementPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const modalSessionIdRef = React.useRef(0);
+  const lastEnrolledDevicePinRef = React.useRef<string | null>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [nfcCardId, setNfcCardId] = useState('');
@@ -204,20 +205,23 @@ export default function MemberManagementPage() {
    * from the physical device so it doesn't block future enrollments.
    */
   const closeAddModal = async () => {
-    // If this is a NEW member form (not editing), and a fingerprint enroll command was
-    // ever sent to the device (POLLING = in progress, SUCCESS = completed, ERROR = device
-    // rejected but may have partial user record), delete the ghost fingerprint from the machine.
-    const fpWasSentToDevice = !isEditingMember && fingerprintId && (
-      fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS' || fpPollStatus === 'ERROR'
+    // If this is a NEW member form (not editing), and a fingerprint or card was sent to the device,
+    // delete the ghost record from the machine so it doesn't block future enrollments.
+    const pinToDelete = lastEnrolledDevicePinRef.current || (
+      !isEditingMember && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS' || fpPollStatus === 'ERROR' || cardPollStatus === 'POLLING' || cardPollStatus === 'SUCCESS')
+        ? fingerprintId.trim()
+        : null
     );
-    if (fpWasSentToDevice) {
-      console.log(`[Ghost Cleanup] Cancelling modal with fpPollStatus=${fpPollStatus}. Deleting PIN ${fingerprintId} from device.`);
+    if (!isEditingMember && pinToDelete) {
+      console.log(`[Ghost Cleanup] Cancelling modal with enrolled PIN ${pinToDelete}. Deleting from machine.`);
       fetch('/api/biometrics/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gymId, pin: fingerprintId })
+        body: JSON.stringify({ gymId, pin: pinToDelete }),
+        keepalive: true
       }).catch(e => console.error('Ghost fingerprint cleanup failed:', e));
     }
+    lastEnrolledDevicePinRef.current = null;
     // Reset modal state
     setShowAddModal(false);
     setIsEditingMember(false);
@@ -234,23 +238,24 @@ export default function MemberManagementPage() {
   // Handle ghost fingerprint cleanup on browser tab close / refresh
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Trigger delete if enroll was attempted (POLLING, SUCCESS, or ERROR)
-      const fpWasSentToDevice = !isEditingMember && fingerprintId && (
-        fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS' || fpPollStatus === 'ERROR'
+      const pinToDelete = lastEnrolledDevicePinRef.current || (
+        !isEditingMember && fingerprintId && (fpPollStatus === 'POLLING' || fpPollStatus === 'SUCCESS' || fpPollStatus === 'ERROR' || cardPollStatus === 'POLLING' || cardPollStatus === 'SUCCESS')
+          ? fingerprintId.trim()
+          : null
       );
-      if (fpWasSentToDevice) {
+      if (!isEditingMember && pinToDelete) {
         // keepalive: true ensures the request survives the page unload
         fetch('/api/biometrics/delete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ gymId, pin: fingerprintId }),
+          body: JSON.stringify({ gymId, pin: pinToDelete }),
           keepalive: true
         }).catch(() => {});
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isEditingMember, fingerprintId, fpPollStatus, gymId]);
+  }, [isEditingMember, fingerprintId, fpPollStatus, cardPollStatus, gymId]);
 
   const handleDeleteMember = (id: string) => {
     setConfirmDialog({
@@ -562,13 +567,11 @@ export default function MemberManagementPage() {
         if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `Member ${savedName} added successfully!`, type: 'success' } }));
       }
       
-      // Re-fetch from DB, then sync the detail panel to the real saved record
-      const freshData = await mutate(['members', gymId]);
-      const freshCustomers = freshData?.custs;
-      if (!isEditingMember && freshCustomers) {
-        const realMember = freshCustomers.find((c: any) => c.name === savedName && !c.id?.startsWith('temp_'));
-        if (realMember) setSelectedMember(realMember);
-      }
+      // Re-fetch members list from DB
+      await mutate(['members', gymId]);
+
+      // Clear enrolled device pin ref as member is now saved successfully
+      lastEnrolledDevicePinRef.current = null;
 
       // Close modal and clear forms only on success
       setShowAddModal(false);
@@ -1776,6 +1779,7 @@ export default function MemberManagementPage() {
                               showToast(`Card ${nfcCardId} is already assigned to ${duplicateNfcMember.name}. Duplicate cards are not allowed.`, 'error');
                               return;
                             }
+                            lastEnrolledDevicePinRef.current = fingerprintId.trim();
                             setCardPollStatus('POLLING');
                             try {
                               const res = await fetch('/api/biometrics/enroll', {
@@ -1859,6 +1863,7 @@ export default function MemberManagementPage() {
                             showToast(`Member ID ${fingerprintId} is already assigned to ${duplicateMember.name}. Use a new ID like ${nextSuggestedId}.`, 'error');
                             return;
                           }
+                          lastEnrolledDevicePinRef.current = fingerprintId.trim();
                           setFpPollStatus('POLLING');
                           try {
                             const res = await fetch('/api/biometrics/enroll', {

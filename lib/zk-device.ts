@@ -64,13 +64,17 @@ export async function deleteUserFromZkDevice(pin: string, deviceIp?: string) {
     });
 
     if (targetUser) {
-      // CMD_DELETE_USER = 18 takes 2-byte UID in LE format
+      // CMD_DELETE_USERTEMP = 19 deletes user profile AND all fingerprint templates
+      // CMD_DELETE_USER = 18 deletes user profile
       const buf = Buffer.alloc(2);
       buf.writeUInt16LE(targetUser.uid, 0);
-      await zk.executeCmd(18, buf);
+      try {
+        await zk.executeCmd(19, buf); // 19 = CMD_DELETE_USERTEMP
+      } catch (e) { /* ignore if not supported by older fw */ }
+      await zk.executeCmd(18, buf);   // 18 = CMD_DELETE_USER
       // CMD_REFRESHDATA = 1013
       await zk.executeCmd(1013, '');
-      console.log(`[ZK_DEVICE] Successfully deleted PIN ${pin} (UID ${targetUser.uid}) from device ${ip}`);
+      console.log(`[ZK_DEVICE] Successfully deleted user & templates for PIN ${pin} (UID ${targetUser.uid}) from device ${ip}`);
     } else {
       console.log(`[ZK_DEVICE] PIN ${pin} not found on device ${ip} — nothing to delete`);
     }

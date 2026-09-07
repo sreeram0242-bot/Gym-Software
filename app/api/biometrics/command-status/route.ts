@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { verifyUserExistsOnZkDevice } from '@/lib/zk-device';
 
 // How long to wait for a fingerprint scan before declaring timeout (seconds)
 const ENROLL_TIMEOUT_SECONDS = 90;
@@ -77,24 +76,10 @@ export async function GET(req: Request) {
       }
     }
 
-    // Fix Issue A: TCP Fallback — look up the gym's actual device IP before checking the physical device.
-    // Previously called verifyUserExistsOnZkDevice(pin) with no IP → fell back to wrong env var.
-    if (isError && pin && isEnrollFp) {
-      const gymSettings = await prisma.gymSettings.findFirst({ where: { gymId } });
-      const deviceIp = gymSettings?.deviceIpAddress || process.env.ZK_DEVICE_IP || '192.168.137.188';
-
-      const existsOnDevice = await verifyUserExistsOnZkDevice(pin, deviceIp);
-      if (existsOnDevice) {
-        console.log(`[TCP FALLBACK] Command ${command.id} marked ERROR/FAILED, but PIN ${pin} exists on device ${deviceIp}! Forcing SUCCESS.`);
-        prisma.biometricCommand.update({
-          where: { id: command.id },
-          data: { status: 'SUCCESS' }
-        }).catch(console.error);
-        
-        isSuccess = true;
-        isError = false;
-      }
-    }
+    // TCP Fallback removed — verifyUserExistsOnZkDevice only checks if the user PIN
+    // exists on the device, NOT whether a fingerprint was actually enrolled. This caused
+    // false "SUCCESS" when the device rejected a duplicate finger but the user already
+    // existed from a prior enrollment or card registration.
 
     return NextResponse.json({ status: isSuccess ? 'SUCCESS' : isError ? 'ERROR' : command.status });
   } catch (error) {
