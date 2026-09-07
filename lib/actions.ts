@@ -1070,15 +1070,14 @@ export async function getAttendance(gymId?: string) {
       }
     }
 
+    // Limit to last 45 days to prevent massive payloads crashing the frontend
+    const fortyFiveDaysAgo = new Date(Date.now() - (45 * 24 * 60 * 60 * 1000)).toISOString();
+    
     const records = await prisma.attendanceRecord.findMany({
-      where: { gymId },
-      orderBy: { checkInTime: 'desc' },
-      include: { customer: { select: { profilePic: true } } }
+      where: { gymId, checkInTime: { gte: fortyFiveDaysAgo } },
+      orderBy: { checkInTime: 'desc' }
     });
-    return records.map(r => ({
-      ...r,
-      customerProfilePic: r.customer?.profilePic || null
-    }));
+    return records;
   } catch (e) {
     return store.attendance.filter((a: any) => a.gymId === gymId);
   }
@@ -2068,8 +2067,10 @@ export async function getStaffAttendance(gymId: string) {
       }).catch(() => {});
     }
 
+    const fortyFiveDaysAgo = new Date(Date.now() - (45 * 24 * 60 * 60 * 1000)).toISOString();
+    
     return await prisma.staffAttendanceRecord.findMany({
-      where: { gymId },
+      where: { gymId, checkInTime: { gte: fortyFiveDaysAgo } },
       orderBy: { checkInTime: 'desc' }
     });
   } catch (e) {

@@ -35,6 +35,8 @@ export default function RevenuePage() {
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE' | 'NEW_MEMBERS'>('ALL');
   const [paymentModeFilter, setPaymentModeFilter] = useState<'ALL' | 'CASH' | 'UPI' | 'CARD'>('ALL');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
 
   
 
@@ -325,6 +327,16 @@ export default function RevenuePage() {
     }
     return t.type === filterType;
   });
+
+  const totalPages = Math.ceil(filteredTxs.length / itemsPerPage) || 1;
+  const paginatedTxs = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredTxs.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredTxs, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterType, paymentModeFilter, globalTimeFilter, globalDateFrom, globalDateTo]);
 
   const getExportTransactions = () => {
     let exportTxs = effectiveTransactions;
@@ -724,7 +736,7 @@ export default function RevenuePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 text-xs sm:text-sm">
-              {filteredTxs.map((tx) => (
+              {paginatedTxs.map((tx) => (
                 <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
                   <td className="py-3 px-4">
                     <span
@@ -819,16 +831,46 @@ export default function RevenuePage() {
                   </td>
                 </tr>
               ))}
-              {filteredTxs.length === 0 && (
+              {paginatedTxs.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400 font-medium text-xs">
-                    No transactions found for the selected filters.
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                    <div className="flex flex-col items-center justify-center">
+                      <Banknote className="w-8 h-8 mb-3 opacity-20" />
+                      <p className="font-bold text-slate-500">No transactions found.</p>
+                      <p className="text-xs mt-1">Try adjusting your filters or date range.</p>
+                    </div>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+            <span className="text-xs text-slate-500 font-semibold">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTxs.length)} of {filteredTxs.length} entries
+            </span>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-bold hover:bg-slate-100 disabled:opacity-50 transition-colors"
+              >
+                Previous
+              </button>
+              <span className="text-xs font-bold text-slate-700 px-2">Page {currentPage} of {totalPages}</span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-bold hover:bg-slate-100 disabled:opacity-50 transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* MODAL: ADD EXPENSE */}
