@@ -234,22 +234,14 @@ const store = globalAny.mockStore;
 
 // --- AUTHORIZATION HELPER ---
 function verifyTenantAccess(requestedGymId?: string) {
+  if (requestedGymId) {
+    return requestedGymId;
+  }
   let activeGymId: string | undefined;
   try {
     activeGymId = cookies().get('active_gym_id')?.value;
   } catch (e) {}
-
-  // If a valid gymId is passed from client, use it directly
-  if (requestedGymId && requestedGymId !== 'gym_1') {
-    return requestedGymId;
-  }
-
-  // Fallback to active session gym from cookies
-  if (activeGymId) {
-    return activeGymId;
-  }
-
-  return requestedGymId || null;
+  return activeGymId || null;
 }
 
 export async function setSuperadminTenant(gymId: string) {
@@ -482,7 +474,7 @@ export async function addCustomer(data: any) {
 
   const waActive = false; // Only activates when member sends 'start' to WhatsApp bot
 
-  const memberId = data.memberId || ('M-' + Math.floor(1000 + Math.random() * 9000).toString());
+  const memberId = data.memberId || ('M-' + Date.now().toString().slice(-6) + Math.floor(100 + Math.random() * 900).toString());
 
   if (data.fingerprintId) {
     const fpStr = String(data.fingerprintId).trim();

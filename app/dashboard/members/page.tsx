@@ -1372,7 +1372,7 @@ export default function MemberManagementPage() {
                         <h3 className="font-bold text-slate-900 text-sm truncate">{cust.name}</h3>
                         {cust.memberId && (
                           <span className="whitespace-nowrap shrink-0 text-[10px] font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200 px-1.5 py-0.5 rounded">
-                            M-{cust.memberId}
+                            {cust.memberId.startsWith('M-') ? cust.memberId : `M-${cust.memberId}`}
                           </span>
                         )}
                       </div>

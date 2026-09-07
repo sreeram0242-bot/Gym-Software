@@ -8,6 +8,13 @@ const addMins = (d: Date, m: number) => new Date(d.getTime() + m * 60000);
 
 export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const secret = searchParams.get('secret');
+    // Guard against accidental data wipe in production
+    if (process.env.NODE_ENV === 'production' && secret !== 'seed_staff_auth_2026') {
+      return NextResponse.json({ error: 'Unauthorized: Seed endpoint is disabled in production' }, { status: 403 });
+    }
+
     // Find the gym
     const gym = await prisma.gym.findFirst({ orderBy: { createdAt: 'desc' } });
     if (!gym) return NextResponse.json({ error: 'No gym found' }, { status: 404 });
