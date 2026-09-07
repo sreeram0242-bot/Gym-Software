@@ -1,5 +1,6 @@
 import useSWR, { preload } from 'swr';
 import { 
+  getGymById,
   getGyms, 
   getCustomers, 
   getAttendance, 
@@ -21,15 +22,22 @@ const SWR_CONFIG = {
   keepPreviousData: true,
 };
 
+// Safe promise wrapper so intermittent network or action hiccups never crash whole page data
+const safe = <T>(promise: Promise<T>, fallback: T): Promise<T> =>
+  promise.catch(err => {
+    console.warn('[SWR Data Fetch Warning]', err?.message || err);
+    return fallback;
+  });
+
 // 1. Overview Page Data
 const fetchOverview = async (gymId: string) => {
-  const [gyms, custs, atts, txs] = await Promise.all([
-    getGyms(),
-    getCustomers(gymId),
-    getAttendance(gymId),
-    getTransactions(gymId)
+  const [gym, custs, atts, txs] = await Promise.all([
+    safe(getGymById(gymId), null),
+    safe(getCustomers(gymId), []),
+    safe(getAttendance(gymId), []),
+    safe(getTransactions(gymId), [])
   ]);
-  return { gyms, custs, atts, txs };
+  return { gyms: gym ? [gym] : [], custs, atts, txs };
 };
 export const preloadOverview = (gymId: string) => preload(gymId ? ['overview', gymId] : null, () => fetchOverview(gymId));
 export function useOverviewData(gymId: string) {
@@ -38,17 +46,17 @@ export function useOverviewData(gymId: string) {
 
 // 2. Members Page Data
 const fetchMembers = async (gymId: string) => {
-  const [gyms, custs, atts, ps, txs, gymSettings, nextId, staffsList] = await Promise.all([
-    getGyms(),
-    getCustomers(gymId),
-    getAttendance(gymId),
-    getSubscriptionPlans(gymId),
-    getTransactions(gymId),
-    getGymSettings(gymId),
-    getNextAvailableZkTecoId(gymId),
-    getStaffs(gymId)
+  const [gym, custs, atts, ps, txs, gymSettings, nextId, staffsList] = await Promise.all([
+    safe(getGymById(gymId), null),
+    safe(getCustomers(gymId), []),
+    safe(getAttendance(gymId), []),
+    safe(getSubscriptionPlans(gymId), []),
+    safe(getTransactions(gymId), []),
+    safe(getGymSettings(gymId), null),
+    safe(getNextAvailableZkTecoId(gymId), '001'),
+    safe(getStaffs(gymId), [])
   ]);
-  return { gyms, custs, atts, ps, txs, gymSettings, nextId, staffs: staffsList };
+  return { gyms: gym ? [gym] : [], custs, atts, ps, txs, gymSettings, nextId, staffs: staffsList };
 };
 export const preloadMembers = (gymId: string) => preload(gymId ? ['members', gymId] : null, () => fetchMembers(gymId));
 export function useMembersData(gymId: string) {
@@ -57,48 +65,48 @@ export function useMembersData(gymId: string) {
 
 // 3. Staffs Page Data
 const fetchStaffs = async (gymId: string) => {
-  const [gyms, staffsList, atts, gymSettings, nextId, custs] = await Promise.all([
-    getGyms(),
-    getStaffs(gymId),
-    getStaffAttendance(gymId),
-    getGymSettings(gymId),
-    getNextAvailableZkTecoId(gymId),
-    getCustomers(gymId)
+  const [gym, staffsList, atts, gymSettings, nextId, custs] = await Promise.all([
+    safe(getGymById(gymId), null),
+    safe(getStaffs(gymId), []),
+    safe(getStaffAttendance(gymId), []),
+    safe(getGymSettings(gymId), null),
+    safe(getNextAvailableZkTecoId(gymId), '001'),
+    safe(getCustomers(gymId), [])
   ]);
-  return { gyms, staffs: staffsList, atts, gymSettings, nextId, custs };
+  return { gyms: gym ? [gym] : [], staffs: staffsList, atts, gymSettings, nextId, custs };
 };
 export const preloadStaffs = (gymId: string) => preload(gymId ? ['staffs', gymId] : null, () => fetchStaffs(gymId));
 export function useStaffsData(gymId: string) {
-  return useSWR(gymId ? ['staffs', gymId] : null, () => fetchStaffs(gymId), SWR_CONFIG);
+  return useSWR(gymId ? ['staffs', gymId] : null, () => fetchStaffs(gymId), { ...SWR_CONFIG, refreshInterval: 8000 });
 }
 
 // 4. Checkin Terminal Data
 const fetchCheckin = async (gymId: string) => {
-  const [gyms, custs, staffsList, atts, stfAtts, gymSettings] = await Promise.all([
-    getGyms(),
-    getCustomers(gymId),
-    getStaffs(gymId),
-    getAttendance(gymId),
-    getStaffAttendance(gymId),
-    getGymSettings(gymId)
+  const [gym, custs, staffsList, atts, stfAtts, gymSettings] = await Promise.all([
+    safe(getGymById(gymId), null),
+    safe(getCustomers(gymId), []),
+    safe(getStaffs(gymId), []),
+    safe(getAttendance(gymId), []),
+    safe(getStaffAttendance(gymId), []),
+    safe(getGymSettings(gymId), null)
   ]);
-  return { gyms, custs, staffs: staffsList, atts, stfAtts, gymSettings };
+  return { gyms: gym ? [gym] : [], custs, staffs: staffsList, atts, stfAtts, gymSettings };
 };
 export const preloadCheckin = (gymId: string) => preload(gymId ? ['checkin', gymId] : null, () => fetchCheckin(gymId));
 export function useCheckinData(gymId: string) {
-  return useSWR(gymId ? ['checkin', gymId] : null, () => fetchCheckin(gymId), SWR_CONFIG);
+  return useSWR(gymId ? ['checkin', gymId] : null, () => fetchCheckin(gymId), { ...SWR_CONFIG, refreshInterval: 6000 });
 }
 
 // 5. Revenue Page Data
 const fetchRevenue = async (gymId: string) => {
-  const [gyms, txs, ps, custs, settings] = await Promise.all([
-    getGyms(),
-    getTransactions(gymId),
-    getSubscriptionPlans(gymId),
-    getCustomers(gymId),
-    getGymSettings(gymId)
+  const [gym, txs, ps, custs, settings] = await Promise.all([
+    safe(getGymById(gymId), null),
+    safe(getTransactions(gymId), []),
+    safe(getSubscriptionPlans(gymId), []),
+    safe(getCustomers(gymId), []),
+    safe(getGymSettings(gymId), null)
   ]);
-  return { gyms, txs, ps, custs, settings };
+  return { gyms: gym ? [gym] : [], txs, ps, custs, settings };
 };
 export const preloadRevenue = (gymId: string) => preload(gymId ? ['revenue', gymId] : null, () => fetchRevenue(gymId));
 export function useRevenueData(gymId: string) {
@@ -107,14 +115,14 @@ export function useRevenueData(gymId: string) {
 
 // 6. Products Page Data
 const fetchProducts = async (gymId: string) => {
-  const [gyms, prods, sales, custs, settings] = await Promise.all([
-    getGyms(),
-    getProducts(gymId),
-    getProductSales(gymId),
-    getCustomers(gymId),
-    getGymSettings(gymId)
+  const [gym, prods, sales, custs, settings] = await Promise.all([
+    safe(getGymById(gymId), null),
+    safe(getProducts(gymId), []),
+    safe(getProductSales(gymId), []),
+    safe(getCustomers(gymId), []),
+    safe(getGymSettings(gymId), null)
   ]);
-  return { gyms, prods, sales, custs, settings };
+  return { gyms: gym ? [gym] : [], prods, sales, custs, settings };
 };
 export const preloadProducts = (gymId: string) => preload(gymId ? ['products', gymId] : null, () => fetchProducts(gymId));
 export function useProductsData(gymId: string) {
@@ -123,12 +131,12 @@ export function useProductsData(gymId: string) {
 
 // 7. Reminders Page Data
 const fetchReminders = async (gymId: string) => {
-  const [gyms, custs, settings] = await Promise.all([
-    getGyms(),
-    getCustomers(gymId),
-    getGymSettings(gymId)
+  const [gym, custs, settings] = await Promise.all([
+    safe(getGymById(gymId), null),
+    safe(getCustomers(gymId), []),
+    safe(getGymSettings(gymId), null)
   ]);
-  return { gyms, custs, settings };
+  return { gyms: gym ? [gym] : [], custs, settings };
 };
 export const preloadReminders = (gymId: string) => preload(gymId ? ['reminders', gymId] : null, () => fetchReminders(gymId));
 export function useRemindersData(gymId: string) {
@@ -138,16 +146,11 @@ export function useRemindersData(gymId: string) {
 // 8. Broadcast Page Data
 const fetchBroadcast = async (gymId: string) => {
   if (!gymId) return { gyms: [], custs: [] };
-  try {
-    const [gyms, custs] = await Promise.all([
-      getGyms(),
-      getCustomers(gymId)
-    ]);
-    return { gyms: gyms || [], custs: custs || [] };
-  } catch (err) {
-    console.error('fetchBroadcast error:', err);
-    return { gyms: [], custs: [] };
-  }
+  const [gym, custs] = await Promise.all([
+    safe(getGymById(gymId), null),
+    safe(getCustomers(gymId), [])
+  ]);
+  return { gyms: gym ? [gym] : [], custs: custs || [] };
 };
 export const preloadBroadcast = (gymId: string) => preload(gymId ? ['broadcast', gymId] : null, () => fetchBroadcast(gymId));
 export function useBroadcastData(gymId: string) {

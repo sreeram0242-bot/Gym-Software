@@ -24,6 +24,160 @@ const TABS: { key: TabType; label: string; icon: React.ReactNode }[] = [
   { key: 'password', label: 'Password', icon: <Key className="w-4 h-4" /> },
 ];
 
+const TEMPLATE_CONFIG: Record<TemplateType, {
+  label: string;
+  category: 'Attendance' | 'Payments & Dues' | 'Member Engagement' | 'Bot Auto-Replies';
+  badge: string;
+  icon: string;
+  trigger: string;
+  desc: string;
+  placeholders: { tag: string; label: string }[];
+}> = {
+  receipt: {
+    label: 'Payment Receipt',
+    category: 'Payments & Dues',
+    badge: 'Renewal / Payment',
+    icon: '🧾',
+    trigger: 'Sent automatically when a member pays for renewal or clears their due balance.',
+    desc: 'Provides the payment confirmation, paid amount, new due date, and gym signature.',
+    placeholders: [
+      { tag: '{{name}}', label: 'Member Name' },
+      { tag: '{{amount}}', label: 'Amount Paid (₹)' },
+      { tag: '{{dueDate}}', label: 'New Due Date' },
+      { tag: '{{gymName}}', label: 'Gym Name' }
+    ]
+  },
+  reminder: {
+    label: 'Plan Due Date Reminder',
+    category: 'Payments & Dues',
+    badge: 'Upcoming Expiry',
+    icon: '⚠️',
+    trigger: 'Sent before or on expiry date to remind member to clear dues.',
+    desc: 'Alerts the member that their gym subscription fee is due soon to ensure uninterrupted workouts.',
+    placeholders: [
+      { tag: '{{name}}', label: 'Member Name' },
+      { tag: '{{amount}}', label: 'Due Fee (₹)' },
+      { tag: '{{dueDate}}', label: 'Due Date' },
+      { tag: '{{gymName}}', label: 'Gym Name' }
+    ]
+  },
+  checkin: {
+    label: 'Attendance Check-In',
+    category: 'Attendance',
+    badge: 'Punch-In Alert',
+    icon: '🏋️‍♂️',
+    trigger: 'Sent immediately when member punches in at the terminal (biometric, card, or receptionist).',
+    desc: 'Real-time WhatsApp entry notification with check-in timestamp.',
+    placeholders: [
+      { tag: '{{name}}', label: 'Member Name' },
+      { tag: '{{time}}', label: 'Check-In Time' },
+      { tag: '{{gymName}}', label: 'Gym Name' }
+    ]
+  },
+  checkout: {
+    label: 'Attendance Check-Out',
+    category: 'Attendance',
+    badge: 'Punch-Out Alert',
+    icon: '⏱️',
+    trigger: 'Sent when member punches out at the gym terminal.',
+    desc: 'Exit notification with workout duration in minutes and completion status.',
+    placeholders: [
+      { tag: '{{name}}', label: 'Member Name' },
+      { tag: '{{time}}', label: 'Check-Out Time' },
+      { tag: '{{duration}}', label: 'Workout Minutes' },
+      { tag: '{{gymName}}', label: 'Gym Name' }
+    ]
+  },
+  welcome: {
+    label: 'New Member Welcome',
+    category: 'Member Engagement',
+    badge: 'New Member',
+    icon: '🎉',
+    trigger: 'Sent when a new member is registered in the system.',
+    desc: 'Welcomes new joiner with full membership breakdown and WhatsApp start info.',
+    placeholders: [
+      { tag: '{{name}}', label: 'Member Name' },
+      { tag: '{{phone}}', label: 'Mobile Number' },
+      { tag: '{{plan}}', label: 'Plan Name' },
+      { tag: '{{amount}}', label: 'Fee Paid (₹)' },
+      { tag: '{{joinDate}}', label: 'Join Date' },
+      { tag: '{{dueDate}}', label: 'First Due Date' },
+      { tag: '{{gymName}}', label: 'Gym Name' }
+    ]
+  },
+  storeReceipt: {
+    label: 'Store POS Receipt',
+    category: 'Payments & Dues',
+    badge: 'Merchandise / POS',
+    icon: '🛍️',
+    trigger: 'Sent when member purchases products/supplements at gym store.',
+    desc: 'Itemized invoice receipt with payment mode and total amount.',
+    placeholders: [
+      { tag: '{{name}}', label: 'Customer Name' },
+      { tag: '{{itemsList}}', label: 'Purchased Items List' },
+      { tag: '{{totalAmount}}', label: 'Total Amount (₹)' },
+      { tag: '{{paymentMode}}', label: 'Payment Mode' },
+      { tag: '{{date}}', label: 'Purchase Date' },
+      { tag: '{{gymName}}', label: 'Gym Name' }
+    ]
+  },
+  absentee: {
+    label: 'Absentee Follow-up',
+    category: 'Member Engagement',
+    badge: 'Inactive Member',
+    icon: '📅',
+    trigger: 'Sent when an active member has not visited the gym for several days.',
+    desc: 'Friendly motivational check-in encouraging consistent workouts.',
+    placeholders: [
+      { tag: '{{name}}', label: 'Member Name' },
+      { tag: '{{gymName}}', label: 'Gym Name' }
+    ]
+  },
+  queryPlan: {
+    label: 'Bot Reply: Plan & Due Date',
+    category: 'Bot Auto-Replies',
+    badge: 'Keyword: "plan"',
+    icon: '📋',
+    trigger: 'Sent when member messages "plan", "due date", "due", or "1" to the WhatsApp bot.',
+    desc: 'Auto-replies with membership plan type, fee amount, pending balance, and next due date.',
+    placeholders: [
+      { tag: '{{name}}', label: 'Member Name' },
+      { tag: '{{plan}}', label: 'Plan Name' },
+      { tag: '{{amount}}', label: 'Fee Amount (₹)' },
+      { tag: '{{balanceNotice}}', label: 'Pending Balance Notice' },
+      { tag: '{{pendingBalance}}', label: 'Pending Balance (₹)' },
+      { tag: '{{dueDate}}', label: 'Next Due Date' },
+      { tag: '{{gymName}}', label: 'Gym Name' }
+    ]
+  },
+  queryPayment: {
+    label: 'Bot Reply: Payment History',
+    category: 'Bot Auto-Replies',
+    badge: 'Keyword: "payment"',
+    icon: '💰',
+    trigger: 'Sent when member messages "payment", "payments", or "2" to the WhatsApp bot.',
+    desc: 'Auto-replies with the member’s last 3 payment transactions, amounts, and payment dates.',
+    placeholders: [
+      { tag: '{{name}}', label: 'Member Name' },
+      { tag: '{{paymentsList}}', label: 'Recent Payments List' },
+      { tag: '{{gymName}}', label: 'Gym Name' }
+    ]
+  },
+  queryAttendance: {
+    label: 'Bot Reply: Attendance History',
+    category: 'Bot Auto-Replies',
+    badge: 'Keyword: "attendance"',
+    icon: '⏱️',
+    trigger: 'Sent when member messages "attendance", "attend", or "3" to the WhatsApp bot.',
+    desc: 'Auto-replies with the member’s last 3 check-in dates and workout session durations.',
+    placeholders: [
+      { tag: '{{name}}', label: 'Member Name' },
+      { tag: '{{attendanceList}}', label: 'Recent Attendance List' },
+      { tag: '{{gymName}}', label: 'Gym Name' }
+    ]
+  }
+};
+
 function Toggle({ enabled, onChange, label, desc }: { enabled: boolean; onChange: (v: boolean) => void; label: string; desc?: string }) {
   return (
     <div className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
@@ -81,7 +235,7 @@ export default function SettingsPage() {
   const [attendanceNfcEnabled, setAttendanceNfcEnabled] = useState(true);
   const [attendanceMantraEnabled, setAttendanceMantraEnabled] = useState(false);
   const [attendanceWallMountEnabled, setAttendanceWallMountEnabled] = useState(false);
-  const [fpPort, setFpPort] = useState(8765);
+  const [fpPort, setFpPort] = useState<number | string>(8765);
   const [deviceIpAddress, setDeviceIpAddress] = useState('');
   const [deviceSerialNumber, setDeviceSerialNumber] = useState('');
   const [memberCutoffHours, setMemberCutoffHours] = useState<number>(4);
@@ -127,39 +281,56 @@ export default function SettingsPage() {
   }, []);
 
   const loadSettings = async (id: string) => {
-    const data = await getGymSettings(id);
-    const device = await getBiometricDevice(id);
-    
-    setSettings(data);
-    setGymName(data.gymName || '');
-    setOwnerName(data.ownerName || '');
-    setOwnerPhone(data.ownerPhone || '');
-    setEmail(data.email || '');
-    setUpiId(data.upiId || '');
-    setUpiName(data.upiName || '');
-    setAddress(data.address || '');
-    setAutoMessages(data.waAutoMessages ?? true);
-    setAttendanceMessages(data.waAttendanceMessages ?? true);
-    setAutoReply(data.waAutoReply ?? true);
-    setAutoArchive(data.waAutoArchive ?? false);
-    setReminderDays(data.waReminderWindowDays ?? 3);
-    setAbsentTracking(data.absentTrackingEnabled ?? false);
-    setAbsentDays(data.absentThresholdDays ?? 3);
-    setAttendanceManualEnabled(data.attendanceManualEnabled ?? true);
-    setAttendanceNfcEnabled(data.attendanceNfcEnabled ?? true);
-    setAttendanceMantraEnabled(data.attendanceMantraEnabled ?? false);
-    setAttendanceWallMountEnabled(data.attendanceWallMountEnabled ?? false);
-    setFpPort(data.fingerprintAgentPort ?? 8765);
-    setDeviceIpAddress(data.deviceIpAddress || '');
-    setMemberCutoffHours(data.memberCutoffHours ?? 4);
-    setStaffCutoffHours(data.staffCutoffHours ?? 12);
-    setProductsEnabled(data.productsEnabled ?? false);
-    setShowStoreInRevenue(data.showStoreInRevenue ?? true);
-    setDeviceSerialNumber(device?.serialNumber || '');
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('show_store_in_revenue', String(data.showStoreInRevenue ?? true));
-      setAnimationsEnabled(localStorage.getItem('animations_enabled') !== 'false');
+    try {
+      const data = await getGymSettings(id).catch(() => null);
+      const device = await getBiometricDevice(id).catch(() => null);
+      
+      if (!data) return;
+      setSettings(data);
+      setGymName(data.gymName || '');
+      setOwnerName(data.ownerName || '');
+      setOwnerPhone(data.ownerPhone || '');
+      setEmail(data.email || '');
+      setUpiId(data.upiId || '');
+      setUpiName(data.upiName || '');
+      setAddress(data.address || '');
+      setAutoMessages(data.waAutoMessages ?? true);
+      setAttendanceMessages(data.waAttendanceMessages ?? true);
+      setAutoReply(data.waAutoReply ?? true);
+      setAutoArchive(data.waAutoArchive ?? false);
+      setReminderDays(data.waReminderWindowDays ?? 3);
+      setAbsentTracking(data.absentTrackingEnabled ?? false);
+      setAbsentDays(data.absentThresholdDays ?? 3);
+      setAttendanceManualEnabled(data.attendanceManualEnabled ?? true);
+      setAttendanceNfcEnabled(data.attendanceNfcEnabled ?? true);
+      setAttendanceMantraEnabled(data.attendanceMantraEnabled ?? false);
+      setAttendanceWallMountEnabled(data.attendanceWallMountEnabled ?? false);
+      setFpPort(data.fingerprintAgentPort ?? 8765);
+      setDeviceIpAddress(data.deviceIpAddress || '');
+      setMemberCutoffHours(data.memberCutoffHours ?? 4);
+      setStaffCutoffHours(data.staffCutoffHours ?? 12);
+      setProductsEnabled(data.productsEnabled ?? false);
+      setShowStoreInRevenue(data.showStoreInRevenue ?? true);
+      setDeviceSerialNumber(device?.serialNumber || '');
+      
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('show_store_in_revenue', String(data.showStoreInRevenue ?? true));
+          setAnimationsEnabled(localStorage.getItem('animations_enabled') !== 'false');
+
+          const params = new URLSearchParams(window.location.search);
+          const tabParam = params.get('tab') as TabType;
+          const templateParam = params.get('template') as TemplateType;
+          if (tabParam && ['general', 'whatsapp', 'attendance', 'store', 'templates', 'password'].includes(tabParam)) {
+            setActiveTab(tabParam);
+          }
+          if (templateParam && ['welcome', 'receipt', 'storeReceipt', 'reminder', 'absentee', 'checkin', 'checkout', 'queryPlan', 'queryPayment', 'queryAttendance'].includes(templateParam)) {
+            setSelectedTemplate(templateParam);
+          }
+        } catch (e) {}
+      }
+    } catch (e) {
+      console.error('Settings load error:', e);
     }
   };
 
@@ -347,7 +518,10 @@ export default function SettingsPage() {
       reminder: 'templateReminder', 
       absentee: 'templateAbsentee', 
       checkin: 'templateCheckIn', 
-      checkout: 'templateCheckOut' 
+      checkout: 'templateCheckOut',
+      queryPlan: 'templateQueryPlan',
+      queryPayment: 'templateQueryPayment',
+      queryAttendance: 'templateQueryAttendance'
     };
     const newSettings = await updateGymSettings(gymId, { [key[selectedTemplate]]: templateContent });
     setSettings(newSettings);
@@ -826,11 +1000,79 @@ export default function SettingsPage() {
 
               {/* Automation Toggles */}
               <div>
-                <h3 className="text-base font-bold text-slate-800 mb-3">Automation Settings</h3>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-base font-bold text-slate-800">Automation Settings &amp; Message Formats</h3>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('templates')}
+                    className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Open Template Studio</span>
+                  </button>
+                </div>
                 <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 px-4">
-                  <Toggle enabled={autoMessages} label="Auto-send Payment Receipts" desc="Send receipt automatically when a member pays" onChange={v => handleToggle('waAutoMessages', v, setAutoMessages)} />
-                  <Toggle enabled={attendanceMessages} label="Auto-send Check-in/Check-out Messages" desc="Notify members on entry and exit" onChange={v => handleToggle('waAttendanceMessages', v, setAttendanceMessages)} />
-                  <Toggle enabled={autoReply} label="Auto-reply to Member Queries" desc="Reply automatically when members message the bot" onChange={v => handleToggle('waAutoReply', v, setAutoReply)} />
+                  <div className="py-3">
+                    <Toggle enabled={autoMessages} label="Auto-send Payment Receipts" desc="Send receipt automatically when a member pays or renews" onChange={v => handleToggle('waAutoMessages', v, setAutoMessages)} />
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedTemplate('receipt'); setActiveTab('templates'); }}
+                        className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-md transition-colors inline-flex items-center gap-1"
+                      >
+                        <FileText className="w-3 h-3" /> Edit Payment Receipt Template <ChevronRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="py-3">
+                    <Toggle enabled={attendanceMessages} label="Auto-send Check-in/Check-out Messages" desc="Notify members on entry and exit" onChange={v => handleToggle('waAttendanceMessages', v, setAttendanceMessages)} />
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedTemplate('checkin'); setActiveTab('templates'); }}
+                        className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-md transition-colors inline-flex items-center gap-1"
+                      >
+                        <FileText className="w-3 h-3" /> Edit Check-In Template <ChevronRight className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedTemplate('checkout'); setActiveTab('templates'); }}
+                        className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-md transition-colors inline-flex items-center gap-1"
+                      >
+                        <FileText className="w-3 h-3" /> Edit Check-Out Template <ChevronRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="py-3">
+                    <Toggle enabled={autoReply} label="Auto-reply to Member Queries" desc="Reply automatically when members message bot keywords (plan, payment, attendance)" onChange={v => handleToggle('waAutoReply', v, setAutoReply)} />
+                    {autoReply && (
+                      <div className="mt-2.5 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedTemplate('queryPlan'); setActiveTab('templates'); }}
+                          className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-md transition-colors inline-flex items-center gap-1"
+                        >
+                          <FileText className="w-3 h-3" /> Edit 'plan' Keyword Reply <ChevronRight className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedTemplate('queryPayment'); setActiveTab('templates'); }}
+                          className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-md transition-colors inline-flex items-center gap-1"
+                        >
+                          <FileText className="w-3 h-3" /> Edit 'payment' Keyword Reply <ChevronRight className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedTemplate('queryAttendance'); setActiveTab('templates'); }}
+                          className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-md transition-colors inline-flex items-center gap-1"
+                        >
+                          <FileText className="w-3 h-3" /> Edit 'attendance' Keyword Reply <ChevronRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <Toggle enabled={autoArchive} label="Auto-archive Chats After Payment" desc="Archive conversation thread after dues are cleared" onChange={v => handleToggle('waAutoArchive', v, setAutoArchive)} />
                 </div>
               </div>
@@ -839,17 +1081,28 @@ export default function SettingsPage() {
               <div>
                 <h3 className="text-base font-bold text-slate-800 mb-3">Reminder Configuration</h3>
                 <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800">Renewal Reminder Window</p>
-                      <p className="text-xs text-slate-500">Days before expiry to start sending reminders</p>
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">Renewal Reminder Window</p>
+                        <p className="text-xs text-slate-500">Days before expiry to start sending reminders</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {[1, 2, 3, 5, 7].map(d => (
+                          <button key={d} onClick={async () => { setReminderDays(d); await saveSetting({ waReminderWindowDays: d }); }}
+                            className={`w-8 h-8 text-xs rounded-lg font-bold border transition-colors ${reminderDays === d ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400'}`}
+                          >{d}</button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {[1, 2, 3, 5, 7].map(d => (
-                        <button key={d} onClick={async () => { setReminderDays(d); await saveSetting({ waReminderWindowDays: d }); }}
-                          className={`w-8 h-8 text-xs rounded-lg font-bold border transition-colors ${reminderDays === d ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400'}`}
-                        >{d}</button>
-                      ))}
+                    <div className="mt-2.5">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedTemplate('reminder'); setActiveTab('templates'); }}
+                        className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-md transition-colors inline-flex items-center gap-1"
+                      >
+                        <FileText className="w-3 h-3" /> Edit Due Date Reminder Template <ChevronRight className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
                   <div className="border-t border-slate-100 pt-4">
@@ -936,9 +1189,15 @@ export default function SettingsPage() {
                       <label className="block text-xs font-bold text-blue-700 uppercase tracking-wider mb-1.5">Bridge Agent WebSocket Port</label>
                       <input
                         type="number"
+                        placeholder="8765"
                         value={fpPort}
-                        onChange={e => setFpPort(Number(e.target.value))}
-                        onBlur={async () => { await saveSetting({ fingerprintAgentPort: fpPort }); showSuccess('Port saved!'); }}
+                        onChange={e => setFpPort(e.target.value === '' ? '' : Number(e.target.value))}
+                        onBlur={async () => {
+                          const p = Number(fpPort) || 8765;
+                          setFpPort(p);
+                          await saveSetting({ fingerprintAgentPort: p });
+                          showSuccess('Port saved!');
+                        }}
                         className="w-32 px-3.5 py-2.5 bg-white border border-blue-200 rounded-lg text-sm font-mono text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
                       />
                     </div>
@@ -1225,38 +1484,257 @@ export default function SettingsPage() {
 
           {/* ─── TEMPLATES TAB ─── */}
           {activeTab === 'templates' && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-800 mb-1">WhatsApp Message Templates</h3>
-                <p className="text-sm text-slate-500 mb-4">Customize the messages sent to members. Use placeholders like <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">{'{{name}}'}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">{'{{amount}}'}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">{'{{joinDate}}'}</code>, <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">{'{{dueDate}}'}</code>.</p>
-              </div>
+            <div className="space-y-6">
+              {/* Top Banner */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 text-[11px] font-bold mb-1.5 border border-blue-200">
+                    <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+                    <span>WhatsApp Bot Studio</span>
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Automated Message Templates</h3>
+                  <p className="text-xs text-slate-500 mt-0.5 max-w-xl">
+                    Customize every automated message sent by your gym bot. Click dynamic tags to insert Member Name, Amount, Due Date, or Workout Time.
+                  </p>
+                </div>
 
-              {/* Template Selector */}
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {(['welcome', 'receipt', 'storeReceipt', 'reminder', 'absentee', 'checkin', 'checkout'] as TemplateType[]).map(t => (
-                  <button key={t} onClick={() => setSelectedTemplate(t)}
-                    className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold capitalize transition-colors ${selectedTemplate === t ? 'bg-blue-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={handleSaveTemplate}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-colors"
                   >
-                    {t === 'storeReceipt' ? 'Store Receipt' : t}
+                    <Save className="w-4 h-4" /> Save Template
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => setShowResetConfirm(true)}
+                    className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-xl transition-colors"
+                    title="Reset this template to original default"
+                  >
+                    <RotateCcw className="w-4 h-4" /> Reset
+                  </button>
+                </div>
               </div>
 
-              <textarea
-                value={templateContent}
-                onChange={e => setTemplateContent(e.target.value)}
-                rows={9}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono text-slate-800 focus:ring-2 focus:ring-slate-800 outline-none resize-none"
-              />
+              {/* Template Category Selector Pills */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">Select Message To Customize</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                  {(['receipt', 'reminder', 'checkin', 'checkout', 'welcome', 'storeReceipt', 'absentee', 'queryPlan', 'queryPayment', 'queryAttendance'] as TemplateType[]).map(t => {
+                    const cfg = TEMPLATE_CONFIG[t];
+                    const isSelected = selectedTemplate === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setSelectedTemplate(t)}
+                        className={`p-3 rounded-xl text-left border transition-all flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-blue-900 text-white border-blue-900 shadow-md ring-2 ring-blue-500/30'
+                            : 'bg-slate-50/70 hover:bg-slate-100/80 border-slate-200 text-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="text-base">{cfg.icon}</span>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                            isSelected ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'
+                          }`}>
+                            {cfg.badge}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-black text-xs leading-tight truncate">{cfg.label}</div>
+                          <div className={`text-[10px] mt-0.5 truncate ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>
+                            {cfg.category}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-              <div className="flex gap-3">
-                <button onClick={handleSaveTemplate} className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-lg">
-                  <Save className="w-4 h-4" /> Save Template
-                </button>
-                <button onClick={() => setShowResetConfirm(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-lg">
-                  <RotateCcw className="w-4 h-4" /> Reset to Default
-                </button>
+              {/* Active Template Editor & Live Preview Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left Editor (7 Cols) */}
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                    {/* Active Template Header Details */}
+                    <div className="border-b border-slate-100 pb-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                          <span>{TEMPLATE_CONFIG[selectedTemplate].icon}</span>
+                          <span>{TEMPLATE_CONFIG[selectedTemplate].label}</span>
+                        </h4>
+                        <span className="text-[10px] font-mono text-slate-400 font-semibold uppercase tracking-wider">
+                          Key: {selectedTemplate}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {TEMPLATE_CONFIG[selectedTemplate].trigger}
+                      </p>
+                    </div>
+
+                    {/* Clickable Placeholders Tag Cloud */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          Click Tag to Insert Dynamic Value:
+                        </label>
+                        <span className="text-[10px] text-blue-600 font-semibold">1-click insert</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {TEMPLATE_CONFIG[selectedTemplate].placeholders.map(p => (
+                          <button
+                            key={p.tag}
+                            type="button"
+                            onClick={() => {
+                              setTemplateContent(prev => {
+                                const addSpace = prev.length > 0 && !prev.endsWith(' ') && !prev.endsWith('\n');
+                                return prev + (addSpace ? ' ' : '') + p.tag;
+                              });
+                            }}
+                            className="group px-2.5 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-lg text-xs font-mono font-bold text-blue-800 transition-all flex items-center gap-1 shadow-2xs"
+                            title={`Insert ${p.label}`}
+                          >
+                            <span className="text-blue-500 font-normal">+</span>
+                            <span>{p.tag}</span>
+                            <span className="text-[10px] text-blue-600/70 font-sans font-normal ml-0.5">({p.label})</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Textarea */}
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          Template Body (WhatsApp Markdown Supported)
+                        </label>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {templateContent.length} chars
+                        </span>
+                      </div>
+                      <textarea
+                        value={templateContent}
+                        onChange={e => setTemplateContent(e.target.value)}
+                        rows={14}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-mono text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none resize-y leading-relaxed transition-all"
+                        placeholder="Write your message template here..."
+                      />
+                      <div className="flex flex-wrap items-center gap-3 mt-2 text-[11px] text-slate-400">
+                        <span>Formatting tips:</span>
+                        <span><code className="text-slate-600 font-bold">*bold*</code> for bold</span>
+                        <span><code className="text-slate-600 font-bold">_italic_</code> for italic</span>
+                        <span><code className="text-slate-600 font-bold">~strike~</code> for strikethrough</span>
+                        <span>Emojis supported 👍</span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="pt-2 flex items-center justify-between border-t border-slate-100">
+                      <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span>Changes take effect immediately for all automated bot messages</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleSaveTemplate}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-colors"
+                      >
+                        <Save className="w-4 h-4" /> Save Template
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Live WhatsApp Bubble Preview (5 Cols) */}
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-md flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                        <Smartphone className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs">Live Member WhatsApp Preview</h4>
+                        <p className="text-[10px] text-slate-400">Sample preview with simulated member details</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/30">
+                      Live Mock
+                    </span>
+                  </div>
+
+                  {/* Phone Chat Mockup Container */}
+                  <div className="bg-[#efeae2] border border-slate-300 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+                    {/* Chat Header */}
+                    <div className="bg-[#075e54] text-white px-4 py-3 flex items-center justify-between">
+                      <div className="flex items-center space-x-2.5">
+                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-black">
+                          {gymName.charAt(0) || 'G'}
+                        </div>
+                        <div>
+                          <p className="font-bold text-xs leading-tight">{gymName || 'Gym Service'}</p>
+                          <p className="text-[9.5px] text-emerald-200">Official WhatsApp Service</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Chat Area */}
+                    <div className="p-4 space-y-3 min-h-[320px] max-h-[460px] overflow-y-auto">
+                      {/* Security notice bubble */}
+                      <div className="text-center my-1">
+                        <span className="bg-[#ffeecd] text-[#554316] text-[10px] font-medium px-3 py-1 rounded-md shadow-2xs inline-block max-w-[280px]">
+                          🔒 Messages are end-to-end encrypted
+                        </span>
+                      </div>
+
+                      {/* Bot Message Bubble */}
+                      <div className="flex justify-start">
+                        <div className="max-w-[92%] bg-[#d9fdd3] text-slate-900 rounded-2xl rounded-tl-xs px-3.5 py-2.5 shadow-xs border border-emerald-200/50 relative">
+                          <div className="text-xs whitespace-pre-wrap font-sans leading-relaxed break-words">
+                            {(() => {
+                              const sampleMap: Record<string, string | number> = {
+                                name: 'Rahul Sharma',
+                                phone: '9876543210',
+                                plan: 'Quarterly Pack (3 Months)',
+                                amount: '5500',
+                                joinDate: '01/09/2026',
+                                dueDate: '01/12/2026',
+                                gymName: gymName || 'Elite Fitness Studio',
+                                time: '06:45 AM',
+                                duration: '65',
+                                itemsList: '• Gold Whey 1kg (1x ₹2,400)\n• Blender Bottle (1x ₹350)',
+                                totalAmount: '2750',
+                                paymentMode: 'UPI',
+                                date: '07/09/2026',
+                                balanceNotice: '\n⏳ *Pending Balance:* ₹500 (Due by 15/09/2026)',
+                                pendingBalance: '500',
+                                paymentsList: '• ₹5,500 [UPI] on 01/09/2026\n• ₹2,000 [Cash] on 01/06/2026\n• ₹5,000 [UPI] on 01/03/2026',
+                                attendanceList: '• 07/09/2026: 1.2 hours\n• 06/09/2026: 1.5 hours\n• 05/09/2026: 1.0 hours'
+                              };
+                              let compiled = templateContent;
+                              for (const [k, v] of Object.entries(sampleMap)) {
+                                compiled = compiled.replace(new RegExp(`{{${k}}}`, 'g'), String(v));
+                              }
+                              return compiled;
+                            })()}
+                          </div>
+                          <div className="flex items-center justify-end gap-1 mt-1.5 text-[9px] text-slate-500 font-mono">
+                            <span>10:30 AM</span>
+                            <span className="text-blue-500 font-bold">✓✓</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer Info */}
+                    <div className="bg-slate-100 border-t border-slate-200 p-2.5 text-center text-[10px] text-slate-500">
+                      💡 Dynamic placeholders are substituted automatically when sending.
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

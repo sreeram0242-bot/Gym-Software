@@ -87,7 +87,22 @@ Thank you for your purchase from our Gym Store!
 Fuel your body and keep crushing your workouts! 💪🔥
 
 _Best Regards,_
-*Team {{gymName}}*`
+*Team {{gymName}}*`,
+
+  queryPlan: `📋 *Your Plan Details - {{gymName}}*
+
+*Name:* {{name}}
+*Plan:* {{plan}}
+*Fee Amount:* ₹{{amount}}{{balanceNotice}}
+*Next Due Date:* {{dueDate}}`,
+
+  queryPayment: `💰 *Payment History for {{name}} - {{gymName}}*
+
+{{paymentsList}}`,
+
+  queryAttendance: `⏱️ *Recent Attendance for {{name}} - {{gymName}}*
+
+{{attendanceList}}`
 };
 
 export type TemplateType = keyof typeof DEFAULT_TEMPLATES;
@@ -104,14 +119,18 @@ export function getTemplate(settings: any, type: TemplateType): string {
     case 'absentee': return settings.templateAbsentee || DEFAULT_TEMPLATES.absentee;
     case 'checkin': return settings.templateCheckIn || DEFAULT_TEMPLATES.checkin;
     case 'checkout': return settings.templateCheckOut || DEFAULT_TEMPLATES.checkout;
+    case 'queryPlan': return settings.templateQueryPlan || DEFAULT_TEMPLATES.queryPlan;
+    case 'queryPayment': return settings.templateQueryPayment || DEFAULT_TEMPLATES.queryPayment;
+    case 'queryAttendance': return settings.templateQueryAttendance || DEFAULT_TEMPLATES.queryAttendance;
     default: return DEFAULT_TEMPLATES[type];
   }
 }
 
 export function compileTemplate(template: string, data: Record<string, string | number>) {
+  if (!template || typeof template !== 'string') return '';
   let compiled = template;
   for (const [key, value] of Object.entries(data)) {
-    compiled = compiled.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
+    compiled = compiled.split(`{{${key}}}`).join(String(value ?? ''));
   }
   
   // 3. ANTI-SPAM MEASURE: Visible Spintax

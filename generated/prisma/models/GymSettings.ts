@@ -59,6 +59,9 @@ export type GymSettingsMinAggregateOutputType = {
   templateAbsentee: string | null
   templateCheckIn: string | null
   templateCheckOut: string | null
+  templateQueryPlan: string | null
+  templateQueryPayment: string | null
+  templateQueryAttendance: string | null
   upiId: string | null
   upiName: string | null
   address: string | null
@@ -91,6 +94,9 @@ export type GymSettingsMaxAggregateOutputType = {
   templateAbsentee: string | null
   templateCheckIn: string | null
   templateCheckOut: string | null
+  templateQueryPlan: string | null
+  templateQueryPayment: string | null
+  templateQueryAttendance: string | null
   upiId: string | null
   upiName: string | null
   address: string | null
@@ -123,6 +129,9 @@ export type GymSettingsCountAggregateOutputType = {
   templateAbsentee: number
   templateCheckIn: number
   templateCheckOut: number
+  templateQueryPlan: number
+  templateQueryPayment: number
+  templateQueryAttendance: number
   upiId: number
   upiName: number
   address: number
@@ -173,6 +182,9 @@ export type GymSettingsMinAggregateInputType = {
   templateAbsentee?: true
   templateCheckIn?: true
   templateCheckOut?: true
+  templateQueryPlan?: true
+  templateQueryPayment?: true
+  templateQueryAttendance?: true
   upiId?: true
   upiName?: true
   address?: true
@@ -205,6 +217,9 @@ export type GymSettingsMaxAggregateInputType = {
   templateAbsentee?: true
   templateCheckIn?: true
   templateCheckOut?: true
+  templateQueryPlan?: true
+  templateQueryPayment?: true
+  templateQueryAttendance?: true
   upiId?: true
   upiName?: true
   address?: true
@@ -237,6 +252,9 @@ export type GymSettingsCountAggregateInputType = {
   templateAbsentee?: true
   templateCheckIn?: true
   templateCheckOut?: true
+  templateQueryPlan?: true
+  templateQueryPayment?: true
+  templateQueryAttendance?: true
   upiId?: true
   upiName?: true
   address?: true
@@ -356,6 +374,9 @@ export type GymSettingsGroupByOutputType = {
   templateAbsentee: string | null
   templateCheckIn: string | null
   templateCheckOut: string | null
+  templateQueryPlan: string | null
+  templateQueryPayment: string | null
+  templateQueryAttendance: string | null
   upiId: string | null
   upiName: string | null
   address: string | null
@@ -411,6 +432,9 @@ export type GymSettingsWhereInput = {
   templateAbsentee?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateCheckIn?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateCheckOut?: Prisma.StringNullableFilter<"GymSettings"> | string | null
+  templateQueryPlan?: Prisma.StringNullableFilter<"GymSettings"> | string | null
+  templateQueryPayment?: Prisma.StringNullableFilter<"GymSettings"> | string | null
+  templateQueryAttendance?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   upiId?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   upiName?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   address?: Prisma.StringNullableFilter<"GymSettings"> | string | null
@@ -444,6 +468,9 @@ export type GymSettingsOrderByWithRelationInput = {
   templateAbsentee?: Prisma.SortOrderInput | Prisma.SortOrder
   templateCheckIn?: Prisma.SortOrderInput | Prisma.SortOrder
   templateCheckOut?: Prisma.SortOrderInput | Prisma.SortOrder
+  templateQueryPlan?: Prisma.SortOrderInput | Prisma.SortOrder
+  templateQueryPayment?: Prisma.SortOrderInput | Prisma.SortOrder
+  templateQueryAttendance?: Prisma.SortOrderInput | Prisma.SortOrder
   upiId?: Prisma.SortOrderInput | Prisma.SortOrder
   upiName?: Prisma.SortOrderInput | Prisma.SortOrder
   address?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -480,6 +507,9 @@ export type GymSettingsWhereUniqueInput = Prisma.AtLeast<{
   templateAbsentee?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateCheckIn?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   templateCheckOut?: Prisma.StringNullableFilter<"GymSettings"> | string | null
+  templateQueryPlan?: Prisma.StringNullableFilter<"GymSettings"> | string | null
+  templateQueryPayment?: Prisma.StringNullableFilter<"GymSettings"> | string | null
+  templateQueryAttendance?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   upiId?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   upiName?: Prisma.StringNullableFilter<"GymSettings"> | string | null
   address?: Prisma.StringNullableFilter<"GymSettings"> | string | null
@@ -513,6 +543,9 @@ export type GymSettingsOrderByWithAggregationInput = {
   templateAbsentee?: Prisma.SortOrderInput | Prisma.SortOrder
   templateCheckIn?: Prisma.SortOrderInput | Prisma.SortOrder
   templateCheckOut?: Prisma.SortOrderInput | Prisma.SortOrder
+  templateQueryPlan?: Prisma.SortOrderInput | Prisma.SortOrder
+  templateQueryPayment?: Prisma.SortOrderInput | Prisma.SortOrder
+  templateQueryAttendance?: Prisma.SortOrderInput | Prisma.SortOrder
   upiId?: Prisma.SortOrderInput | Prisma.SortOrder
   upiName?: Prisma.SortOrderInput | Prisma.SortOrder
   address?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -553,6 +586,9 @@ export type GymSettingsScalarWhereWithAggregatesInput = {
   templateAbsentee?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   templateCheckIn?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   templateCheckOut?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
+  templateQueryPlan?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
+  templateQueryPayment?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
+  templateQueryAttendance?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   upiId?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   upiName?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
   address?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
@@ -584,6 +620,9 @@ export type GymSettingsCreateInput = {
   templateAbsentee?: string | null
   templateCheckIn?: string | null
   templateCheckOut?: string | null
+  templateQueryPlan?: string | null
+  templateQueryPayment?: string | null
+  templateQueryAttendance?: string | null
   upiId?: string | null
   upiName?: string | null
   address?: string | null
@@ -617,6 +656,9 @@ export type GymSettingsUncheckedCreateInput = {
   templateAbsentee?: string | null
   templateCheckIn?: string | null
   templateCheckOut?: string | null
+  templateQueryPlan?: string | null
+  templateQueryPayment?: string | null
+  templateQueryAttendance?: string | null
   upiId?: string | null
   upiName?: string | null
   address?: string | null
@@ -648,6 +690,9 @@ export type GymSettingsUpdateInput = {
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckOut?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryPayment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryAttendance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   upiName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -681,6 +726,9 @@ export type GymSettingsUncheckedUpdateInput = {
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckOut?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryPayment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryAttendance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   upiName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -713,6 +761,9 @@ export type GymSettingsCreateManyInput = {
   templateAbsentee?: string | null
   templateCheckIn?: string | null
   templateCheckOut?: string | null
+  templateQueryPlan?: string | null
+  templateQueryPayment?: string | null
+  templateQueryAttendance?: string | null
   upiId?: string | null
   upiName?: string | null
   address?: string | null
@@ -744,6 +795,9 @@ export type GymSettingsUpdateManyMutationInput = {
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckOut?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryPayment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryAttendance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   upiName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -776,6 +830,9 @@ export type GymSettingsUncheckedUpdateManyInput = {
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckOut?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryPayment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryAttendance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   upiName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -813,6 +870,9 @@ export type GymSettingsCountOrderByAggregateInput = {
   templateAbsentee?: Prisma.SortOrder
   templateCheckIn?: Prisma.SortOrder
   templateCheckOut?: Prisma.SortOrder
+  templateQueryPlan?: Prisma.SortOrder
+  templateQueryPayment?: Prisma.SortOrder
+  templateQueryAttendance?: Prisma.SortOrder
   upiId?: Prisma.SortOrder
   upiName?: Prisma.SortOrder
   address?: Prisma.SortOrder
@@ -853,6 +913,9 @@ export type GymSettingsMaxOrderByAggregateInput = {
   templateAbsentee?: Prisma.SortOrder
   templateCheckIn?: Prisma.SortOrder
   templateCheckOut?: Prisma.SortOrder
+  templateQueryPlan?: Prisma.SortOrder
+  templateQueryPayment?: Prisma.SortOrder
+  templateQueryAttendance?: Prisma.SortOrder
   upiId?: Prisma.SortOrder
   upiName?: Prisma.SortOrder
   address?: Prisma.SortOrder
@@ -885,6 +948,9 @@ export type GymSettingsMinOrderByAggregateInput = {
   templateAbsentee?: Prisma.SortOrder
   templateCheckIn?: Prisma.SortOrder
   templateCheckOut?: Prisma.SortOrder
+  templateQueryPlan?: Prisma.SortOrder
+  templateQueryPayment?: Prisma.SortOrder
+  templateQueryAttendance?: Prisma.SortOrder
   upiId?: Prisma.SortOrder
   upiName?: Prisma.SortOrder
   address?: Prisma.SortOrder
@@ -956,6 +1022,9 @@ export type GymSettingsCreateWithoutGymInput = {
   templateAbsentee?: string | null
   templateCheckIn?: string | null
   templateCheckOut?: string | null
+  templateQueryPlan?: string | null
+  templateQueryPayment?: string | null
+  templateQueryAttendance?: string | null
   upiId?: string | null
   upiName?: string | null
   address?: string | null
@@ -987,6 +1056,9 @@ export type GymSettingsUncheckedCreateWithoutGymInput = {
   templateAbsentee?: string | null
   templateCheckIn?: string | null
   templateCheckOut?: string | null
+  templateQueryPlan?: string | null
+  templateQueryPayment?: string | null
+  templateQueryAttendance?: string | null
   upiId?: string | null
   upiName?: string | null
   address?: string | null
@@ -1034,6 +1106,9 @@ export type GymSettingsUpdateWithoutGymInput = {
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckOut?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryPayment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryAttendance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   upiName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1065,6 +1140,9 @@ export type GymSettingsUncheckedUpdateWithoutGymInput = {
   templateAbsentee?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckIn?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   templateCheckOut?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryPayment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  templateQueryAttendance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   upiId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   upiName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1099,6 +1177,9 @@ export type GymSettingsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   templateAbsentee?: boolean
   templateCheckIn?: boolean
   templateCheckOut?: boolean
+  templateQueryPlan?: boolean
+  templateQueryPayment?: boolean
+  templateQueryAttendance?: boolean
   upiId?: boolean
   upiName?: boolean
   address?: boolean
@@ -1132,6 +1213,9 @@ export type GymSettingsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   templateAbsentee?: boolean
   templateCheckIn?: boolean
   templateCheckOut?: boolean
+  templateQueryPlan?: boolean
+  templateQueryPayment?: boolean
+  templateQueryAttendance?: boolean
   upiId?: boolean
   upiName?: boolean
   address?: boolean
@@ -1165,6 +1249,9 @@ export type GymSettingsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   templateAbsentee?: boolean
   templateCheckIn?: boolean
   templateCheckOut?: boolean
+  templateQueryPlan?: boolean
+  templateQueryPayment?: boolean
+  templateQueryAttendance?: boolean
   upiId?: boolean
   upiName?: boolean
   address?: boolean
@@ -1198,6 +1285,9 @@ export type GymSettingsSelectScalar = {
   templateAbsentee?: boolean
   templateCheckIn?: boolean
   templateCheckOut?: boolean
+  templateQueryPlan?: boolean
+  templateQueryPayment?: boolean
+  templateQueryAttendance?: boolean
   upiId?: boolean
   upiName?: boolean
   address?: boolean
@@ -1213,7 +1303,7 @@ export type GymSettingsSelectScalar = {
   staffCutoffHours?: boolean
 }
 
-export type GymSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "absentTrackingEnabled" | "absentThresholdDays" | "waAutoMessages" | "waReminderWindowDays" | "waAttendanceMessages" | "waAutoReply" | "waAutoArchive" | "templateWelcome" | "templateReceipt" | "templateStoreReceipt" | "templateReminder" | "templateAbsentee" | "templateCheckIn" | "templateCheckOut" | "upiId" | "upiName" | "address" | "productsEnabled" | "showStoreInRevenue" | "attendanceManualEnabled" | "attendanceNfcEnabled" | "attendanceMantraEnabled" | "attendanceWallMountEnabled" | "fingerprintAgentPort" | "deviceIpAddress" | "memberCutoffHours" | "staffCutoffHours", ExtArgs["result"]["gymSettings"]>
+export type GymSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "absentTrackingEnabled" | "absentThresholdDays" | "waAutoMessages" | "waReminderWindowDays" | "waAttendanceMessages" | "waAutoReply" | "waAutoArchive" | "templateWelcome" | "templateReceipt" | "templateStoreReceipt" | "templateReminder" | "templateAbsentee" | "templateCheckIn" | "templateCheckOut" | "templateQueryPlan" | "templateQueryPayment" | "templateQueryAttendance" | "upiId" | "upiName" | "address" | "productsEnabled" | "showStoreInRevenue" | "attendanceManualEnabled" | "attendanceNfcEnabled" | "attendanceMantraEnabled" | "attendanceWallMountEnabled" | "fingerprintAgentPort" | "deviceIpAddress" | "memberCutoffHours" | "staffCutoffHours", ExtArgs["result"]["gymSettings"]>
 export type GymSettingsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }
@@ -1246,6 +1336,9 @@ export type $GymSettingsPayload<ExtArgs extends runtime.Types.Extensions.Interna
     templateAbsentee: string | null
     templateCheckIn: string | null
     templateCheckOut: string | null
+    templateQueryPlan: string | null
+    templateQueryPayment: string | null
+    templateQueryAttendance: string | null
     upiId: string | null
     upiName: string | null
     address: string | null
@@ -1699,6 +1792,9 @@ export interface GymSettingsFieldRefs {
   readonly templateAbsentee: Prisma.FieldRef<"GymSettings", 'String'>
   readonly templateCheckIn: Prisma.FieldRef<"GymSettings", 'String'>
   readonly templateCheckOut: Prisma.FieldRef<"GymSettings", 'String'>
+  readonly templateQueryPlan: Prisma.FieldRef<"GymSettings", 'String'>
+  readonly templateQueryPayment: Prisma.FieldRef<"GymSettings", 'String'>
+  readonly templateQueryAttendance: Prisma.FieldRef<"GymSettings", 'String'>
   readonly upiId: Prisma.FieldRef<"GymSettings", 'String'>
   readonly upiName: Prisma.FieldRef<"GymSettings", 'String'>
   readonly address: Prisma.FieldRef<"GymSettings", 'String'>

@@ -196,6 +196,9 @@ model GymSettings {
   templateAbsentee      String?
   templateCheckIn       String?
   templateCheckOut      String?
+  templateQueryPlan       String?
+  templateQueryPayment    String?
+  templateQueryAttendance String?
 
   // Profile & Payments
   upiId                 String?

@@ -15,7 +15,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
 
   const [gyms, setGyms] = useState<any[]>([]);
-  const [currentGym, setCurrentGym] = useState<any | null>(null);
+  const [currentGym, setCurrentGym] = useState<any | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const id = localStorage.getItem('active_gym_id');
+        const name = localStorage.getItem('active_gym_name');
+        if (id) {
+          return { id, name: name || 'Gym Admin', status: 'active' };
+        }
+      } catch (e) {}
+    }
+    return null;
+  });
 
   // Global Live Check-in / Check-out Notification (Top Right)
   const [livePunchNotice, setLivePunchNotice] = useState<{
@@ -40,55 +51,88 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isMasterAdmin = typeof window !== 'undefined' ? localStorage.getItem('is_master_admin') === 'true' : false;
 
   useEffect(() => {
+    let waInterval: NodeJS.Timeout | null = null;
+    let gymStatusInterval: NodeJS.Timeout | null = null;
+    let punchInterval: NodeJS.Timeout | null = null;
+    let notificationTimeout: NodeJS.Timeout | undefined;
+    let handleKeyDown: ((e: KeyboardEvent) => Promise<void>) | null = null;
+
     const initLayout = async () => {
-      const loadedGyms = await getGyms();
-      setGyms(loadedGyms);
+      let savedId: string | null = null;
+      try {
+        savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
+      } catch (e) {}
 
-      const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
-
-      // Find gym
-      const matched = loadedGyms.find((g: any) => g.id === savedId);
-      
-      if (!matched) {
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('active_gym_id');
-        }
+      if (!savedId) {
         router.push('/');
         return;
       }
-      
-      setCurrentGym(matched);
+
+      let matched: any = null;
+      try {
+        const loadedGyms = await getGyms();
+        if (loadedGyms && loadedGyms.length > 0) {
+          setGyms(loadedGyms);
+          const found = loadedGyms.find((g: any) => g.id === savedId);
+          if (found) {
+            matched = found;
+            setCurrentGym(found);
+            try {
+              if (found.name) localStorage.setItem('active_gym_name', found.name);
+            } catch (e) {}
+          } else {
+            // Gym list came back non-empty and id not found in system
+            try {
+              localStorage.removeItem('active_gym_id');
+              localStorage.removeItem('active_gym_user_id');
+            } catch (e) {}
+            router.push('/');
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('initLayout fetch error:', err);
+      }
+
+      const activeGymId = matched?.id || savedId;
+      const activeGymName = matched?.name || (typeof window !== 'undefined' ? localStorage.getItem('active_gym_name') : '') || 'Our Gym';
 
       // If gym is suspended or locked and user is NOT a superadmin impersonating,
       // halt layout initialization immediately so the full-screen blocker is shown.
-      if ((matched.status === 'suspended' || matched.status === 'locked') && !isMasterAdmin) {
+      if (matched && (matched.status === 'suspended' || matched.status === 'locked') && !isMasterAdmin) {
         return;
       }
 
       // Load gym settings for feature toggles
       try {
         const { getGymSettings: fetchSettings } = await import('@/lib/actions');
-        const gymSettings = await fetchSettings(matched.id);
+        const gymSettings = await fetchSettings(activeGymId);
         setProductsEnabled(gymSettings?.productsEnabled ?? false);
         // Capture NFC enabled flag as a local variable — we cannot use React state here
         // because setState is async and the closure would always read the stale initial value (true).
         const isNfcEnabled = gymSettings?.attendanceNfcEnabled ?? true;
         setNfcListenerEnabled(isNfcEnabled);
         if (typeof window !== 'undefined') {
-          localStorage.setItem('nfc_listener_enabled', String(isNfcEnabled));
-          localStorage.setItem('products_enabled', String(gymSettings?.productsEnabled ?? false));
+          try {
+            localStorage.setItem('nfc_listener_enabled', String(isNfcEnabled));
+            localStorage.setItem('products_enabled', String(gymSettings?.productsEnabled ?? false));
+          } catch (e) {}
         }
       } catch (e) {
         // Use cached localStorage value as fallback
-        const cached = typeof window !== 'undefined' ? localStorage.getItem('products_enabled') === 'true' : false;
-        setProductsEnabled(cached);
+        try {
+          const cached = typeof window !== 'undefined' ? localStorage.getItem('products_enabled') === 'true' : false;
+          setProductsEnabled(cached);
+        } catch (err) {}
       }
 
       // Check animations
-      if (typeof window !== 'undefined') {
-        const anim = localStorage.getItem('animations_enabled');
-        if (anim === 'false') setAnimationsEnabled(false);
-      }
+      try {
+        if (typeof window !== 'undefined') {
+          const anim = localStorage.getItem('animations_enabled');
+          if (anim === 'false') setAnimationsEnabled(false);
+        }
+      } catch (e) {}
 
       const checkWaStatus = async (id: string) => {
         if (typeof document !== 'undefined' && document.hidden) return;
@@ -101,38 +145,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             setWaStatus('disconnected');
           }
         } catch (e) {
-          console.error('WhatsApp status poll error:', e);
           setWaStatus('disconnected');
         }
       };
-      checkWaStatus(matched.id);
-      const waInterval = setInterval(() => checkWaStatus(matched.id), 60000);
+      checkWaStatus(activeGymId);
+      waInterval = setInterval(() => checkWaStatus(activeGymId), 60000);
 
       // ── Live Suspension Check ──────────────────────────────────────────────
-      // Re-fetch the gym's status every 30s so that if the superadmin suspends
+      // Re-fetch the gym's status every 15s so that if the superadmin suspends
       // this gym while the admin already has an active session, they are kicked
       // out immediately without needing a page refresh.
-      let gymStatusInterval: NodeJS.Timeout | null = null;
       const checkGymStatus = async () => {
         if (isMasterAdmin) return; // superadmin is never blocked
         try {
-          const res = await fetch(`/api/gyms/status?gymId=${matched.id}`);
+          const res = await fetch(`/api/gyms/status?gymId=${activeGymId}`);
           if (res.ok) {
             const data = await res.json();
-            if (data.status === 'suspended' || data.status === 'locked') {
-              // Update in-memory gym so the full-screen blocker renders
-              setCurrentGym((prev: any) => prev ? { ...prev, status: data.status } : prev);
-              // Stop all background polling — admin is blocked
-              clearInterval(gymStatusInterval!);
-              clearInterval(waInterval);
-              clearInterval(punchInterval);
+            if (data.status) {
+              setCurrentGym((prev: any) => {
+                if (!prev || prev.status !== data.status) {
+                  return { ...(prev || { id: activeGymId, name: activeGymName }), status: data.status };
+                }
+                return prev;
+              });
+              if (data.status === 'suspended' || data.status === 'locked') {
+                if (gymStatusInterval) clearInterval(gymStatusInterval);
+                if (waInterval) clearInterval(waInterval);
+                if (punchInterval) clearInterval(punchInterval);
+              }
             }
           }
         } catch (e) {
           // Network error — do nothing, try again next tick
         }
       };
-      gymStatusInterval = setInterval(checkGymStatus, 30000);
+      gymStatusInterval = setInterval(checkGymStatus, 15000);
 
       // Global Polling for Recent Punches (for ADMS hardware and cross-tab sync)
       const processedPunchIds = new Set<string>();
@@ -184,15 +231,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           }, 4500);
         }
       };
-      const punchInterval = setInterval(() => checkRecentPunch(matched.id), 3000);
+      const punchInterval = setInterval(() => checkRecentPunch(activeGymId), 3000);
 
       // Automated Daily Reminders (Due, Overdue, Absentee)
       const runDailyReminders = async (id: string) => {
         try {
           const lastRunKey = `last_auto_reminders_${id}`;
           const today = new Date().toISOString().split('T')[0];
-          if (localStorage.getItem(lastRunKey) !== today) {
-            localStorage.setItem(lastRunKey, today);
+          let lastRun: string | null = null;
+          try {
+            lastRun = localStorage.getItem(lastRunKey);
+          } catch (e) {}
+
+          if (lastRun !== today) {
+            try {
+              localStorage.setItem(lastRunKey, today);
+            } catch (e) {}
             fetch('/api/whatsapp/auto-reminders', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -203,7 +257,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           console.error('Daily reminders error:', e);
         }
       };
-      runDailyReminders(matched.id);
+      runDailyReminders(activeGymId);
 
       // Global NFC scanner keyboard listener
       let buffer = '';
@@ -211,9 +265,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       const handleKeyDown = async (e: KeyboardEvent) => {
         // Only active when the gym has USB NFC card attendance enabled
-        const isNfcActive = typeof window !== 'undefined'
-          ? localStorage.getItem('nfc_listener_enabled') !== 'false'
-          : true;
+        let isNfcActive = true;
+        try {
+          if (typeof window !== 'undefined') {
+            isNfcActive = localStorage.getItem('nfc_listener_enabled') !== 'false';
+          }
+        } catch (e) {}
         if (!isNfcActive) return;
 
         // Don't intercept if they are actively typing in an input/textarea
@@ -231,7 +288,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         if (e.key === 'Enter' && buffer.length > 3) {
           // Attempt to find customer by NFC
-          const matchedCust = await findCustomerByNFC(matched.id, buffer);
+          const matchedCust = await findCustomerByNFC(activeGymId, buffer);
           if (matchedCust) {
             const { record, action } = await toggleCheckIn(matchedCust.id);
             const avgHours = 1.2; // default
@@ -246,8 +303,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               durationMinutes: record?.durationMinutes
             });
 
-            mutate(['checkin', matched.id]);
-            mutate(['overview', matched.id]);
+            mutate(['checkin', activeGymId]);
+            mutate(['overview', activeGymId]);
             if (typeof window !== 'undefined') {
               window.dispatchEvent(new CustomEvent('attendance_updated'));
             }
@@ -258,7 +315,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }, 5000);
 
             // Fetch settings to check if Attendance WA messages are enabled
-            const gymSettings = await getGymSettings(matched.id);
+            const gymSettings = await getGymSettings(activeGymId);
             if (gymSettings?.waAttendanceMessages && matchedCust.phone && matchedCust.waActive) {
               const templateName = action === 'checkin' ? 'checkin' : 'checkout';
               const rawTemplate = getTemplate(gymSettings, templateName);
@@ -267,7 +324,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               const duration = record.durationMinutes || 0;
               
               const message = compileTemplate(rawTemplate, {
-                gymName: matched.name,
+                gymName: activeGymName,
                 name: matchedCust.name,
                 time: nowTime,
                 duration: duration.toString()
@@ -277,7 +334,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  gymId: matched.id,
+                  gymId: activeGymId,
                   phone: matchedCust.phone,
                   message
                 })
@@ -296,7 +353,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           } else {
             // Check if it's a Staff Member
-            const matchedStaff = await findStaffByNFC(matched.id, buffer);
+            const matchedStaff = await findStaffByNFC(activeGymId, buffer);
             if (matchedStaff) {
               const staffRes = await toggleStaffCheckIn(matchedStaff.id);
               const isPunchIn = staffRes?.action === 'checkin';
@@ -311,8 +368,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 durationMinutes: staffRes?.record?.durationMinutes
               });
 
-              mutate(['checkin', matched.id]);
-              mutate(['overview', matched.id]);
+              mutate(['checkin', activeGymId]);
+              mutate(['overview', activeGymId]);
               if (typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('attendance_updated'));
               }
@@ -447,37 +504,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const handleSettingsUpdate = () => {
       if (typeof window !== 'undefined') {
-        setProductsEnabled(localStorage.getItem('products_enabled') === 'true');
-        setAnimationsEnabled(localStorage.getItem('animations_enabled') !== 'false');
+        try {
+          setProductsEnabled(localStorage.getItem('products_enabled') === 'true');
+          setAnimationsEnabled(localStorage.getItem('animations_enabled') !== 'false');
+        } catch (e) {}
       }
     };
     window.addEventListener('settings_updated', handleSettingsUpdate);
 
-    // Periodic status check (every 3 seconds) to detect real-time suspension or reactivation
-    const pollInterval = setInterval(async () => {
-      const activeId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') : null;
-      if (!activeId) return;
-      try {
-        const latestGyms = await getGyms();
-        const current = latestGyms.find((g: any) => g.id === activeId);
-        if (current) {
-          setCurrentGym(prev => {
-            if (!prev || prev.status !== current.status) {
-              return current;
-            }
-            return prev;
-          });
-        }
-      } catch (e) {}
-    }, 3000);
-
     return () => {
       window.removeEventListener('settings_updated', handleSettingsUpdate);
-      clearInterval(pollInterval);
     };
   }, []);
 
-  if (!currentGym) return null; // Loading or unauthorized
+  if (!currentGym) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center p-4 select-none">
+        <div className="relative flex flex-col items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 animate-pulse">
+            <Dumbbell className="w-7 h-7 text-white" />
+          </div>
+          <div className="flex items-center gap-2 text-slate-300 text-sm font-semibold">
+            <div className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
+            <span>Loading GymFlow...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Handle suspended or locked gym state for normal users (BLOCKS ALL PAGES & ALL OPTIONS)
   if ((currentGym.status === 'suspended' || currentGym.status === 'locked') && !isMasterAdmin) {
@@ -710,7 +764,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* MAIN VIEW */}
-        <main key={pathname} className="flex-1 min-w-0 px-3 pt-0 pb-20 sm:px-5 sm:pt-0 sm:pb-6 md:px-8 md:pt-0 md:pb-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 min-w-0 px-3 pt-0 pb-20 sm:px-5 sm:pt-0 sm:pb-6 md:px-8 md:pt-0 md:pb-8 max-w-7xl mx-auto w-full">
           {children}
         </main>
       </div>

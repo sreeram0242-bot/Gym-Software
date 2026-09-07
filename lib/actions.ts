@@ -322,8 +322,9 @@ export async function getGymSettings(gymId: string) {
 }
 
 export async function updateGymSettings(gymId: string, data: any) {
-  const authorizedGymId = verifyTenantAccess(data.gymId);
+  const authorizedGymId = verifyTenantAccess(data?.gymId || gymId);
   if (!authorizedGymId) throw new Error("Unauthorized");
+  gymId = authorizedGymId;
   data.gymId = authorizedGymId;
 
   try {
@@ -371,6 +372,14 @@ export async function getGyms() {
     return await prisma.gym.findMany({ orderBy: { createdAt: 'desc' } });
   } catch (e) {
     return store.gyms;
+  }
+}
+
+export async function getGymById(id: string) {
+  try {
+    return await prisma.gym.findUnique({ where: { id } });
+  } catch (e) {
+    return store.gyms.find((g: any) => g.id === id) || null;
   }
 }
 
@@ -591,7 +600,7 @@ export async function addCustomer(data: any) {
           profilePic: data.profilePic || null,
           status: 'active',
           waActive: false,
-          joinedDate: getLocalTodayDateString()
+          joinedDate: data.joinedDate || data.lastPaymentDate || getLocalTodayDateString()
         }
       });
 
@@ -610,7 +619,7 @@ export async function addCustomer(data: any) {
             upiSenderName: data.upiSenderName || null,
             category: 'Membership Fee',
             description: `New Joiner: ${createdCust.name} (${createdCust.planType})${pendingBalance > 0 ? ` [₹${pendingBalance} Due]` : ''}${discountAmount > 0 ? ` [₹${discountAmount} Disc]` : ''}`,
-            date: createdCust.joinedDate,
+            date: data.lastPaymentDate || createdCust.joinedDate || getLocalTodayDateString(),
             time: nowTime,
             customerId: createdCust.id,
             customerName: createdCust.name
@@ -639,7 +648,7 @@ export async function addCustomer(data: any) {
       nextDueDate: data.nextDueDate,
       status: 'active',
       waActive: false,
-      joinedDate: getLocalTodayDateString()
+      joinedDate: data.joinedDate || data.lastPaymentDate || getLocalTodayDateString()
     };
     store.customers.unshift(newCust);
 
@@ -655,7 +664,7 @@ export async function addCustomer(data: any) {
         splitDetails: splitDetails,
         category: 'Membership Fee',
         description: `New Joiner: ${newCust.name} (${newCust.planType})${pendingBalance > 0 ? ` [₹${pendingBalance} Due]` : ''}${discountAmount > 0 ? ` [₹${discountAmount} Disc]` : ''}`,
-        date: newCust.joinedDate,
+        date: data.lastPaymentDate || newCust.joinedDate || getLocalTodayDateString(),
         customerId: newCust.id,
         customerName: newCust.name
       });
@@ -1926,14 +1935,14 @@ export async function authenticateGym(userId: string, password: string) {
         success: false, 
         suspended: true, 
         status: gym.status,
-        gym: { id: gym.id, userId: gym.userId, status: gym.status }, 
+        gym: { id: gym.id, userId: gym.userId, status: gym.status, name: gym.name }, 
         error: gym.status === 'locked' ? 'Your account is locked due to too many failed attempts. Please contact the Master Admin.' : 'Your account has been suspended. Please contact the Master Admin.' 
       };
     }
 
     resetFailedAttempts(userId);
     cookies().set('active_gym_id', gym.id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
-    return { success: true, gym: { id: gym.id, userId: gym.userId, status: gym.status } };
+    return { success: true, gym: { id: gym.id, userId: gym.userId, status: gym.status, name: gym.name } };
   } catch (e) {
     // Fallback to mock store
     const rateLimit = checkRateLimit(userId);
@@ -1965,13 +1974,13 @@ export async function authenticateGym(userId: string, password: string) {
         success: false, 
         suspended: true, 
         status: gym.status,
-        gym: { id: gym.id, userId: gym.userId, status: gym.status }, 
+        gym: { id: gym.id, userId: gym.userId, status: gym.status, name: gym.name }, 
         error: gym.status === 'locked' ? 'Your account is locked due to too many failed attempts. Please contact the Master Admin.' : 'Your account has been suspended. Please contact the Master Admin.' 
       };
     }
     resetFailedAttempts(userId);
     cookies().set('active_gym_id', gym.id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
-    return { success: true, gym: { id: gym.id, userId: gym.userId, status: gym.status } };
+    return { success: true, gym: { id: gym.id, userId: gym.userId, status: gym.status, name: gym.name } };
   }
 }
 
@@ -2543,9 +2552,7 @@ export async function getNextAvailableZkTecoId(gymId: string): Promise<string> {
       ...staffs.map(s => Number(s.fingerprintId)).filter(n => !isNaN(n) && n > 0)
     ];
 
-    if (allIds.length === 0) return '001';
-    
-    const nextId = Math.max(...allIds) + 1;
+    const nextId = allIds.reduce((max, n) => Math.max(max, n), 0) + 1;
     return nextId.toString().padStart(3, '0');
   } catch (e) {
     console.error('Error in getNextAvailableZkTecoId:', e);

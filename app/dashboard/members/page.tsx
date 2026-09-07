@@ -80,8 +80,8 @@ export default function MemberManagementPage() {
   const [remainingType, setRemainingType] = useState<'BALANCE' | 'DISCOUNT'>('BALANCE');
   const [balanceDueDate, setBalanceDueDate] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
-  const [splitCash, setSplitCash] = useState<number | string>(0);
-  const [splitUpi, setSplitUpi] = useState<number | string>(0);
+  const [splitCash, setSplitCash] = useState<number | string>('');
+  const [splitUpi, setSplitUpi] = useState<number | string>('');
   const [upiId, setUpiId] = useState('');
   const [upiSenderName, setUpiSenderName] = useState('');
   const [lastPaymentDate, setLastPaymentDate] = useState(getLocalTodayDateString());
@@ -93,16 +93,38 @@ export default function MemberManagementPage() {
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
   const [renewMonths, setRenewMonths] = useState(1);
+  const [renewPlanPrice, setRenewPlanPrice] = useState<number | string>(2500);
   const [renewPaidAmount, setRenewPaidAmount] = useState<number | string>(2500);
+  const [selectedRenewPlanKey, setSelectedRenewPlanKey] = useState<string>('current');
   const [renewRemainingType, setRenewRemainingType] = useState<'BALANCE' | 'DISCOUNT'>('BALANCE');
   const [renewBalanceDueDate, setRenewBalanceDueDate] = useState<string>('');
   const [renewPaymentMethod, setRenewPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
-  const [renewSplitCash, setRenewSplitCash] = useState<number | string>(0);
-  const [renewSplitUpi, setRenewSplitUpi] = useState<number | string>(0);
+  const [renewSplitCash, setRenewSplitCash] = useState<number | string>('');
+  const [renewSplitUpi, setRenewSplitUpi] = useState<number | string>('');
   const [renewUpiId, setRenewUpiId] = useState('');
   const [renewUpiSenderName, setRenewUpiSenderName] = useState('');
   const [isEditingMember, setIsEditingMember] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+
+  // Sync renewal plan details whenever a member drawer is opened
+  useEffect(() => {
+    if (selectedMember) {
+      const memberPlan = plans.find(p => p.name.toLowerCase() === (selectedMember.planType || '').toLowerCase());
+      const initialMonths = memberPlan ? memberPlan.durationMonths : 1;
+      const initialAmount = selectedMember.feeAmount || memberPlan?.price || 2500;
+      setRenewMonths(initialMonths);
+      setRenewPlanPrice(initialAmount);
+      setRenewPaidAmount(initialAmount);
+      setSelectedRenewPlanKey('current');
+      setRenewRemainingType('BALANCE');
+      setRenewBalanceDueDate('');
+      setRenewPaymentMethod('CASH');
+      setRenewSplitCash(0);
+      setRenewSplitUpi(0);
+      setRenewUpiId('');
+      setRenewUpiSenderName('');
+    }
+  }, [selectedMember?.id, selectedMember?.feeAmount]);
 
   const duplicateMember = useMemo(() => {
     if (!fingerprintId.trim()) return null;
@@ -189,8 +211,8 @@ export default function MemberManagementPage() {
   const [collectDueAmount, setCollectDueAmount] = useState<number | string>(0);
   const [collectDueRemainingType, setCollectDueRemainingType] = useState<'BALANCE' | 'DISCOUNT'>('BALANCE');
   const [collectDuePaymentMethod, setCollectDuePaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
-  const [collectDueSplitCash, setCollectDueSplitCash] = useState<number | string>(0);
-  const [collectDueSplitUpi, setCollectDueSplitUpi] = useState<number | string>(0);
+  const [collectDueSplitCash, setCollectDueSplitCash] = useState<number | string>('');
+  const [collectDueSplitUpi, setCollectDueSplitUpi] = useState<number | string>('');
   const [collectDueUpiId, setCollectDueUpiId] = useState('');
   const [collectDueUpiSenderName, setCollectDueUpiSenderName] = useState('');
 
@@ -524,42 +546,6 @@ export default function MemberManagementPage() {
     };
   }, []);
 
-  const loadData = async () => {
-    // setIsLoading(true);
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1';
-    setGymId(savedId);
-
-    const [custs, ps, txs, atts, loadedGyms, gymSettings, nextId] = await Promise.all([
-      getCustomers(savedId),
-      getSubscriptionPlans(savedId),
-      getTransactions(savedId),
-      getAttendance(savedId),
-      getGyms(),
-      getGymSettings(savedId),
-      getNextAvailableZkTecoId(savedId)
-    ]);
-
-    // setCustomers(custs);
-    // setPlans(ps);
-    // setTransactions(txs);
-    // setAttendance(atts);
-    // setSettings(gymSettings);
-    // setNextAvailableId(nextId);
-    
-    const matchedGym = loadedGyms.find((g: any) => g.id === savedId);
-    if (matchedGym) {
-      // setGymName(matchedGym.name);
-    }
-
-    if (gymSettings) {
-      // setAbsentTrackingEnabled...
-      // setAbsentThresholdDays...
-    }
-    
-    // setIsLoading(false);
-    return custs; // Return fresh customers so callers can sync selectedMember
-  };
-
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return; // Prevent double submission
@@ -575,8 +561,7 @@ export default function MemberManagementPage() {
     
     const existingPhone = customers.find(c => !c.isArchived && c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
     if (existingPhone && (!isEditingMember || existingPhone.id !== editingMemberId)) {
-      setErrorMsg(`Phone number already in use by ${existingPhone.name}. A number is for one customer only.`);
-      return;
+      setInfoMsg(`Shared contact with active member: ${existingPhone.name}`);
     }
 
     if (fingerprintId && fingerprintId.trim()) {
@@ -699,7 +684,7 @@ export default function MemberManagementPage() {
   };
 
   const handleRenewPayment = async (cust: any) => {
-    const totalPlanPrice = cust.feeAmount * renewMonths;
+    const totalPlanPrice = Number(renewPlanPrice) > 0 ? Number(renewPlanPrice) : (cust.feeAmount || 0);
     const actualPaid = Number(renewPaidAmount);
     const diff = Math.max(0, totalPlanPrice - actualPaid);
     const finalPendingBalance = diff > 0 && renewRemainingType === 'BALANCE' ? diff : 0;
@@ -2071,11 +2056,12 @@ export default function MemberManagementPage() {
                   <input
                     type="number"
                     required
+                    placeholder="2500"
                     value={feeAmount}
                     onChange={(e) => {
-                      const val = Number(e.target.value);
+                      const val = e.target.value === '' ? '' : Number(e.target.value);
                       setFeeAmount(val);
-                      if (!isEditingMember && Number(paidAmount) > val) setPaidAmount(val);
+                      if (!isEditingMember && val !== '' && Number(paidAmount) > val) setPaidAmount(val);
                     }}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold text-slate-900 outline-none"
                   />
@@ -2232,6 +2218,7 @@ export default function MemberManagementPage() {
                           <input
                             type="number"
                             min={0}
+                            placeholder="0"
                             value={splitCash}
                             onChange={(e) => setSplitCash(e.target.value === '' ? '' : Number(e.target.value))}
                             className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
@@ -2242,6 +2229,7 @@ export default function MemberManagementPage() {
                           <input
                             type="number"
                             min={0}
+                            placeholder="0"
                             value={splitUpi}
                             onChange={(e) => setSplitUpi(e.target.value === '' ? '' : Number(e.target.value))}
                             className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
@@ -2414,22 +2402,68 @@ export default function MemberManagementPage() {
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Plan Period</label>
                       <select
-                        value={renewMonths}
+                        value={selectedRenewPlanKey}
                         onChange={(e) => {
-                          const m = Number(e.target.value);
-                          setRenewMonths(m);
-                          setRenewPaidAmount(selectedMember.feeAmount * m);
+                          const val = e.target.value;
+                          setSelectedRenewPlanKey(val);
+                          const memberPlanDuration = plans.find(p => p.name.toLowerCase() === (selectedMember.planType || '').toLowerCase())?.durationMonths || 1;
+                          const monthlyUnit = Math.max(1, Math.round(selectedMember.feeAmount / memberPlanDuration));
+                          
+                          if (val === 'current') {
+                            setRenewMonths(memberPlanDuration);
+                            setRenewPlanPrice(selectedMember.feeAmount);
+                            setRenewPaidAmount(selectedMember.feeAmount);
+                          } else if (val.startsWith('plan_')) {
+                            const pName = val.replace('plan_', '');
+                            const matchedPlan = plans.find(p => p.name === pName);
+                            if (matchedPlan) {
+                              setRenewMonths(matchedPlan.durationMonths);
+                              setRenewPlanPrice(matchedPlan.price);
+                              setRenewPaidAmount(matchedPlan.price);
+                            }
+                          } else if (val.startsWith('custom_')) {
+                            const m = Number(val.replace('custom_', ''));
+                            const calculated = monthlyUnit * m;
+                            setRenewMonths(m);
+                            setRenewPlanPrice(calculated);
+                            setRenewPaidAmount(calculated);
+                          }
                         }}
                         className="w-full bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2.5 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-blue-600 outline-none transition-all"
                       >
-                        <option value={1}>+1 Month (₹{selectedMember.feeAmount})</option>
-                        <option value={3}>+3 Months (₹{selectedMember.feeAmount * 3})</option>
-                        <option value={6}>+6 Months (₹{selectedMember.feeAmount * 6})</option>
-                        <option value={12}>+1 Year (₹{selectedMember.feeAmount * 12})</option>
+                        {(() => {
+                          const memberPlanDuration = plans.find(p => p.name.toLowerCase() === (selectedMember.planType || '').toLowerCase())?.durationMonths || 1;
+                          const monthlyUnit = Math.max(1, Math.round(selectedMember.feeAmount / memberPlanDuration));
+                          return (
+                            <>
+                              <option value="current">
+                                Current: {selectedMember.planType || 'Membership'} ({memberPlanDuration} Mo) — ₹{selectedMember.feeAmount}
+                              </option>
+                              {plans.length > 0 && (
+                                <optgroup label="Gym Membership Plans">
+                                  {plans.map((p) => (
+                                    <option key={p.id || p.name} value={`plan_${p.name}`}>
+                                      {p.name} ({p.durationMonths} Mo) — ₹{p.price}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
+                              <optgroup label="Standard Extension">
+                                <option value="custom_1">+1 Month — ₹{monthlyUnit}</option>
+                                <option value="custom_3">+3 Months — ₹{monthlyUnit * 3}</option>
+                                <option value="custom_6">+6 Months — ₹{monthlyUnit * 6}</option>
+                                <option value="custom_12">+1 Year — ₹{monthlyUnit * 12}</option>
+                              </optgroup>
+                            </>
+                          );
+                        })()}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Amount Paid (₹)</label>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Amount Paid (₹)</label>
+                        <span className="text-[10px] font-bold text-slate-400">Plan Fee: ₹{renewPlanPrice}</span>
+                      </div>
                       <input
                         type="number"
                         min={0}
@@ -2440,11 +2474,11 @@ export default function MemberManagementPage() {
                     </div>
                   </div>
 
-                  {Number(renewPaidAmount) < selectedMember.feeAmount * renewMonths && (
+                  {Number(renewPaidAmount) < Number(renewPlanPrice) && (
                     <div className="p-2.5 bg-amber-50/50 border border-amber-200 rounded-xl space-y-2 animate-in fade-in zoom-in duration-200">
                       <div className="flex justify-between items-center font-bold text-xs">
                         <span className="text-amber-900">Remaining Unpaid:</span>
-                        <span className="text-amber-700 font-black">₹{selectedMember.feeAmount * renewMonths - Number(renewPaidAmount)}</span>
+                        <span className="text-amber-700 font-black">₹{Number(renewPlanPrice) - Number(renewPaidAmount)}</span>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <button
@@ -2525,6 +2559,7 @@ export default function MemberManagementPage() {
                           <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cash (₹)</label>
                           <input
                             type="number"
+                            placeholder="0"
                             value={renewSplitCash}
                             onChange={(e) => setRenewSplitCash(e.target.value === '' ? '' : Number(e.target.value))}
                             className="w-full py-1.5 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500"
@@ -2534,6 +2569,7 @@ export default function MemberManagementPage() {
                           <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">UPI (₹)</label>
                           <input
                             type="number"
+                            placeholder="0"
                             value={renewSplitUpi}
                             onChange={(e) => setRenewSplitUpi(e.target.value === '' ? '' : Number(e.target.value))}
                             className="w-full py-1.5 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500"
@@ -2749,6 +2785,7 @@ export default function MemberManagementPage() {
                       <input
                         type="number"
                         min={0}
+                        placeholder="0"
                         value={collectDueSplitCash}
                         onChange={(e) => setCollectDueSplitCash(e.target.value === '' ? '' : Number(e.target.value))}
                         className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"
@@ -2759,6 +2796,7 @@ export default function MemberManagementPage() {
                       <input
                         type="number"
                         min={0}
+                        placeholder="0"
                         value={collectDueSplitUpi}
                         onChange={(e) => setCollectDueSplitUpi(e.target.value === '' ? '' : Number(e.target.value))}
                         className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none"

@@ -27,14 +27,24 @@ export default function LandingPage() {
 
       if (response.success && response.gym) {
         if (typeof window !== 'undefined') {
-          localStorage.setItem('active_gym_id', response.gym.id);
-          localStorage.setItem('active_gym_user_id', response.gym.userId);
+          try {
+            localStorage.setItem('active_gym_id', response.gym.id);
+            localStorage.setItem('active_gym_user_id', response.gym.userId);
+            const gymName = (response.gym as any)?.name;
+            if (gymName) localStorage.setItem('active_gym_name', gymName);
+            document.cookie = `active_gym_id=${response.gym.id}; path=/; max-age=31536000; SameSite=Lax`;
+          } catch (e) {}
         }
         router.push('/dashboard');
       } else if (response.suspended && response.gym) {
         if (typeof window !== 'undefined') {
-          localStorage.setItem('active_gym_id', response.gym.id);
-          localStorage.setItem('active_gym_user_id', response.gym.userId);
+          try {
+            localStorage.setItem('active_gym_id', response.gym.id);
+            localStorage.setItem('active_gym_user_id', response.gym.userId);
+            const gymName = (response.gym as any)?.name;
+            if (gymName) localStorage.setItem('active_gym_name', gymName);
+            document.cookie = `active_gym_id=${response.gym.id}; path=/; max-age=31536000; SameSite=Lax`;
+          } catch (e) {}
         }
         router.push('/dashboard');
       } else {

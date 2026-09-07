@@ -65,6 +65,14 @@ export default function StaffPage() {
   const [joinedDate, setJoinedDate] = useState(getLocalTodayDateString());
   const [modalError, setModalError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [staffShiftFilter, setStaffShiftFilter] = useState<'on_duty' | 'all'>('all');
+  const [nowTick, setNowTick] = useState<number>(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNowTick(Date.now()), 10000);
+    return () => clearInterval(timer);
+  }, []);
+
   const lastEnrolledDevicePinRef = React.useRef<string | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -822,47 +830,85 @@ export default function StaffPage() {
 
           {/* Today's Active Shift Status Grid (Same design as member check-in cards) */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
               <div>
                 <h2 className="font-black text-slate-900 text-base flex items-center space-x-2">
                   <Briefcase className="w-5 h-5 text-blue-600" />
-                  <span>Today's Staff Shift Status ({activeStaffSessions.length} On Duty)</span>
+                  <span>Today's Staff Shifts ({activeStaffSessions.length} On Duty)</span>
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Live shift tracking and active punch-in status of trainers and front-desk employees
                 </p>
               </div>
+
+              {/* View Toggle Tabs */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setStaffShiftFilter('on_duty')}
+                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                    staffShiftFilter === 'on_duty'
+                      ? 'bg-purple-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Currently On Duty ({activeStaffSessions.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStaffShiftFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                    staffShiftFilter === 'all'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span>All Shifts ({uniqueTodayStaffRecords.length})</span>
+                </button>
+              </div>
             </div>
 
-            {uniqueTodayStaffRecords.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center">
-                <Briefcase className="w-8 h-8 mb-2 opacity-40 text-slate-500" />
-                <p className="font-bold text-slate-600 text-sm">No staff punches logged today</p>
-                <p className="text-xs mt-0.5 text-slate-400">Scan employee NFC badge or tap fingerprint sensor at check-in terminal.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {uniqueTodayStaffRecords.map(session => {
-                  const staffObj = staffs.find(s => s.id === session.staffId);
-                  const isActive = !session.checkOutTime;
-                  const checkInDate = new Date(session.checkInTime);
-                  const elapsedMinutes = Math.floor((Date.now() - checkInDate.getTime()) / 60000);
-                  const isPunching = punchLoading === session.staffId;
+            {(() => {
+              const recordsToDisplay = staffShiftFilter === 'on_duty'
+                ? uniqueTodayStaffRecords.filter(s => !s.checkOutTime)
+                : uniqueTodayStaffRecords;
 
-                  return (
-                    <div key={session.id} className={`p-4 rounded-2xl border relative overflow-hidden transition-all hover:shadow-md ${
-                      isActive 
-                        ? 'border-purple-300 bg-gradient-to-br from-purple-50/70 via-white to-emerald-50/30 shadow-sm' 
-                        : 'border-slate-200 bg-slate-50/50 opacity-80'
-                    }`}>
-                      <div className={`absolute top-0 right-0 text-[10px] font-black px-2.5 py-1 rounded-bl-xl shadow-xs flex items-center gap-1 ${
+              if (recordsToDisplay.length === 0) {
+                return (
+                  <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center">
+                    <Briefcase className="w-8 h-8 mb-2 opacity-40 text-slate-500" />
+                    <p className="font-bold text-slate-600 text-sm">
+                      {staffShiftFilter === 'on_duty' ? 'No staff members currently on duty' : 'No staff punches logged today'}
+                    </p>
+                    <p className="text-xs mt-0.5 text-slate-400">Scan employee NFC badge or tap fingerprint sensor at check-in terminal.</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {recordsToDisplay.map(session => {
+                    const staffObj = staffs.find(s => s.id === session.staffId);
+                    const isActive = !session.checkOutTime;
+                    const checkInDate = new Date(session.checkInTime);
+                    const elapsedMinutes = Math.max(0, Math.floor((nowTick - checkInDate.getTime()) / 60000));
+                    const isPunching = punchLoading === session.staffId;
+
+                    return (
+                      <div key={session.id} className={`p-4 rounded-2xl border relative overflow-hidden transition-all hover:shadow-md ${
                         isActive 
-                          ? 'bg-emerald-600 text-white animate-pulse' 
-                          : 'bg-slate-400 text-white'
+                          ? 'border-purple-300 bg-gradient-to-br from-purple-50/70 via-white to-emerald-50/30 shadow-sm' 
+                          : 'border-slate-200 bg-slate-50/50 opacity-80'
                       }`}>
-                        {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
-                        <span>{isActive ? `ON DUTY (${elapsedMinutes}m)` : 'COMPLETED'}</span>
-                      </div>
+                        <div className={`absolute top-0 right-0 text-[10px] font-black px-2.5 py-1 rounded-bl-xl shadow-xs flex items-center gap-1 ${
+                          isActive 
+                            ? 'bg-emerald-600 text-white animate-pulse' 
+                            : 'bg-slate-400 text-white'
+                        }`}>
+                          {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
+                          <span>{isActive ? `ON DUTY (${elapsedMinutes < 60 ? `${elapsedMinutes}m` : `${Math.floor(elapsedMinutes / 60)}h ${elapsedMinutes % 60}m`})` : 'COMPLETED'}</span>
+                        </div>
                       
                       <div className="flex items-center space-x-3 mb-3">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm border ${
@@ -933,8 +979,9 @@ export default function StaffPage() {
                   );
                 })}
               </div>
-            )}
-          </div>
+            );
+          })()}
+        </div>
 
           {/* Team Members Directory Section */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">

@@ -57,16 +57,16 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
   const [pName, setPName] = useState('');
   const [pCategory, setPCategory] = useState('Supplement');
-  const [pPrice, setPPrice] = useState<number | string>(0);
-  const [pStock, setPStock] = useState<number | string>(0);
+  const [pPrice, setPPrice] = useState<number | string>('');
+  const [pStock, setPStock] = useState<number | string>('');
   const [pUnit, setPUnit] = useState('unit');
   const [savingProduct, setSavingProduct] = useState(false);
 
   // POS Cart
   const [cart, setCart] = useState<CartItem[]>([]);
   const [posPaymentMethod, setPosPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'SPLIT'>('CASH');
-  const [posCashSplit, setPosCashSplit] = useState<number | string>(0);
-  const [posUpiSplit, setPosUpiSplit] = useState<number | string>(0);
+  const [posCashSplit, setPosCashSplit] = useState<number | string>('');
+  const [posUpiSplit, setPosUpiSplit] = useState<number | string>('');
   const [posCustomer, setPosCustomer] = useState<string | null>(null);
   const [posCustomerName, setPosCustomerName] = useState('');
   const [posCustomerSearch, setPosCustomerSearch] = useState('');
@@ -509,8 +509,8 @@ export default function ProductsPage() {
                         </div>
                         {posPaymentMethod === 'SPLIT' && (
                           <div className="grid grid-cols-2 gap-2 mt-2">
-                            <div><label className="text-xs text-slate-500 font-semibold">Cash (₹)</label><input type="number" value={posCashSplit} onChange={e => setPosCashSplit(e.target.value === '' ? '' : Number(e.target.value))} className="w-full px-2 py-1.5 mt-1 bg-white border border-slate-200 rounded text-xs" /></div>
-                            <div><label className="text-xs text-slate-500 font-semibold">UPI (₹)</label><input type="number" value={posUpiSplit} onChange={e => setPosUpiSplit(e.target.value === '' ? '' : Number(e.target.value))} className="w-full px-2 py-1.5 mt-1 bg-white border border-slate-200 rounded text-xs" /></div>
+                            <div><label className="text-xs text-slate-500 font-semibold">Cash (₹)</label><input type="number" placeholder="0" value={posCashSplit} onChange={e => setPosCashSplit(e.target.value === '' ? '' : Number(e.target.value))} className="w-full px-2 py-1.5 mt-1 bg-white border border-slate-200 rounded text-xs" /></div>
+                            <div><label className="text-xs text-slate-500 font-semibold">UPI (₹)</label><input type="number" placeholder="0" value={posUpiSplit} onChange={e => setPosUpiSplit(e.target.value === '' ? '' : Number(e.target.value))} className="w-full px-2 py-1.5 mt-1 bg-white border border-slate-200 rounded text-xs" /></div>
                           </div>
                         )}
                       </div>
@@ -632,11 +632,11 @@ export default function ProductsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Price (₹) *</label>
-                <input type="number" value={pPrice} onChange={e => setPPrice(e.target.value === '' ? '' : Number(e.target.value))} min={0} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-800 outline-none" />
+                <input type="number" placeholder="0" value={pPrice} onChange={e => setPPrice(e.target.value === '' ? '' : Number(e.target.value))} min={0} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-800 outline-none" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Stock Quantity</label>
-                <input type="number" value={pStock} onChange={e => setPStock(e.target.value === '' ? '' : Number(e.target.value))} min={0} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-800 outline-none" />
+                <input type="number" placeholder="0" value={pStock} onChange={e => setPStock(e.target.value === '' ? '' : Number(e.target.value))} min={0} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-800 outline-none" />
                 </div>
               </div>
             </div>

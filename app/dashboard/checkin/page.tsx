@@ -65,6 +65,13 @@ export default function CheckInTerminal() {
   const [manualSearch, setManualSearch] = useState('');
   const deferredSearchQuery = useDeferredValue(manualSearch);
   const [punchLoading, setPunchLoading] = useState<string | null>(null);
+  const [memberViewFilter, setMemberViewFilter] = useState<'all' | 'inside'>('all');
+  const [nowTick, setNowTick] = useState<number>(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNowTick(Date.now()), 10000);
+    return () => clearInterval(timer);
+  }, []);
 
   const prevAttRef = useRef<any[]>([]);
 
@@ -695,43 +702,85 @@ export default function CheckInTerminal() {
 
           {/* SECTION: Member Attendance Cards */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h2 className="font-black text-slate-900 text-base mb-1 flex items-center space-x-2">
-              <UserCheck className="w-5 h-5 text-blue-600" />
-              <span>Today's Member Attendance Status ({activeMemberSessions.length} Active in Gym)</span>
-            </h2>
-            <p className="text-xs text-slate-500 mb-6">
-              Real-time check-in and check-out status of gym members today.
-            </p>
-
-            {uniqueTodayMemberRecords.length === 0 ? (
-              <div className="text-center py-10 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center">
-                <UserCheck className="w-8 h-8 mb-3 opacity-40 text-slate-500" />
-                <p className="font-bold text-slate-600 text-sm">No member attendance logged today</p>
-                <p className="text-xs mt-1">Waiting for NFC hardware taps or manual check-ins...</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+              <div>
+                <h2 className="font-black text-slate-900 text-base flex items-center space-x-2">
+                  <UserCheck className="w-5 h-5 text-blue-600" />
+                  <span>Today's Member Attendance ({activeMemberSessions.length} Inside Gym)</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Real-time workout timing and active check-in status of gym members.
+                </p>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {uniqueTodayMemberRecords.map(session => {
-                  const customer = customers.find(c => c.id === session.customerId);
-                  const avgHours = getAvg(session.customerId);
-                  const isActive = !session.checkOutTime;
-                  const checkInDate = new Date(session.checkInTime);
-                  const elapsedMinutes = Math.floor((Date.now() - checkInDate.getTime()) / 60000);
-                    
-                  return (
-                    <div key={session.id} className={`p-4 rounded-2xl border relative overflow-hidden transition-all hover:shadow-md ${
-                      isActive 
-                        ? 'border-blue-300 bg-gradient-to-br from-blue-50/70 via-white to-emerald-50/30 shadow-sm' 
-                        : 'border-slate-200 bg-slate-50/50 opacity-80'
-                    }`}>
-                      <div className={`absolute top-0 right-0 text-[10px] font-black px-2.5 py-1 rounded-bl-xl shadow-xs flex items-center gap-1 ${
+
+              {/* View Toggle Tabs */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setMemberViewFilter('inside')}
+                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                    memberViewFilter === 'inside'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Currently Inside ({activeMemberSessions.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMemberViewFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                    memberViewFilter === 'all'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span>All Visits ({uniqueTodayMemberRecords.length})</span>
+                </button>
+              </div>
+            </div>
+
+            {(() => {
+              const recordsToDisplay = memberViewFilter === 'inside'
+                ? uniqueTodayMemberRecords.filter(s => !s.checkOutTime)
+                : uniqueTodayMemberRecords;
+
+              if (recordsToDisplay.length === 0) {
+                return (
+                  <div className="text-center py-10 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center">
+                    <UserCheck className="w-8 h-8 mb-3 opacity-40 text-slate-500" />
+                    <p className="font-bold text-slate-600 text-sm">
+                      {memberViewFilter === 'inside' ? 'No members currently inside the gym' : 'No member attendance logged today'}
+                    </p>
+                    <p className="text-xs mt-1">Waiting for biometric taps or check-ins...</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {recordsToDisplay.map(session => {
+                    const customer = customers.find(c => c.id === session.customerId);
+                    const avgHours = getAvg(session.customerId);
+                    const isActive = !session.checkOutTime;
+                    const checkInDate = new Date(session.checkInTime);
+                    const elapsedMinutes = Math.max(0, Math.floor((nowTick - checkInDate.getTime()) / 60000));
+                      
+                    return (
+                      <div key={session.id} className={`p-4 rounded-2xl border relative overflow-hidden transition-all hover:shadow-md ${
                         isActive 
-                          ? 'bg-emerald-600 text-white animate-pulse' 
-                          : 'bg-slate-400 text-white'
+                          ? 'border-blue-300 bg-gradient-to-br from-blue-50/70 via-white to-emerald-50/30 shadow-sm' 
+                          : 'border-slate-200 bg-slate-50/50 opacity-80'
                       }`}>
-                        {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
-                        <span>{isActive ? `IN GYM (${elapsedMinutes <= 60 ? `${elapsedMinutes}m` : `${Math.floor(elapsedMinutes / 60)}h ${elapsedMinutes % 60}m`})` : 'COMPLETED'}</span>
-                      </div>
+                        <div className={`absolute top-0 right-0 text-[10px] font-black px-2.5 py-1 rounded-bl-xl shadow-xs flex items-center gap-1 ${
+                          isActive 
+                            ? 'bg-emerald-600 text-white animate-pulse' 
+                            : 'bg-slate-400 text-white'
+                        }`}>
+                          {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
+                          <span>{isActive ? `IN GYM (${elapsedMinutes < 60 ? `${elapsedMinutes}m` : `${Math.floor(elapsedMinutes / 60)}h ${elapsedMinutes % 60}m`})` : 'COMPLETED'}</span>
+                        </div>
                       
                       <div className="flex items-center space-x-3 mb-3">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm border ${
@@ -775,7 +824,8 @@ export default function CheckInTerminal() {
                   );
                 })}
               </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* SECTION: Today's Detailed Member Attendance Log */}

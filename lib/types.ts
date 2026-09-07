@@ -133,6 +133,10 @@ export interface GymSettings {
   templateAbsentee?: string;
   templateCheckIn?: string;
   templateCheckOut?: string;
+  templateStoreReceipt?: string;
+  templateQueryPlan?: string;
+  templateQueryPayment?: string;
+  templateQueryAttendance?: string;
   // Feature toggles
   productsEnabled?: boolean;
   // Attendance hardware: MANUAL | NFC | MANTRA_USB | BIOMAX_WALL | ESSL_WALL

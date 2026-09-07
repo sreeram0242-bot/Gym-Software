@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { CreditCard, TrendingUp, TrendingDown, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Wallet, PieChart as PieChartIcon, Calendar, X, Filter, Settings, Trash2, Edit2, Download, Banknote, Smartphone, ArrowLeftRight, Copy, Check } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
-import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, updateTransaction, deleteTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan, getGyms, getGymSettings } from '@/lib/actions';
+import { getCustomers, getTransactions, getSubscriptionPlans, addTransaction, updateTransaction, deleteTransaction, addSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan, getGymById, getGymSettings } from '@/lib/actions';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatDateDDMMYYYY, getLocalTodayDateString } from '@/lib/utils';
@@ -434,8 +434,7 @@ export default function RevenuePage() {
       ];
     });
 
-    const gyms = await getGyms();
-    const gym = gyms.find((g: any) => g.id === gymId);
+    const gym = await getGymById(gymId);
     const gymName = gym?.name || 'Gym Ledger Report';
     
     const doc = new jsPDF('landscape');
@@ -1079,7 +1078,20 @@ export default function RevenuePage() {
                  </div>
                  <div className="grid grid-cols-2 gap-3 mb-3">
                    <input type="text" placeholder="Package Name (e.g. Annual)" value={newPlanName} onChange={e => setNewPlanName(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
-                   <input type="number" min={1} max={60} placeholder="Duration in Months (e.g. 12)" value={newPlanMonths} onChange={e => setNewPlanMonths(e.target.value === '' ? '' : Math.min(60, Math.max(1, Number(e.target.value))))} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />
+                   <input
+                      type="number"
+                      min={1}
+                      max={60}
+                      placeholder="Duration in Months (e.g. 12)"
+                      value={newPlanMonths}
+                      onChange={e => setNewPlanMonths(e.target.value === '' ? '' : Number(e.target.value))}
+                      onBlur={() => {
+                        if (newPlanMonths !== '') {
+                          setNewPlanMonths(Math.min(60, Math.max(1, Number(newPlanMonths) || 1)));
+                        }
+                      }}
+                      className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800"
+                    />
                    <div className="col-span-2 relative">
                      <span className="absolute left-3 top-2 text-slate-400 font-bold">₹</span>
                       <input type="number" placeholder="Price (₹)" value={newPlanPrice} onChange={e => setNewPlanPrice(e.target.value === '' ? '' : Number(e.target.value))} className="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-800" />

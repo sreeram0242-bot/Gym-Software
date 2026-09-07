@@ -292,6 +292,12 @@ export class WhatsAppManager {
         }
       }
 
+      let gymName = 'Our Gym';
+      try {
+        const gym = await db.gym.findUnique({ where: { id: gymId } });
+        if (gym) gymName = gym.name;
+      } catch (e) {}
+
       const footer = '\n\n---\nReply *start* to see the main menu anytime.';
       let replyText = '';
 
@@ -299,45 +305,57 @@ export class WhatsAppManager {
         const balanceNotice = (customer.pendingBalance || 0) > 0 
           ? `\n⏳ *Pending Balance:* ₹${customer.pendingBalance}${customer.balanceDueDate ? ` (Due by ${formatDateDDMMYYYY(customer.balanceDueDate)})` : ''}`
           : '';
-        replyText = `📋 *Your Plan Details*\n\n*Name:* ${customer.name}\n*Plan:* ${customer.planType}\n*Fee Amount:* ₹${customer.feeAmount}${balanceNotice}\n*Next Due Date:* ${formatDateDDMMYYYY(customer.nextDueDate)}`;
+        const rawTemplate = getTemplate(settings, 'queryPlan');
+        replyText = compileTemplate(rawTemplate, {
+          gymName: gymName,
+          name: customer.name,
+          plan: customer.planType,
+          amount: customer.feeAmount.toString(),
+          balanceNotice: balanceNotice,
+          pendingBalance: customer.pendingBalance?.toString() || '0',
+          dueDate: formatDateDDMMYYYY(customer.nextDueDate)
+        });
       } else if (isPayment) {
         const txs = await db.transaction.findMany({
           where: { customerId: customer.id, type: 'INCOME' },
           orderBy: { date: 'desc' },
           take: 3
         });
-        if (txs.length === 0) {
-          replyText = `💰 *Payment History for ${customer.name}*\n\nNo payments found.`;
-        } else {
-          replyText = `💰 *Last 3 Payments for ${customer.name}*\n\n` + txs.map(t => {
-            const methodTag = t.paymentMethod ? ` [${t.paymentMethod}]` : '';
-            return `• ₹${t.amount}${methodTag} on ${formatDateDDMMYYYY(t.date)}`;
-          }).join('\n');
-        }
+        const paymentsList = txs.length === 0 
+          ? 'No payments found.' 
+          : txs.map(t => {
+              const methodTag = t.paymentMethod ? ` [${t.paymentMethod}]` : '';
+              return `• ₹${t.amount}${methodTag} on ${formatDateDDMMYYYY(t.date)}`;
+            }).join('\n');
+        
+        const rawTemplate = getTemplate(settings, 'queryPayment');
+        replyText = compileTemplate(rawTemplate, {
+          gymName: gymName,
+          name: customer.name,
+          paymentsList: paymentsList
+        });
       } else if (isAttendance) {
         const atts = await db.attendanceRecord.findMany({
           where: { customerId: customer.id, durationMinutes: { not: null } },
           orderBy: { checkInTime: 'desc' },
           take: 3
         });
-        if (atts.length === 0) {
-          replyText = `⏱️ *Recent Attendance for ${customer.name}*\n\nNo recent check-ins found.`;
-        } else {
-          replyText = `⏱️ *Last 3 Days Attendance for ${customer.name}*\n\n` + atts.map(a => {
-            const date = formatDateDDMMYYYY(a.dateStr);
-            const hrs = ((a.durationMinutes || 0) / 60).toFixed(1);
-            return `• ${date}: ${hrs} hours`;
-          }).join('\n');
-        }
+        const attendanceList = atts.length === 0 
+          ? 'No recent check-ins found.' 
+          : atts.map(a => {
+              const date = formatDateDDMMYYYY(a.dateStr);
+              const hrs = ((a.durationMinutes || 0) / 60).toFixed(1);
+              return `• ${date}: ${hrs} hours`;
+            }).join('\n');
+
+        const rawTemplate = getTemplate(settings, 'queryAttendance');
+        replyText = compileTemplate(rawTemplate, {
+          gymName: gymName,
+          name: customer.name,
+          attendanceList: attendanceList
+        });
       } else if (isStart) {
         const rawTemplate = getTemplate(settings, 'welcome');
-        
-        let gymName = 'Our Gym';
-        try {
-          const gym = await db.gym.findUnique({ where: { id: gymId } });
-          if (gym) gymName = gym.name;
-        } catch (e) {}
-
         const joinDate = customer.joinedDate ? formatDateDDMMYYYY(customer.joinedDate) : 'N/A';
         
         replyText = compileTemplate(rawTemplate, {

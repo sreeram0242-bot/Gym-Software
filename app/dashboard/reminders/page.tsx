@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Bell, AlertTriangle, CheckCircle2, MessageSquare, Phone, RefreshCw, Calendar, Filter, Sparkles, Send, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Bell, AlertTriangle, CheckCircle2, MessageSquare, Phone, RefreshCw, Calendar, Filter, Sparkles, Send, Loader2, FileText } from 'lucide-react';
 import { getCustomers, renewMemberPayment, getGymSettings, getGyms } from '@/lib/actions';
 import { Customer } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
@@ -252,9 +253,18 @@ export default function RemindersPage() {
             <AlertTriangle className="w-4 h-4 text-amber-500" />
             <span>Members Due for Payment ({dueCustomers.length})</span>
           </h2>
-          <span className="text-xs font-semibold px-2.5 py-1 bg-amber-50 text-amber-800 rounded-full border border-amber-200">
-            Window: Next {reminderThresholdDays} Days
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold px-2.5 py-1 bg-amber-50 text-amber-800 rounded-full border border-amber-200">
+              Window: Next {reminderThresholdDays} Days
+            </span>
+            <Link
+              href="/dashboard/settings?tab=templates&template=reminder"
+              className="text-xs font-bold px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-full border border-blue-200 transition-colors flex items-center gap-1.5"
+            >
+              <FileText className="w-3.5 h-3.5 text-blue-600" />
+              <span>Customize Due Template</span>
+            </Link>
+          </div>
         </div>
 
         {dueCustomers.length > 0 ? (
