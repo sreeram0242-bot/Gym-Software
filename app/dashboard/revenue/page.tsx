@@ -201,11 +201,15 @@ export default function RevenuePage() {
   // Helper filter for global date toolbar
   const isDateInGlobalFilter = (dateStr: string) => {
     if (globalTimeFilter === 'ALL') return true;
-    const d = new Date(dateStr);
+    if (!dateStr) return true;
+    
+    const [rY, rM, rD] = dateStr.split('T')[0].split('-').map(Number);
+    if (!rY || !rM || !rD) return true;
+    
     const now = new Date();
 
     if (globalTimeFilter === 'TODAY') {
-      return d.toDateString() === now.toDateString();
+      return rY === now.getFullYear() && rM - 1 === now.getMonth() && rD === now.getDate();
     }
     if (globalTimeFilter === 'THIS_WEEK') {
       const startOfWeek = new Date(now);
@@ -213,13 +217,14 @@ export default function RevenuePage() {
       const diff = now.getDate() - day + (day === 0 ? -6 : 1);
       startOfWeek.setDate(diff);
       startOfWeek.setHours(0, 0, 0, 0);
-      return d >= startOfWeek;
+      const recordDate = new Date(rY, rM - 1, rD);
+      return recordDate >= startOfWeek;
     }
     if (globalTimeFilter === 'THIS_MONTH') {
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      return rM - 1 === now.getMonth() && rY === now.getFullYear();
     }
     if (globalTimeFilter === 'THIS_YEAR') {
-      return d.getFullYear() === now.getFullYear();
+      return rY === now.getFullYear();
     }
     if (globalTimeFilter === 'CUSTOM') {
       if (!globalDateFrom || !globalDateTo) return true;

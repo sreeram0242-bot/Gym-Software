@@ -62,6 +62,7 @@ model Customer {
   productSales ProductSale[]
 
   @@index([gymId])
+  @@unique([gymId, fingerprintId])
 }
 
 model AttendanceRecord {
@@ -99,7 +100,7 @@ model Transaction {
   paidAmount    Int?
   discountAmount Int      @default(0)
   customerId    String?
-  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerName  String?
 
   @@index([gymId])
@@ -283,6 +284,7 @@ model BiometricDevice {
 
 model BiometricCommand {
   id              String   @id @default(uuid())
+  deviceCommandId Int      @default(autoincrement())
   deviceId        String
   device          BiometricDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   commandString   String   // e.g. "DATA UPDATE USERINFO PIN=105 Name=John..."
@@ -293,4 +295,5 @@ model BiometricCommand {
   
   @@index([deviceId])
   @@index([status])
+  @@index([deviceId, status, createdAt])
 }

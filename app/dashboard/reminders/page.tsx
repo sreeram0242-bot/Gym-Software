@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Bell, AlertTriangle, CheckCircle2, MessageSquare, Phone, RefreshCw, Calendar, Filter, Sparkles, Send } from 'lucide-react';
+import { Bell, AlertTriangle, CheckCircle2, MessageSquare, Phone, RefreshCw, Calendar, Filter, Sparkles, Send, Loader2 } from 'lucide-react';
 import { getCustomers, renewMemberPayment, getGymSettings, getGyms } from '@/lib/actions';
 import { Customer } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
@@ -9,30 +9,52 @@ import { formatDateDDMMYYYY } from '@/lib/utils';
 import { useRemindersData } from '@/lib/hooks';
 import { mutate } from 'swr';
 
-export default function RemindersPage() {
-  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
+// Helper for strict YYYY-MM-DD calculations ignoring local timezones
+const getYYYYMMDD = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
-  
+const getMidnightUTC = (dateStr: string) => {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return Date.UTC(y, m - 1, d);
+};
 
-  const { data, isLoading } = useRemindersData(gymId);
-  const customers = data?.custs || [];
-  const settings = data?.settings || null;
-  const gyms = data?.gyms || [];
-  const matchedGym = gyms.find((g: any) => g.id === gymId);
-  const gymName = matchedGym?.name || 'Our Gym';
-  const reminderThresholdDays = settings?.waReminderWindowDays ?? 3;
-
+// Extracted Component to prevent re-rendering the massive list every 3 seconds
+function BatchSendButton({ dueCustomers, gymId, gymName, settings }: { dueCustomers: any[], gymId: string, gymName: string, settings: any }) {
   const [batchSending, setBatchSending] = useState(false);
   const [batchSentCount, setBatchSentCount] = useState<number | null>(null);
+  const [failedCount, setFailedCount] = useState<number>(0);
 
-  const handleSendBatchReminders = async (recipients: any[]) => {
-    if (recipients.length === 0 || batchSending) return;
+  const handleSendBatchReminders = async () => {
+    if (dueCustomers.length === 0 || batchSending) return;
+    
+    // Prevent closing the tab accidentally
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Request Wake Lock to prevent tab sleep on mobile/laptops
+    let wakeLock: any = null;
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await (navigator as any).wakeLock.request('screen');
+      }
+    } catch (err) {}
+
     setBatchSending(true);
     setBatchSentCount(0);
+    setFailedCount(0);
 
     let sent = 0;
-    for (let i = 0; i < recipients.length; i++) {
-      const cust = recipients[i];
+    let failed = 0;
+
+    for (let i = 0; i < dueCustomers.length; i++) {
+      const cust = dueCustomers[i];
       const now = new Date();
       const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const dateString = now.toLocaleDateString();
@@ -47,7 +69,7 @@ export default function RemindersPage() {
       }) + `\n\n_Generated: ${dateString} ${timeString}_`;
 
       try {
-        await fetch('/api/whatsapp/send', {
+        const res = await fetch('/api/whatsapp/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -56,62 +78,117 @@ export default function RemindersPage() {
             message: waText
           })
         });
+        
+        if (!res.ok) throw new Error("API failure status: " + res.status);
+        
         sent++;
         setBatchSentCount(sent);
       } catch (e) {
+        failed++;
+        setFailedCount(failed);
         console.error('Batch reminder send failed for', cust.name, e);
       }
 
       // Anti-ban delay between 3 to 6 seconds
-      if (i < recipients.length - 1) {
-        const delay = Math.floor(Math.random() * 30000) + 3000;
+      if (i < dueCustomers.length - 1) {
+        const delay = Math.floor(Math.random() * 3000) + 3000;
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
 
+    if (wakeLock) {
+      wakeLock.release().catch(() => {});
+    }
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+    
     setBatchSending(false);
-    setTimeout(() => setBatchSentCount(null), 5000);
+    setTimeout(() => {
+      setBatchSentCount(null);
+      setFailedCount(0);
+    }, 5000);
   };
 
-  const handleRecordPayment = async (cust: any) => {
-    const updated = await renewMemberPayment(cust.id, 1, cust.feeAmount);
-    mutate(['reminders', gymId]);
-    if (updated) {
-      const autoMessagesEnabled = settings?.waAutoMessages ?? true;
-      if (autoMessagesEnabled) {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const dateString = now.toLocaleDateString();
+  if (dueCustomers.length === 0) return null;
 
-        fetch('/api/whatsapp/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            gymId,
-            phone: cust.phone,
-            message: compileTemplate(getTemplate(settings, 'receipt'), {
-              name: updated.name,
-              gymName,
+  return (
+    <button
+      onClick={handleSendBatchReminders}
+      disabled={batchSending}
+      className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex items-center space-x-2 ${
+        batchSending
+          ? 'bg-amber-100 text-amber-800 cursor-wait'
+          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+      }`}
+    >
+      <Send className="w-4 h-4" />
+      <span>
+        {batchSending
+          ? `Sending (${batchSentCount}/${dueCustomers.length})${failedCount > 0 ? ` [${failedCount} failed]` : ''}...`
+          : `Send Reminders to All (${dueCustomers.length})`}
+      </span>
+    </button>
+  );
+}
+
+export default function RemindersPage() {
+  const [gymId, setGymId] = useState<string>(typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || 'gym_1' : 'gym_1');
+
+  const { data, isLoading } = useRemindersData(gymId);
+  const customers = data?.custs || [];
+  const settings = data?.settings || null;
+  const gyms = data?.gyms || [];
+  const matchedGym = gyms.find((g: any) => g.id === gymId);
+  const gymName = matchedGym?.name || 'Our Gym';
+  const reminderThresholdDays = settings?.waReminderWindowDays ?? 3;
+
+  const [processingPaymentId, setProcessingPaymentId] = useState<string | null>(null);
+
+  const handleRecordPayment = async (cust: any) => {
+    if (processingPaymentId === cust.id) return;
+    setProcessingPaymentId(cust.id);
+    
+    try {
+      const updated = await renewMemberPayment(cust.id, 1, cust.feeAmount);
+      mutate(['reminders', gymId]);
+      if (updated) {
+        const autoMessagesEnabled = settings?.waAutoMessages ?? true;
+        if (autoMessagesEnabled) {
+          const now = new Date();
+          const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const dateString = now.toLocaleDateString();
+
+          fetch('/api/whatsapp/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              gymId,
               phone: cust.phone,
-              plan: updated.planType,
-              amount: cust.feeAmount,
-              date: dateString,
-              nextDueDate: formatDateDDMMYYYY(updated.nextDueDate)
-            }) + `\n\n_Generated: ${dateString} ${timeString}_`
-          })
-        }).catch(() => {});
+              message: compileTemplate(getTemplate(settings, 'receipt'), {
+                name: updated.name,
+                gymName,
+                phone: cust.phone,
+                plan: updated.planType,
+                amount: cust.feeAmount,
+                date: dateString,
+                nextDueDate: formatDateDDMMYYYY(updated.nextDueDate)
+              }) + `\n\n_Generated: ${dateString} ${timeString}_`
+            })
+          }).catch(() => {});
+        }
       }
+    } finally {
+      setProcessingPaymentId(null);
     }
   };
 
-  // Filter members by due date
-  const today = new Date();
-  const targetThresholdDate = new Date();
-  targetThresholdDate.setDate(today.getDate() + reminderThresholdDays);
+  // Strict Date logic ignoring Local Timezones
+  const todayStr = getYYYYMMDD(new Date());
+  const targetDate = new Date();
+  targetDate.setDate(targetDate.getDate() + reminderThresholdDays);
+  const targetThresholdStr = getYYYYMMDD(targetDate);
 
   const dueCustomers = customers.filter((cust) => {
-    const dueDate = new Date(cust.nextDueDate);
-    return dueDate <= targetThresholdDate || cust.status === 'due_soon' || cust.status === 'overdue';
+    return cust.nextDueDate <= targetThresholdStr || cust.status === 'due_soon' || cust.status === 'overdue';
   });
 
   return (
@@ -152,25 +229,7 @@ export default function RemindersPage() {
             </select>
           </div>
 
-          {/* Batch Send WhatsApp Reminders Button */}
-          {dueCustomers.length > 0 && (
-            <button
-              onClick={() => handleSendBatchReminders(dueCustomers)}
-              disabled={batchSending}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-sm flex items-center space-x-2 ${
-                batchSending
-                  ? 'bg-amber-100 text-amber-800 cursor-wait'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-              }`}
-            >
-              <Send className="w-4 h-4" />
-              <span>
-                {batchSending
-                  ? `Sending Reminders (${batchSentCount}/${dueCustomers.length})...`
-                  : `Send Reminders to All (${dueCustomers.length})`}
-              </span>
-            </button>
-          )}
+          <BatchSendButton dueCustomers={dueCustomers} gymId={gymId} gymName={gymName} settings={settings} />
         </div>
       </div>
 
@@ -189,7 +248,11 @@ export default function RemindersPage() {
         {dueCustomers.length > 0 ? (
           <div className="divide-y divide-slate-100">
             {dueCustomers.map((cust) => {
-              const isOverdue = new Date(cust.nextDueDate) < new Date();
+              const todayUTC = getMidnightUTC(todayStr);
+              const dueUTC = getMidnightUTC(cust.nextDueDate);
+              const diffDays = Math.round((dueUTC - todayUTC) / (1000 * 60 * 60 * 24));
+              const isOverdue = diffDays < 0;
+
               const now = new Date();
               const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               const dateString = now.toLocaleDateString();
@@ -219,12 +282,6 @@ export default function RemindersPage() {
                       <div className="flex items-center space-x-2">
                         <h3 className="font-bold text-slate-900 text-base">{cust.name}</h3>
                         {(() => {
-                          const todayMidnight = new Date();
-                          todayMidnight.setHours(0, 0, 0, 0);
-                          const dueMidnight = new Date(cust.nextDueDate);
-                          dueMidnight.setHours(0, 0, 0, 0);
-                          const diffDays = Math.round((dueMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
-
                           if (diffDays < 0) {
                             return (
                               <span className="px-2 py-0.5 rounded text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">
@@ -274,10 +331,11 @@ export default function RemindersPage() {
 
                     <button
                       onClick={() => handleRecordPayment(cust)}
-                      className="px-3.5 py-2 bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center space-x-1.5"
+                      disabled={processingPaymentId === cust.id}
+                      className={`px-3.5 py-2 ${processingPaymentId === cust.id ? 'bg-blue-300 cursor-wait' : 'bg-blue-900 hover:bg-blue-950'} text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center space-x-1.5`}
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Record Payment Received</span>
+                      {processingPaymentId === cust.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                      <span>{processingPaymentId === cust.id ? 'Processing...' : 'Record Payment Received'}</span>
                     </button>
                   </div>
                 </div>

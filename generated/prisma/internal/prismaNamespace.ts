@@ -1818,6 +1818,7 @@ export type BiometricDeviceScalarFieldEnum = (typeof BiometricDeviceScalarFieldE
 
 export const BiometricCommandScalarFieldEnum = {
   id: 'id',
+  deviceCommandId: 'deviceCommandId',
   deviceId: 'deviceId',
   commandString: 'commandString',
   status: 'status',

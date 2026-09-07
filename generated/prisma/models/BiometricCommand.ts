@@ -20,12 +20,23 @@ export type BiometricCommandModel = runtime.Types.Result.DefaultSelection<Prisma
 
 export type AggregateBiometricCommand = {
   _count: BiometricCommandCountAggregateOutputType | null
+  _avg: BiometricCommandAvgAggregateOutputType | null
+  _sum: BiometricCommandSumAggregateOutputType | null
   _min: BiometricCommandMinAggregateOutputType | null
   _max: BiometricCommandMaxAggregateOutputType | null
 }
 
+export type BiometricCommandAvgAggregateOutputType = {
+  deviceCommandId: number | null
+}
+
+export type BiometricCommandSumAggregateOutputType = {
+  deviceCommandId: number | null
+}
+
 export type BiometricCommandMinAggregateOutputType = {
   id: string | null
+  deviceCommandId: number | null
   deviceId: string | null
   commandString: string | null
   status: string | null
@@ -36,6 +47,7 @@ export type BiometricCommandMinAggregateOutputType = {
 
 export type BiometricCommandMaxAggregateOutputType = {
   id: string | null
+  deviceCommandId: number | null
   deviceId: string | null
   commandString: string | null
   status: string | null
@@ -46,6 +58,7 @@ export type BiometricCommandMaxAggregateOutputType = {
 
 export type BiometricCommandCountAggregateOutputType = {
   id: number
+  deviceCommandId: number
   deviceId: number
   commandString: number
   status: number
@@ -56,8 +69,17 @@ export type BiometricCommandCountAggregateOutputType = {
 }
 
 
+export type BiometricCommandAvgAggregateInputType = {
+  deviceCommandId?: true
+}
+
+export type BiometricCommandSumAggregateInputType = {
+  deviceCommandId?: true
+}
+
 export type BiometricCommandMinAggregateInputType = {
   id?: true
+  deviceCommandId?: true
   deviceId?: true
   commandString?: true
   status?: true
@@ -68,6 +90,7 @@ export type BiometricCommandMinAggregateInputType = {
 
 export type BiometricCommandMaxAggregateInputType = {
   id?: true
+  deviceCommandId?: true
   deviceId?: true
   commandString?: true
   status?: true
@@ -78,6 +101,7 @@ export type BiometricCommandMaxAggregateInputType = {
 
 export type BiometricCommandCountAggregateInputType = {
   id?: true
+  deviceCommandId?: true
   deviceId?: true
   commandString?: true
   status?: true
@@ -125,6 +149,18 @@ export type BiometricCommandAggregateArgs<ExtArgs extends runtime.Types.Extensio
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: BiometricCommandAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: BiometricCommandSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: BiometricCommandMinAggregateInputType
@@ -155,12 +191,15 @@ export type BiometricCommandGroupByArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   _count?: BiometricCommandCountAggregateInputType | true
+  _avg?: BiometricCommandAvgAggregateInputType
+  _sum?: BiometricCommandSumAggregateInputType
   _min?: BiometricCommandMinAggregateInputType
   _max?: BiometricCommandMaxAggregateInputType
 }
 
 export type BiometricCommandGroupByOutputType = {
   id: string
+  deviceCommandId: number
   deviceId: string
   commandString: string
   status: string
@@ -168,6 +207,8 @@ export type BiometricCommandGroupByOutputType = {
   sentAt: Date | null
   completedAt: Date | null
   _count: BiometricCommandCountAggregateOutputType | null
+  _avg: BiometricCommandAvgAggregateOutputType | null
+  _sum: BiometricCommandSumAggregateOutputType | null
   _min: BiometricCommandMinAggregateOutputType | null
   _max: BiometricCommandMaxAggregateOutputType | null
 }
@@ -192,6 +233,7 @@ export type BiometricCommandWhereInput = {
   OR?: Prisma.BiometricCommandWhereInput[]
   NOT?: Prisma.BiometricCommandWhereInput | Prisma.BiometricCommandWhereInput[]
   id?: Prisma.StringFilter<"BiometricCommand"> | string
+  deviceCommandId?: Prisma.IntFilter<"BiometricCommand"> | number
   deviceId?: Prisma.StringFilter<"BiometricCommand"> | string
   commandString?: Prisma.StringFilter<"BiometricCommand"> | string
   status?: Prisma.StringFilter<"BiometricCommand"> | string
@@ -203,6 +245,7 @@ export type BiometricCommandWhereInput = {
 
 export type BiometricCommandOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  deviceCommandId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   commandString?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -217,6 +260,7 @@ export type BiometricCommandWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.BiometricCommandWhereInput | Prisma.BiometricCommandWhereInput[]
   OR?: Prisma.BiometricCommandWhereInput[]
   NOT?: Prisma.BiometricCommandWhereInput | Prisma.BiometricCommandWhereInput[]
+  deviceCommandId?: Prisma.IntFilter<"BiometricCommand"> | number
   deviceId?: Prisma.StringFilter<"BiometricCommand"> | string
   commandString?: Prisma.StringFilter<"BiometricCommand"> | string
   status?: Prisma.StringFilter<"BiometricCommand"> | string
@@ -228,6 +272,7 @@ export type BiometricCommandWhereUniqueInput = Prisma.AtLeast<{
 
 export type BiometricCommandOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  deviceCommandId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   commandString?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -235,8 +280,10 @@ export type BiometricCommandOrderByWithAggregationInput = {
   sentAt?: Prisma.SortOrderInput | Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.BiometricCommandCountOrderByAggregateInput
+  _avg?: Prisma.BiometricCommandAvgOrderByAggregateInput
   _max?: Prisma.BiometricCommandMaxOrderByAggregateInput
   _min?: Prisma.BiometricCommandMinOrderByAggregateInput
+  _sum?: Prisma.BiometricCommandSumOrderByAggregateInput
 }
 
 export type BiometricCommandScalarWhereWithAggregatesInput = {
@@ -244,6 +291,7 @@ export type BiometricCommandScalarWhereWithAggregatesInput = {
   OR?: Prisma.BiometricCommandScalarWhereWithAggregatesInput[]
   NOT?: Prisma.BiometricCommandScalarWhereWithAggregatesInput | Prisma.BiometricCommandScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"BiometricCommand"> | string
+  deviceCommandId?: Prisma.IntWithAggregatesFilter<"BiometricCommand"> | number
   deviceId?: Prisma.StringWithAggregatesFilter<"BiometricCommand"> | string
   commandString?: Prisma.StringWithAggregatesFilter<"BiometricCommand"> | string
   status?: Prisma.StringWithAggregatesFilter<"BiometricCommand"> | string
@@ -254,6 +302,7 @@ export type BiometricCommandScalarWhereWithAggregatesInput = {
 
 export type BiometricCommandCreateInput = {
   id?: string
+  deviceCommandId?: number
   commandString: string
   status?: string
   createdAt?: Date | string
@@ -264,6 +313,7 @@ export type BiometricCommandCreateInput = {
 
 export type BiometricCommandUncheckedCreateInput = {
   id?: string
+  deviceCommandId?: number
   deviceId: string
   commandString: string
   status?: string
@@ -274,6 +324,7 @@ export type BiometricCommandUncheckedCreateInput = {
 
 export type BiometricCommandUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceCommandId?: Prisma.IntFieldUpdateOperationsInput | number
   commandString?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -284,6 +335,7 @@ export type BiometricCommandUpdateInput = {
 
 export type BiometricCommandUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceCommandId?: Prisma.IntFieldUpdateOperationsInput | number
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
   commandString?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -294,6 +346,7 @@ export type BiometricCommandUncheckedUpdateInput = {
 
 export type BiometricCommandCreateManyInput = {
   id?: string
+  deviceCommandId?: number
   deviceId: string
   commandString: string
   status?: string
@@ -304,6 +357,7 @@ export type BiometricCommandCreateManyInput = {
 
 export type BiometricCommandUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceCommandId?: Prisma.IntFieldUpdateOperationsInput | number
   commandString?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -313,6 +367,7 @@ export type BiometricCommandUpdateManyMutationInput = {
 
 export type BiometricCommandUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceCommandId?: Prisma.IntFieldUpdateOperationsInput | number
   deviceId?: Prisma.StringFieldUpdateOperationsInput | string
   commandString?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
@@ -333,6 +388,7 @@ export type BiometricCommandOrderByRelationAggregateInput = {
 
 export type BiometricCommandCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  deviceCommandId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   commandString?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -341,8 +397,13 @@ export type BiometricCommandCountOrderByAggregateInput = {
   completedAt?: Prisma.SortOrder
 }
 
+export type BiometricCommandAvgOrderByAggregateInput = {
+  deviceCommandId?: Prisma.SortOrder
+}
+
 export type BiometricCommandMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  deviceCommandId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   commandString?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -353,12 +414,17 @@ export type BiometricCommandMaxOrderByAggregateInput = {
 
 export type BiometricCommandMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  deviceCommandId?: Prisma.SortOrder
   deviceId?: Prisma.SortOrder
   commandString?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   sentAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
+}
+
+export type BiometricCommandSumOrderByAggregateInput = {
+  deviceCommandId?: Prisma.SortOrder
 }
 
 export type BiometricCommandCreateNestedManyWithoutDeviceInput = {
@@ -409,6 +475,7 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
 
 export type BiometricCommandCreateWithoutDeviceInput = {
   id?: string
+  deviceCommandId?: number
   commandString: string
   status?: string
   createdAt?: Date | string
@@ -418,6 +485,7 @@ export type BiometricCommandCreateWithoutDeviceInput = {
 
 export type BiometricCommandUncheckedCreateWithoutDeviceInput = {
   id?: string
+  deviceCommandId?: number
   commandString: string
   status?: string
   createdAt?: Date | string
@@ -456,6 +524,7 @@ export type BiometricCommandScalarWhereInput = {
   OR?: Prisma.BiometricCommandScalarWhereInput[]
   NOT?: Prisma.BiometricCommandScalarWhereInput | Prisma.BiometricCommandScalarWhereInput[]
   id?: Prisma.StringFilter<"BiometricCommand"> | string
+  deviceCommandId?: Prisma.IntFilter<"BiometricCommand"> | number
   deviceId?: Prisma.StringFilter<"BiometricCommand"> | string
   commandString?: Prisma.StringFilter<"BiometricCommand"> | string
   status?: Prisma.StringFilter<"BiometricCommand"> | string
@@ -466,6 +535,7 @@ export type BiometricCommandScalarWhereInput = {
 
 export type BiometricCommandCreateManyDeviceInput = {
   id?: string
+  deviceCommandId?: number
   commandString: string
   status?: string
   createdAt?: Date | string
@@ -475,6 +545,7 @@ export type BiometricCommandCreateManyDeviceInput = {
 
 export type BiometricCommandUpdateWithoutDeviceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceCommandId?: Prisma.IntFieldUpdateOperationsInput | number
   commandString?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -484,6 +555,7 @@ export type BiometricCommandUpdateWithoutDeviceInput = {
 
 export type BiometricCommandUncheckedUpdateWithoutDeviceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceCommandId?: Prisma.IntFieldUpdateOperationsInput | number
   commandString?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -493,6 +565,7 @@ export type BiometricCommandUncheckedUpdateWithoutDeviceInput = {
 
 export type BiometricCommandUncheckedUpdateManyWithoutDeviceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  deviceCommandId?: Prisma.IntFieldUpdateOperationsInput | number
   commandString?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -504,6 +577,7 @@ export type BiometricCommandUncheckedUpdateManyWithoutDeviceInput = {
 
 export type BiometricCommandSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  deviceCommandId?: boolean
   deviceId?: boolean
   commandString?: boolean
   status?: boolean
@@ -515,6 +589,7 @@ export type BiometricCommandSelect<ExtArgs extends runtime.Types.Extensions.Inte
 
 export type BiometricCommandSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  deviceCommandId?: boolean
   deviceId?: boolean
   commandString?: boolean
   status?: boolean
@@ -526,6 +601,7 @@ export type BiometricCommandSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
 
 export type BiometricCommandSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  deviceCommandId?: boolean
   deviceId?: boolean
   commandString?: boolean
   status?: boolean
@@ -537,6 +613,7 @@ export type BiometricCommandSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
 
 export type BiometricCommandSelectScalar = {
   id?: boolean
+  deviceCommandId?: boolean
   deviceId?: boolean
   commandString?: boolean
   status?: boolean
@@ -545,7 +622,7 @@ export type BiometricCommandSelectScalar = {
   completedAt?: boolean
 }
 
-export type BiometricCommandOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "deviceId" | "commandString" | "status" | "createdAt" | "sentAt" | "completedAt", ExtArgs["result"]["biometricCommand"]>
+export type BiometricCommandOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "deviceCommandId" | "deviceId" | "commandString" | "status" | "createdAt" | "sentAt" | "completedAt", ExtArgs["result"]["biometricCommand"]>
 export type BiometricCommandInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   device?: boolean | Prisma.BiometricDeviceDefaultArgs<ExtArgs>
 }
@@ -563,6 +640,7 @@ export type $BiometricCommandPayload<ExtArgs extends runtime.Types.Extensions.In
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    deviceCommandId: number
     deviceId: string
     commandString: string
     status: string
@@ -994,6 +1072,7 @@ export interface Prisma__BiometricCommandClient<T, Null = never, ExtArgs extends
  */
 export interface BiometricCommandFieldRefs {
   readonly id: Prisma.FieldRef<"BiometricCommand", 'String'>
+  readonly deviceCommandId: Prisma.FieldRef<"BiometricCommand", 'Int'>
   readonly deviceId: Prisma.FieldRef<"BiometricCommand", 'String'>
   readonly commandString: Prisma.FieldRef<"BiometricCommand", 'String'>
   readonly status: Prisma.FieldRef<"BiometricCommand", 'String'>

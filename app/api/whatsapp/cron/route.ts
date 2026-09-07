@@ -14,7 +14,7 @@ function getLocalTodayStr() {
 function daysBetween(dateStrA: string, dateStrB: string) {
   const a = new Date(dateStrA).getTime();
   const b = new Date(dateStrB).getTime();
-  return Math.floor((b - a) / (1000 * 60 * 60 * 24));
+  return Math.round((b - a) / (1000 * 60 * 60 * 24));
 }
 
 export async function GET(request: Request) {
@@ -30,44 +30,31 @@ export async function GET(request: Request) {
   const results = { remindersSent: 0, absenteesSent: 0, errors: [] as string[] };
 
   try {
+    // RAM Fix: Only load gyms, load customers iteratively
     const gyms = await prisma.gym.findMany({
-      include: {
-        gymSettings: true,
-        customers: {
-          where: {
-            status: 'active',
-            waActive: true, // ONLY customers who opted into WhatsApp service
-          },
-          include: {
-            attendance: {
-              orderBy: { checkInTime: 'desc' },
-              take: 1,
-            }
-          }
-        }
-      }
+      include: { gymSettings: true }
     });
 
     for (const gym of gyms) {
       const settings = gym.gymSettings;
-      if (!settings) continue;
-
-      // Skip if auto messages are disabled for this gym
-      if (!settings.waAutoMessages) continue;
+      if (!settings || !settings.waAutoMessages) continue;
 
       const reminderWindowDays = settings.waReminderWindowDays ?? 3;
       const absentThresholdDays = settings.absentThresholdDays ?? 3;
       const gymName = gym.name;
 
-      for (const customer of gym.customers) {
+      const customers = await prisma.customer.findMany({
+        where: { gymId: gym.id, status: 'active', waActive: true },
+        include: { attendance: { orderBy: { checkInTime: 'desc' }, take: 1 } }
+      });
+
+      for (const customer of customers) {
         // ── 1. EXPIRY REMINDER ───────────────────────────────────────────
         try {
           const daysUntilDue = daysBetween(todayStr, customer.nextDueDate);
 
-          // Only send reminder if within the window (e.g. 3 days before due)
-          if (daysUntilDue >= 0 && daysUntilDue <= reminderWindowDays) {
-            // Prevent spam: only send once per due cycle
-            // Check if we already sent a reminder in the last 'reminderWindowDays' days
+          // Send reminder if within the window or up to 7 days overdue
+          if (daysUntilDue >= -7 && daysUntilDue <= reminderWindowDays) {
             const alreadySentReminder = customer.lastReminderSentDate &&
               daysBetween(customer.lastReminderSentDate, todayStr) < reminderWindowDays;
 
@@ -80,15 +67,18 @@ export async function GET(request: Request) {
                 dueDate: customer.nextDueDate,
               });
 
-              const sent = await WhatsAppManager.sendMessage(gym.id, customer.phone, message);
-              if (sent) {
-                await prisma.customer.update({
-                  where: { id: customer.id },
-                  data: { lastReminderSentDate: todayStr },
-                });
-                results.remindersSent++;
-                console.log(`[CRON] ✅ Expiry reminder sent to ${customer.name} (${customer.phone})`);
-              }
+              // Fire & Forget queue to prevent Nginx timeouts
+              WhatsAppManager.sendMessage(gym.id, customer.phone, message).then((sent) => {
+                if (sent) {
+                  prisma.customer.update({
+                    where: { id: customer.id },
+                    data: { lastReminderSentDate: todayStr },
+                  }).catch(() => {});
+                }
+              });
+              
+              results.remindersSent++;
+              console.log(`[CRON] ✅ Expiry reminder queued for ${customer.name} (${customer.phone})`);
             }
           }
         } catch (err: any) {
@@ -107,9 +97,9 @@ export async function GET(request: Request) {
 
           // Only send if absent for more than threshold
           if (daysSinceLastVisit >= absentThresholdDays) {
-            // Prevent spam: only send once per month (every 30 days)
+            // Prevent spam: only send if we haven't reminded them SINCE their last check-in
             const alreadySentAbsentee = customer.lastAbsenteeSentDate &&
-              daysBetween(customer.lastAbsenteeSentDate, todayStr) < 30;
+              (new Date(customer.lastAbsenteeSentDate).getTime() > new Date(lastCheckInDate).getTime() || customer.lastAbsenteeSentDate === todayStr);
 
             if (!alreadySentAbsentee) {
               const template = getTemplate(settings, 'absentee');
@@ -119,15 +109,18 @@ export async function GET(request: Request) {
                 days: daysSinceLastVisit.toString(),
               });
 
-              const sent = await WhatsAppManager.sendMessage(gym.id, customer.phone, message);
-              if (sent) {
-                await prisma.customer.update({
-                  where: { id: customer.id },
-                  data: { lastAbsenteeSentDate: todayStr },
-                });
-                results.absenteesSent++;
-                console.log(`[CRON] ✅ Absentee reminder sent to ${customer.name} (${customer.phone}) — ${daysSinceLastVisit} days absent`);
-              }
+              // Fire & Forget queue to prevent Nginx timeouts
+              WhatsAppManager.sendMessage(gym.id, customer.phone, message).then((sent) => {
+                if (sent) {
+                  prisma.customer.update({
+                    where: { id: customer.id },
+                    data: { lastAbsenteeSentDate: todayStr },
+                  }).catch(() => {});
+                }
+              });
+              
+              results.absenteesSent++;
+              console.log(`[CRON] ✅ Absentee reminder queued for ${customer.name} (${customer.phone}) — ${daysSinceLastVisit} days absent`);
             }
           }
         } catch (err: any) {

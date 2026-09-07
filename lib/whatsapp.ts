@@ -146,6 +146,14 @@ export class WhatsAppManager {
       if (connection === 'close') {
         const shouldReconnect = (lastDisconnect?.error as any)?.output?.statusCode !== DisconnectReason.loggedOut;
         globalAny.WhatsAppStatuses.set(gymId, 'disconnected');
+        
+        const oldSock = globalAny.WhatsAppSessions.get(gymId);
+        if (oldSock) {
+           try {
+             if (oldSock.ws) oldSock.ws.close();
+             if (oldSock.end) oldSock.end(undefined);
+           } catch(e) {}
+        }
         globalAny.WhatsAppSessions.delete(gymId);
         
         if (shouldReconnect) {
@@ -165,6 +173,7 @@ export class WhatsAppManager {
     });
 
     sock.ev.on('messages.upsert', async ({ messages, type }: { messages: any[], type: string }) => {
+      try {
       console.log('[WA DEBUG] messages.upsert triggered:', type);
       if (type !== 'notify') return;
       const m = messages[0];
@@ -213,11 +222,10 @@ export class WhatsAppManager {
       const shortPhone = fullPhone.length === 12 && fullPhone.startsWith('91') ? fullPhone.substring(2) : fullPhone;
       console.log('[WA DEBUG] Searching customer with phone:', shortPhone);
 
-      // Find customer safely ignoring spaces/symbols in DB
-      const activeCustomers = await db.customer.findMany({
-        where: { gymId, status: 'active' }
+      // Find customer safely ignoring spaces/symbols in DB (Filtered at DB level to prevent RAM exhaustion)
+      const customer = await db.customer.findFirst({
+        where: { gymId, status: 'active', phone: { contains: shortPhone } }
       });
-      const customer = activeCustomers.find(c => c.phone.replace(/\D/g, '').includes(shortPhone));
       
       if (!customer) {
         console.log('[WA DEBUG] Customer not found for phone:', shortPhone);
@@ -319,6 +327,9 @@ export class WhatsAppManager {
       const finalReply = cleanText === 'start' ? replyText : replyText + footer;
       await WhatsAppManager.sendMessage(gymId, fullPhone, finalReply, undefined, true);
       console.log('[WA DEBUG] Message queued successfully');
+      } catch (eventErr) {
+        console.error('[WA DEBUG] Unhandled error in messages.upsert:', eventErr);
+      }
     });
 
     } catch (error: any) {
@@ -390,36 +401,45 @@ export class WhatsAppManager {
     
     globalAny.WhatsAppQueueProcessing = true;
     
-    if (!globalAny.WhatsAppHourlyStats) {
-      globalAny.WhatsAppHourlyStats = { count: 0, resetAt: Date.now() + 60 * 60 * 1000 };
-    }
-    
-    while (globalAny.WhatsAppMessageQueue.length > 0) {
-      // 1. Anti-ban measure: Hourly Throttle (Deep Sleep Batching)
-      if (Date.now() > globalAny.WhatsAppHourlyStats.resetAt) {
-        globalAny.WhatsAppHourlyStats.count = 0;
-        globalAny.WhatsAppHourlyStats.resetAt = Date.now() + 60 * 60 * 1000;
+    try {
+      if (!globalAny.WhatsAppHourlyStats) {
+        globalAny.WhatsAppHourlyStats = new Map<string, { count: number, resetAt: number }>();
       }
       
-      if (globalAny.WhatsAppHourlyStats.count >= 20) {
-        console.log('WhatsApp hourly limit (20) reached. Sleeping queue for 10 mins.');
-        setTimeout(() => {
-          globalAny.WhatsAppQueueProcessing = false;
-          WhatsAppManager.processQueue();
-        }, 10 * 60 * 1000); // Sleep 10 minutes
-        return; // Exit loop, leaving remaining items in queue
-      }
+      while (globalAny.WhatsAppMessageQueue.length > 0) {
+        let taskIndex = -1;
+        for (let i = 0; i < globalAny.WhatsAppMessageQueue.length; i++) {
+          const qGymId = globalAny.WhatsAppMessageQueue[i].gymId;
+          if (!globalAny.WhatsAppHourlyStats.has(qGymId)) {
+             globalAny.WhatsAppHourlyStats.set(qGymId, { count: 0, resetAt: Date.now() + 60 * 60 * 1000 });
+          }
+          const stats = globalAny.WhatsAppHourlyStats.get(qGymId);
+          if (Date.now() > stats.resetAt) {
+             stats.count = 0;
+             stats.resetAt = Date.now() + 60 * 60 * 1000;
+          }
+          if (stats.count < 20) {
+             taskIndex = i;
+             break;
+          }
+        }
 
-      const task = globalAny.WhatsAppMessageQueue.shift();
-      if (!task) continue;
-      
-      const { gymId, phone, text, mediaBase64, resolve } = task;
-      const sock = globalAny.WhatsAppSessions.get(gymId);
-      
-      if (!sock) {
-        resolve(false);
-        continue;
-      }
+        if (taskIndex === -1) {
+          console.log('All queued gyms have reached their hourly limit. Sleeping queue for 5 mins.');
+          setTimeout(() => {
+            WhatsAppManager.processQueue();
+          }, 5 * 60 * 1000);
+          return;
+        }
+
+        const task = globalAny.WhatsAppMessageQueue.splice(taskIndex, 1)[0];
+        const { gymId, phone, text, mediaBase64, resolve } = task;
+        const sock = globalAny.WhatsAppSessions.get(gymId);
+        
+        if (!sock) {
+          resolve(false);
+          continue;
+        }
       
       // Ensure country code is present
       let cleanPhone = phone.replace(/\D/g, '');
@@ -475,7 +495,8 @@ export class WhatsAppManager {
           console.error('[WA DEBUG] Failed to archive chat:', e);
         }
 
-        globalAny.WhatsAppHourlyStats.count++; // Increment our hourly limit tracker
+        const stats = globalAny.WhatsAppHourlyStats.get(gymId);
+        if (stats) stats.count++; // Increment our per-gym hourly limit tracker
         resolve(true);
 
         // Anti-ban measure: Massive cooldown between messages (10 to 25 seconds)
@@ -488,7 +509,8 @@ export class WhatsAppManager {
         resolve(false);
       }
     }
-    
-    globalAny.WhatsAppQueueProcessing = false;
+    } finally {
+      globalAny.WhatsAppQueueProcessing = false;
+    }
   }
 }

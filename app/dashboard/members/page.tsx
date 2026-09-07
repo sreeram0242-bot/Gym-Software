@@ -295,13 +295,14 @@ export default function MemberManagementPage() {
 
   // Polling for biometric command success (Fingerprint & Card)
   useEffect(() => {
+    let isMounted = true;
     if (fpPollStatus !== 'POLLING' && cardPollStatus !== 'POLLING') return;
     const interval = setInterval(async () => {
       // Check Fingerprint command
       if (fpPollStatus === 'POLLING') {
         try {
           const res = await fetch(`/api/biometrics/command-status?id=${fpCommandId || ''}&pin=${fingerprintId || ''}&gymId=${gymId}`);
-          if (res.ok) {
+          if (res.ok && isMounted) {
             const data = await res.json();
             if (data.status === 'SUCCESS') {
               setFpPollStatus('SUCCESS');
@@ -327,7 +328,7 @@ export default function MemberManagementPage() {
       if (cardPollStatus === 'POLLING') {
         try {
           const res = await fetch(`/api/biometrics/command-status?id=${cardCommandId || ''}&pin=${fingerprintId || ''}&gymId=${gymId}`);
-          if (res.ok) {
+          if (res.ok && isMounted) {
             const data = await res.json();
             if (data.status === 'SUCCESS') {
               setCardPollStatus('SUCCESS');
@@ -342,8 +343,11 @@ export default function MemberManagementPage() {
         } catch (e) { }
       }
     }, 2000);
-    return () => clearInterval(interval);
-  }, [fpPollStatus, cardPollStatus, fpCommandId, cardCommandId, fingerprintId]);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [fpPollStatus, cardPollStatus, fpCommandId, cardCommandId, fingerprintId, gymId]);
 
   // Timeout for biometric enrollment polling (client-side safety net, server also enforces 90s)
   useEffect(() => {
@@ -471,8 +475,14 @@ export default function MemberManagementPage() {
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return; // Prevent double submission
     if (!name || !phone) return;
     setErrorMsg('');
+
+    if (Number(feeAmount) < 0 || Number(paidAmount) < 0) {
+      setErrorMsg('Amounts cannot be negative.');
+      return;
+    }
 
     const cleanPhone = phone.replace(/\D/g, '');
     
@@ -1223,7 +1233,7 @@ export default function MemberManagementPage() {
       </div>
 
       {/* Members Grid View (Responsive Cards + Table) */}
-      {isLoading ? (
+      {isLoading && (!customers || customers.length === 0) ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-between h-48">

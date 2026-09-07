@@ -42,6 +42,7 @@ export default function CheckInTerminal() {
   // Web NFC State
   const [nfcSupported, setNfcSupported] = useState<boolean>(false);
   const [isScanning, setIsScanning] = useState<boolean>(false);
+  const nfcProcessingRef = useRef<boolean>(false);
 
   // Fingerprint Bridge WebSocket State
   const [fpConnected, setFpConnected] = useState<boolean>(false);
@@ -63,18 +64,22 @@ export default function CheckInTerminal() {
       
       if (newCheckins.length > 0) {
          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('member_punch_event', {
-              detail: { customerName: newCheckins[0].customerName || newCheckins[0].staffName, action: 'checkin', customerProfilePic: newCheckins[0].customerProfilePic }
-            }));
+            newCheckins.forEach(checkin => {
+              window.dispatchEvent(new CustomEvent('member_punch_event', {
+                detail: { customerName: checkin.customerName || checkin.staffName, action: 'checkin', customerProfilePic: checkin.customerProfilePic }
+              }));
+            });
          }
       } else {
          const prevActive = new Map(prevAttRef.current.filter(a => !a.checkOutTime).map(a => [a.id, a]));
          const checkedOut = attendance.filter(a => a.checkOutTime && prevActive.has(a.id));
          if (checkedOut.length > 0) {
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('member_punch_event', {
-                detail: { customerName: checkedOut[0].customerName || checkedOut[0].staffName, action: 'checkout', customerProfilePic: checkedOut[0].customerProfilePic }
-              }));
+              checkedOut.forEach(checkout => {
+                window.dispatchEvent(new CustomEvent('member_punch_event', {
+                  detail: { customerName: checkout.customerName || checkout.staffName, action: 'checkout', customerProfilePic: checkout.customerProfilePic }
+                }));
+              });
             }
          }
       }
@@ -180,6 +185,10 @@ export default function CheckInTerminal() {
   // Connect to local MFS100 WebSocket bridge agent
   const connectFingerprintBridge = (gymId: string, port: number) => {
     try {
+      if (fpWsRef.current) {
+        fpWsRef.current.close();
+        fpWsRef.current = null;
+      }
       const ws = new WebSocket(`ws://localhost:${port}`);
       fpWsRef.current = ws;
 
@@ -252,7 +261,7 @@ export default function CheckInTerminal() {
 
   // Start Hardware Web NFC Scan (for devices with Web NFC support)
   const startHardwareNFCScan = async () => {
-    if (!nfcSupported) return;
+    if (!nfcSupported || isScanning) return;
     try {
       setIsScanning(true);
       // @ts-ignore
@@ -261,26 +270,32 @@ export default function CheckInTerminal() {
 
       // @ts-ignore
       ndef.addEventListener('reading', async ({ serialNumber }: any) => {
-        const matched = await findCustomerByNFC(gymId, serialNumber);
-        if (matched) {
-          await handleCheckInToggle(matched, gymId);
-        } else {
-          const matchedStaff = await findStaffByNFC(gymId, serialNumber);
-          if (matchedStaff) {
-            const staffRes = await toggleStaffCheckIn(matchedStaff.id);
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('staff_punch_event', {
-                detail: {
-                  staffName: matchedStaff.name,
-                  staffRole: matchedStaff.role || 'Staff',
-                  action: staffRes?.action,
-                  record: staffRes?.record,
-                  durationMinutes: staffRes?.record?.durationMinutes
-                }
-              }));
+        if (nfcProcessingRef.current) return;
+        nfcProcessingRef.current = true;
+        try {
+          const matched = await findCustomerByNFC(gymId, serialNumber);
+          if (matched) {
+            await handleCheckInToggle(matched, gymId);
+          } else {
+            const matchedStaff = await findStaffByNFC(gymId, serialNumber);
+            if (matchedStaff) {
+              const staffRes = await toggleStaffCheckIn(matchedStaff.id);
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('staff_punch_event', {
+                  detail: {
+                    staffName: matchedStaff.name,
+                    staffRole: matchedStaff.role || 'Staff',
+                    action: staffRes?.action,
+                    record: staffRes?.record,
+                    durationMinutes: staffRes?.record?.durationMinutes
+                  }
+                }));
+              }
+              await mutate(['checkin', gymId]);
             }
-            await mutate(['checkin', gymId]);
           }
+        } finally {
+          setTimeout(() => { nfcProcessingRef.current = false; }, 2500);
         }
       });
     } catch (err) {
@@ -318,7 +333,12 @@ export default function CheckInTerminal() {
   };
 
   const handleManualCheckIn = async (customer: any) => {
-    await handleCheckInToggle(customer, gymId, true);
+    setPunchLoading(customer.id);
+    try {
+      await handleCheckInToggle(customer, gymId, true);
+    } finally {
+      setPunchLoading(null);
+    }
   };
 
   const handleManualStaffPunch = async (staffId: string) => {
@@ -351,7 +371,7 @@ export default function CheckInTerminal() {
     const countsMap = new Map<string, number>();
     
     attendance.forEach(a => {
-      if (a.durationMinutes) {
+      if (a.durationMinutes !== undefined && a.durationMinutes !== null) {
         totalMinsMap.set(a.customerId, (totalMinsMap.get(a.customerId) || 0) + a.durationMinutes);
         countsMap.set(a.customerId, (countsMap.get(a.customerId) || 0) + 1);
       }
@@ -563,7 +583,8 @@ export default function CheckInTerminal() {
                           <button 
                             key={c.id} 
                             onClick={() => handleManualCheckIn(c)}
-                            className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl transition-colors text-left"
+                            disabled={punchLoading === c.id}
+                            className={`w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl transition-colors text-left ${punchLoading === c.id ? 'opacity-50 cursor-wait' : ''}`}
                           >
                             <div>
                               <p className="text-sm font-bold text-slate-900">{c.name}</p>

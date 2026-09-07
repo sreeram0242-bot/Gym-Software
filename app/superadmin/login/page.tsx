@@ -10,10 +10,13 @@ export default function MasterLoginPage() {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isAuthenticating) return;
     setErrorMsg('');
+    setIsAuthenticating(true);
 
     try {
       const response = await authenticateSuperadmin(userId, password);
@@ -25,9 +28,11 @@ export default function MasterLoginPage() {
         router.push('/superadmin');
       } else {
         setErrorMsg(response.error || 'Invalid Master Admin credentials.');
+        setIsAuthenticating(false);
       }
     } catch (e) {
       setErrorMsg('Server error while authenticating.');
+      setIsAuthenticating(false);
     }
   };
 
@@ -105,10 +110,17 @@ export default function MasterLoginPage() {
 
             <button
               type="submit"
-              className="w-full py-3 rounded-lg text-white font-bold text-sm transition-colors flex items-center justify-center space-x-2 bg-blue-900 hover:bg-blue-950 shadow-md shadow-blue-900/20 mt-6"
+              disabled={isAuthenticating}
+              className={`w-full py-3 rounded-lg text-white font-bold text-sm transition-colors flex items-center justify-center space-x-2 shadow-md mt-6 ${
+                isAuthenticating ? 'bg-blue-900/70 cursor-not-allowed shadow-none' : 'bg-blue-900 hover:bg-blue-950 shadow-blue-900/20'
+              }`}
             >
-              <span>Authenticate Session</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>{isAuthenticating ? 'Authenticating...' : 'Authenticate Session'}</span>
+              {!isAuthenticating ? (
+                <ArrowRight className="w-4 h-4" />
+              ) : (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              )}
             </button>
           </form>
 

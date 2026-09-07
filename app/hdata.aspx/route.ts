@@ -27,19 +27,13 @@ export async function POST(req: Request) {
     return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }
 
-  // Extract JSON by finding the first '{' and the last '}'
-  let jsonData = null;
-  const jsonStart = text.indexOf('{');
-  const jsonEnd = text.lastIndexOf('}');
-  
-  if (jsonStart !== -1 && jsonEnd !== -1) {
-    try {
-      const jsonStr = text.substring(jsonStart, jsonEnd + 1);
-      jsonData = JSON.parse(jsonStr);
-    } catch (e) {
-      console.error("[BIOMETRIC] Failed to parse JSON body");
-    }
+  // Parse incoming JSON (Handles single objects or newline-separated bulk logs)
+  const jsonLines = text.split('\n').map(l => l.trim()).filter(l => l.startsWith('{') && l.endsWith('}'));
+  const parsedObjects: any[] = [];
+  for (const line of jsonLines) {
+    try { parsedObjects.push(JSON.parse(line)); } catch(e) {}
   }
+  const jsonData = parsedObjects.length === 1 ? parsedObjects[0] : null;
 
   console.log(`[BIOMAX] Received ${cmdId} from ${devId} (via ${req.method})`);
 
@@ -64,22 +58,23 @@ export async function POST(req: Request) {
     const pendingCommands = await prisma.biometricCommand.findMany({
       where: { deviceId: device.id, status: 'PENDING' },
       orderBy: { createdAt: 'asc' },
-      take: 10 // send up to 10 commands at a time
+      take: 10
     });
 
     let payload = "OK\n";
     if (pendingCommands.length > 0) {
-      payload = pendingCommands.map(cmd => {
-        const numericId = Math.floor(Math.random() * 100000000);
-        return `C:${numericId}:${cmd.commandString}`;
-      }).join('\n') + '\n';
-      
-      // Mark them as sent
-      await prisma.biometricCommand.updateMany({
-        where: { id: { in: pendingCommands.map(c => c.id) } },
+      // Atomic claim
+      const claim = await prisma.biometricCommand.updateMany({
+        where: { id: { in: pendingCommands.map(c => c.id) }, status: 'PENDING' },
         data: { status: 'SENT' }
       });
-      console.log(`[BIOMETRIC] Sent ${pendingCommands.length} commands to device ${devId}`);
+      
+      if (claim.count === pendingCommands.length) {
+        payload = pendingCommands.map(cmd => {
+          return `C:${cmd.deviceCommandId}:${cmd.commandString}`;
+        }).join('\n') + '\n';
+        console.log(`[BIOMETRIC] Sent ${claim.count} commands to device ${devId}`);
+      }
     }
 
     return new NextResponse(payload, { 
@@ -87,31 +82,35 @@ export async function POST(req: Request) {
       headers: { 
         'Content-Type': 'text/plain', 
         'Connection': 'close',
-        'Content-Length': payload.length.toString()
+        'Content-Length': Buffer.byteLength(payload).toString()
       } 
     });
   }
 
   // 2. Handle Attendance Punch (Check-in / Check-out)
-  if (cmdId === "RTLogSendAction" && jsonData) {
-    const userIdStr = jsonData.user_id;
-    const timeStr = jsonData.io_time; // Format: "YYYYMMDDHHMMSS"
+  if (cmdId === "RTLogSendAction" && parsedObjects.length > 0) {
+    for (const punchData of parsedObjects) {
+      const userIdStr = punchData.user_id;
+      const timeStr = punchData.io_time; // Format: "YYYYMMDDHHMMSS"
 
-    if (userIdStr && timeStr && timeStr.length === 14) {
-      const year = parseInt(timeStr.substring(0, 4));
-      const month = parseInt(timeStr.substring(4, 6)) - 1;
-      const day = parseInt(timeStr.substring(6, 8));
-      const hour = parseInt(timeStr.substring(8, 10));
-      const min = parseInt(timeStr.substring(10, 12));
-      const sec = parseInt(timeStr.substring(12, 14));
-      const punchTime = new Date(year, month, day, hour, min, sec);
+      if (userIdStr && timeStr && timeStr.length === 14) {
+        const year = timeStr.substring(0, 4);
+        const month = timeStr.substring(4, 6);
+        const day = timeStr.substring(6, 8);
+        const hour = timeStr.substring(8, 10);
+        const min = timeStr.substring(10, 12);
+        const sec = timeStr.substring(12, 14);
+        const dateStrLocal = `${year}-${month}-${day}`;
+        // Force IST timezone (+05:30) for absolute correctness
+        const punchTime = new Date(`${year}-${month}-${day}T${hour}:${min}:${sec}+05:30`);
 
       console.log(`[BIOMETRIC] Punch received for User ${userIdStr} at ${punchTime.toISOString()}`);
 
       const device = await prisma.biometricDevice.findUnique({ where: { serialNumber: devId } });
       if (!device) {
         console.error(`[BIOMETRIC] Unknown device ${devId} attempting punch`);
-        return new NextResponse("OK", { status: 200 });
+        const res = "result=OK";
+        return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
       }
 
       let customer = null;
@@ -168,12 +167,12 @@ export async function POST(req: Request) {
                     data: { checkOutTime: autoOut, durationMinutes: cutoffHours * 60 }
                  });
                  await prisma.attendanceRecord.create({
-                   data: { gymId: customer.gymId, customerId: customer.id, customerName: customer.name, customerPhone: customer.phone, checkInTime: nowIso, dateStr: nowIso.split('T')[0] }
+                   data: { gymId: customer.gymId, customerId: customer.id, customerName: customer.name, customerPhone: customer.phone, checkInTime: nowIso, dateStr: dateStrLocal }
                  });
               }
             } else {
               await prisma.attendanceRecord.create({
-                data: { gymId: customer.gymId, customerId: customer.id, customerName: customer.name, customerPhone: customer.phone, checkInTime: nowIso, dateStr: nowIso.split('T')[0] }
+                data: { gymId: customer.gymId, customerId: customer.id, customerName: customer.name, customerPhone: customer.phone, checkInTime: nowIso, dateStr: dateStrLocal }
               });
             }
             
@@ -194,9 +193,10 @@ export async function POST(req: Request) {
         } catch (e: any) {
           console.error(`[BIOMETRIC] Customer check-in error for ${customer.name}:`, e?.message || e);
         }
-      } else if (staff) {
+      }
+      
+      if (staff) {
         try {
-          
           const oneMinuteAgo = new Date(punchTime.getTime() - 60000);
           const recentLog = await prisma.staffAttendanceRecord.findFirst({
             where: { staffId: staff.id, checkInTime: { gte: oneMinuteAgo.toISOString() } }
@@ -231,12 +231,12 @@ export async function POST(req: Request) {
                     data: { checkOutTime: autoOut, durationMinutes: cutoffHours * 60 }
                  });
                  await prisma.staffAttendanceRecord.create({
-                   data: { gymId: staff.gymId, staffId: staff.id, staffName: staff.name, staffPhone: staff.phone, checkInTime: nowIso, dateStr: nowIso.split('T')[0] }
+                   data: { gymId: staff.gymId, staffId: staff.id, staffName: staff.name, staffPhone: staff.phone, checkInTime: nowIso, dateStr: dateStrLocal }
                  });
               }
             } else {
               await prisma.staffAttendanceRecord.create({
-                data: { gymId: staff.gymId, staffId: staff.id, staffName: staff.name, staffPhone: staff.phone, checkInTime: nowIso, dateStr: nowIso.split('T')[0] }
+                data: { gymId: staff.gymId, staffId: staff.id, staffName: staff.name, staffPhone: staff.phone, checkInTime: nowIso, dateStr: dateStrLocal }
               });
             }
             console.log(`[BIOMETRIC] Automated staff ${action} for ${staff.name}`);
@@ -247,7 +247,8 @@ export async function POST(req: Request) {
       } else {
         console.log(`[BIOMETRIC] Warning: Unregistered User ID ${userIdStr} punched.`);
       }
-    }
+    } // End if valid timeStr
+    } // End for loop
 
     // Check if there's a DATA CLEAR command pending — send it here to break infinite loops
     try {
@@ -258,8 +259,7 @@ export async function POST(req: Request) {
           orderBy: { createdAt: 'asc' }
         });
         if (clearCmd) {
-          const numericId = Math.floor(Math.random() * 100000000);
-          const payload = `C:${numericId}:${clearCmd.commandString}\n`;
+          const payload = `C:${clearCmd.deviceCommandId}:${clearCmd.commandString}\n`;
           console.log(`[BIOMAX] Injecting DATA CLEAR into RTLogSendAction response: ${payload.trim()}`);
           await prisma.biometricCommand.update({ where: { id: clearCmd.id }, data: { status: 'SENT' } });
           return new NextResponse(payload, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': Buffer.byteLength(payload).toString() } });

@@ -394,6 +394,7 @@ export type CustomerOrderByWithRelationInput = {
 export type CustomerWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   memberId?: string
+  gymId_fingerprintId?: Prisma.CustomerGymIdFingerprintIdCompoundUniqueInput
   AND?: Prisma.CustomerWhereInput | Prisma.CustomerWhereInput[]
   OR?: Prisma.CustomerWhereInput[]
   NOT?: Prisma.CustomerWhereInput | Prisma.CustomerWhereInput[]
@@ -421,7 +422,7 @@ export type CustomerWhereUniqueInput = Prisma.AtLeast<{
   attendance?: Prisma.AttendanceRecordListRelationFilter
   transactions?: Prisma.TransactionListRelationFilter
   productSales?: Prisma.ProductSaleListRelationFilter
-}, "id" | "memberId">
+}, "id" | "memberId" | "gymId_fingerprintId">
 
 export type CustomerOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -675,6 +676,11 @@ export type CustomerListRelationFilter = {
 
 export type CustomerOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type CustomerGymIdFingerprintIdCompoundUniqueInput = {
+  gymId: string
+  fingerprintId: string
 }
 
 export type CustomerCountOrderByAggregateInput = {

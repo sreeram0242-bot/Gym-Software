@@ -195,6 +195,8 @@ export default function StaffPage() {
         body: JSON.stringify({ gymId, pin: fingerprintId })
       }).catch(e => console.error('Ghost cleanup failed', e));
     }
+    setFpPollStatus('IDLE');
+    setCardPollStatus('IDLE');
     setShowStaffModal(false);
   };
 
@@ -207,6 +209,7 @@ export default function StaffPage() {
 
   // Search & Filters State
   const [search, setSearch] = useState('');
+  const deferredSearch = React.useDeferredValue(search);
   const [staffFilter, setStaffFilter] = useState('ALL');
   const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'CUSTOM'>('ALL');
   const [customFrom, setCustomFrom] = useState('');
@@ -394,13 +397,15 @@ export default function StaffPage() {
         const diff = now.getDate() - day + (day === 0 ? -6 : 1);
         startOfWeek.setDate(diff);
         startOfWeek.setHours(0, 0, 0, 0);
-        const recordDate = new Date(record.dateStr);
+        
+        const [rY, rM, rD] = record.dateStr.split('-').map(Number);
+        const recordDate = new Date(rY, rM - 1, rD);
         if (recordDate < startOfWeek) return false;
       }
       
       if (dateFilter === 'THIS_MONTH') {
-        const recordDate = new Date(record.dateStr);
-        if (recordDate.getMonth() !== now.getMonth() || recordDate.getFullYear() !== now.getFullYear()) return false;
+        const [rY, rM] = record.dateStr.split('-').map(Number);
+        if (rM - 1 !== now.getMonth() || rY !== now.getFullYear()) return false;
       }
 
       if (dateFilter === 'CUSTOM') {
@@ -409,8 +414,8 @@ export default function StaffPage() {
       }
 
       // 3. Search query
-      if (search.trim()) {
-        const q = search.toLowerCase();
+      if (deferredSearch.trim()) {
+        const q = deferredSearch.toLowerCase();
         const matchName = record.staffName?.toLowerCase().includes(q);
         const matchPhone = record.staffPhone?.includes(q);
         const staffObj = staffs.find(s => s.id === record.staffId);
@@ -422,13 +427,13 @@ export default function StaffPage() {
 
       return true;
     });
-  }, [attendance, staffFilter, dateFilter, customFrom, customTo, search, staffs]);
+  }, [attendance, staffFilter, dateFilter, customFrom, customTo, deferredSearch, staffs]);
 
   // Filtered Staffs List for Directory
   const filteredStaffs = useMemo(() => {
     return staffs.filter(staff => {
-      if (!search.trim()) return true;
-      const q = search.toLowerCase();
+      if (!deferredSearch.trim()) return true;
+      const q = deferredSearch.toLowerCase();
       return (
         staff.name?.toLowerCase().includes(q) ||
         staff.phone?.includes(q) ||
@@ -437,7 +442,7 @@ export default function StaffPage() {
         staff.fingerprintId?.toLowerCase().includes(q)
       );
     });
-  }, [staffs, search]);
+  }, [staffs, deferredSearch]);
 
   // Today's staff records
   const todayStr = getLocalTodayDateString();
@@ -452,7 +457,7 @@ export default function StaffPage() {
         map.set(rec.staffId, rec);
       } else {
         const existing = map.get(rec.staffId);
-        if (existing.checkOutTime && !rec.checkOutTime) {
+        if (new Date(rec.checkInTime).getTime() > new Date(existing.checkInTime).getTime()) {
           map.set(rec.staffId, rec);
         }
       }

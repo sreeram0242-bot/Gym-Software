@@ -450,6 +450,7 @@ export async function getCustomers(gymId?: string) {
     return await prisma.customer.findMany({
       where: { gymId, isArchived: false },
       orderBy: { joinedDate: 'desc' },
+      take: 2000,
       include: {
         attendance: {
           orderBy: { checkInTime: 'desc' },
@@ -493,6 +494,7 @@ export async function addCustomer(data: any) {
   }
 
   if (data.mantraFpData) {
+    if (data.mantraFpData.length > 5000) throw new Error("Invalid fingerprint data: Payload too large");
     const existingMantra = await prisma.customer.findFirst({
       where: { mantraFpData: data.mantraFpData, gymId: data.gymId }
     });
@@ -560,50 +562,53 @@ export async function addCustomer(data: any) {
   }
 
   try {
-    const newCust = await prisma.customer.create({
-      data: {
-        memberId: memberId,
-        gymId: data.gymId,
-        name: data.name,
-        phone: data.phone,
-        nfcCardId: data.nfcCardId,
-        nfcCardId2: data.nfcCardId2 || null,
-        fingerprintId: data.fingerprintId || null,
-        planType: data.planType,
-        feeAmount: data.feeAmount,
-        pendingBalance: pendingBalance,
-        balanceDueDate: data.balanceDueDate || null,
-        lastPaymentDate: data.lastPaymentDate,
-        nextDueDate: data.nextDueDate,
-        profilePic: data.profilePic || null,
-        status: 'active',
-        waActive: false,
-        joinedDate: getLocalTodayDateString()
-      }
-    });
-
-    if (paidAmount > 0) {
-      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-      await prisma.transaction.create({
+    const newCust = await prisma.$transaction(async (tx) => {
+      const createdCust = await tx.customer.create({
         data: {
-          gymId: newCust.gymId,
-          type: 'INCOME',
-          amount: paidAmount,
-          paidAmount: paidAmount,
-          discountAmount: discountAmount,
-          paymentMethod: paymentMethod,
-          splitDetails: splitDetails,
-          upiId: data.upiId || null,
-          upiSenderName: data.upiSenderName || null,
-          category: 'Membership Fee',
-          description: `New Joiner: ${newCust.name} (${newCust.planType})${pendingBalance > 0 ? ` [₹${pendingBalance} Due]` : ''}${discountAmount > 0 ? ` [₹${discountAmount} Disc]` : ''}`,
-          date: newCust.joinedDate,
-          time: nowTime,
-          customerId: newCust.id,
-          customerName: newCust.name
+          memberId: memberId,
+          gymId: data.gymId,
+          name: data.name,
+          phone: data.phone,
+          nfcCardId: data.nfcCardId,
+          nfcCardId2: data.nfcCardId2 || null,
+          fingerprintId: data.fingerprintId || null,
+          planType: data.planType,
+          feeAmount: data.feeAmount,
+          pendingBalance: pendingBalance,
+          balanceDueDate: data.balanceDueDate || null,
+          lastPaymentDate: data.lastPaymentDate,
+          nextDueDate: data.nextDueDate,
+          profilePic: data.profilePic || null,
+          status: 'active',
+          waActive: false,
+          joinedDate: getLocalTodayDateString()
         }
       });
-    }
+
+      if (paidAmount > 0) {
+        const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        await tx.transaction.create({
+          data: {
+            gymId: createdCust.gymId,
+            type: 'INCOME',
+            amount: paidAmount,
+            paidAmount: paidAmount,
+            discountAmount: discountAmount,
+            paymentMethod: paymentMethod,
+            splitDetails: splitDetails,
+            upiId: data.upiId || null,
+            upiSenderName: data.upiSenderName || null,
+            category: 'Membership Fee',
+            description: `New Joiner: ${createdCust.name} (${createdCust.planType})${pendingBalance > 0 ? ` [₹${pendingBalance} Due]` : ''}${discountAmount > 0 ? ` [₹${discountAmount} Disc]` : ''}`,
+            date: createdCust.joinedDate,
+            time: nowTime,
+            customerId: createdCust.id,
+            customerName: createdCust.name
+          }
+        });
+      }
+      return createdCust;
+    });
 
     return newCust;
   } catch (e) {
@@ -721,6 +726,7 @@ export async function updateCustomer(id: string, data: any) {
   }
 
   if (data.mantraFpData) {
+    if (data.mantraFpData.length > 5000) throw new Error("Invalid fingerprint data: Payload too large");
     const existingMantra = await prisma.customer.findFirst({
       where: { mantraFpData: data.mantraFpData, gymId: callerGymId, id: { not: id } }
     });
@@ -790,9 +796,15 @@ export async function updateCustomer(id: string, data: any) {
   }
 
   try {
+    const { name, phone, nfcCardId, nfcCardId2, fingerprintId, mantraFpData, profilePic, planType, feeAmount, lastPaymentDate, nextDueDate } = data;
+    const safeData = { name, phone, nfcCardId, nfcCardId2, fingerprintId, mantraFpData, profilePic, planType, feeAmount, lastPaymentDate, nextDueDate };
+    
+    // Clean up undefined fields so we don't accidentally overwrite with null if not provided
+    Object.keys(safeData).forEach(key => (safeData as any)[key] === undefined && delete (safeData as any)[key]);
+
     return await prisma.customer.updateMany({
       where: { id, gymId: callerGymId },
-      data
+      data: safeData
     });
   } catch (e) {
     return null;
@@ -2193,35 +2205,48 @@ export async function processDailyAutomatedReminders(gymId: string) {
     let absenteeRemindersSent = 0;
 
     const [todayY, todayM, todayD] = today.split('-').map(Number);
-    const targetDateObj = new Date(todayY, todayM - 1, todayD + reminderWindowDays);
-    const targetDateStr = `${targetDateObj.getFullYear()}-${String(targetDateObj.getMonth() + 1).padStart(2, '0')}-${String(targetDateObj.getDate()).padStart(2, '0')}`;
+    const todayDate = new Date(todayY, todayM - 1, todayD);
 
     for (const cust of activeWaMembers) {
       // 1. DUE / SUBSCRIPTION & OVERDUE REMINDER (Runs if waAutoMessages is enabled)
       if (waAutoMessages && cust.nextDueDate) {
-        // If due within reminderWindowDays or overdue (nextDueDate <= targetDateStr)
-        const isDueOrOverdue = cust.nextDueDate <= targetDateStr;
-        const notSentToday = cust.lastReminderSentDate !== today;
+        const [dY, dM, dD] = cust.nextDueDate.split('-').map(Number);
+        const dueDate = new Date(dY, dM - 1, dD);
+        const daysUntilDue = Math.round((dueDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
 
-        if (isDueOrOverdue && notSentToday) {
-          const rawTemplate = getTemplate(settings, 'reminder');
-          const waMessage = compileTemplate(rawTemplate, {
-            name: cust.name,
-            gymName: gym.name,
-            phone: cust.phone,
-            plan: cust.planType,
-            amount: cust.feeAmount?.toString() || '0',
-            dueDate: formatDateDDMMYYYY(cust.nextDueDate)
-          });
-
-          await WhatsAppManager.sendMessage(gymId, cust.phone, waMessage).catch(() => {});
+        // If due within reminderWindowDays or overdue up to 7 days
+        if (daysUntilDue >= -7 && daysUntilDue <= reminderWindowDays) {
           
-          await prisma.customer.update({
-            where: { id: cust.id },
-            data: { lastReminderSentDate: today }
-          }).catch(() => {});
+          let daysSinceLastSent = 999;
+          if (cust.lastReminderSentDate) {
+            const [lY, lM, lD] = cust.lastReminderSentDate.split('-').map(Number);
+            const lastSent = new Date(lY, lM - 1, lD);
+            daysSinceLastSent = Math.round((todayDate.getTime() - lastSent.getTime()) / (1000 * 60 * 60 * 24));
+          }
 
-          dueRemindersSent++;
+          if (daysSinceLastSent >= reminderWindowDays) {
+            const rawTemplate = getTemplate(settings, 'reminder');
+            const waMessage = compileTemplate(rawTemplate, {
+              name: cust.name,
+              gymName: gym.name,
+              phone: cust.phone,
+              plan: cust.planType,
+              amount: cust.feeAmount?.toString() || '0',
+              dueDate: formatDateDDMMYYYY(cust.nextDueDate)
+            });
+
+            // Fire & forget queue
+            WhatsAppManager.sendMessage(gymId, cust.phone, waMessage).then(sent => {
+              if (sent) {
+                prisma.customer.update({
+                  where: { id: cust.id },
+                  data: { lastReminderSentDate: today }
+                }).catch(() => {});
+              }
+            });
+
+            dueRemindersSent++;
+          }
         }
       }
 
@@ -2229,23 +2254,31 @@ export async function processDailyAutomatedReminders(gymId: string) {
       if (absentTracking) {
         const lastAtt = cust.attendance[0];
         let daysAbsent = 999;
+        let lastCheckInDate = cust.joinedDate;
 
         if (lastAtt && lastAtt.dateStr) {
+          lastCheckInDate = lastAtt.dateStr;
           const [aY, aM, aD] = lastAtt.dateStr.split('-').map(Number);
           const attDate = new Date(aY, aM - 1, aD);
-          const todayDate = new Date(todayY, todayM - 1, todayD);
-          daysAbsent = Math.floor((todayDate.getTime() - attDate.getTime()) / (1000 * 60 * 60 * 24));
+          daysAbsent = Math.round((todayDate.getTime() - attDate.getTime()) / (1000 * 60 * 60 * 24));
         } else if (cust.joinedDate) {
           const [jY, jM, jD] = cust.joinedDate.split('-').map(Number);
           const joinDate = new Date(jY, jM - 1, jD);
-          const todayDate = new Date(todayY, todayM - 1, todayD);
-          daysAbsent = Math.floor((todayDate.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24));
+          daysAbsent = Math.round((todayDate.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24));
         }
 
         const isAbsentThresholdMet = daysAbsent >= absentThresholdDays;
-        const notSentAbsentToday = cust.lastAbsenteeSentDate !== today;
+        
+        let alreadySentSinceLastVisit = false;
+        if (cust.lastAbsenteeSentDate && lastCheckInDate) {
+           const [sY, sM, sD] = cust.lastAbsenteeSentDate.split('-').map(Number);
+           const sentDate = new Date(sY, sM - 1, sD);
+           const [cY, cM, cD] = lastCheckInDate.split('-').map(Number);
+           const checkDate = new Date(cY, cM - 1, cD);
+           alreadySentSinceLastVisit = (sentDate.getTime() > checkDate.getTime()) || cust.lastAbsenteeSentDate === today;
+        }
 
-        if (isAbsentThresholdMet && notSentAbsentToday) {
+        if (isAbsentThresholdMet && !alreadySentSinceLastVisit) {
           const rawTemplate = getTemplate(settings, 'absentee');
           const waMessage = compileTemplate(rawTemplate, {
             name: cust.name,
@@ -2253,12 +2286,15 @@ export async function processDailyAutomatedReminders(gymId: string) {
             days: daysAbsent.toString()
           });
 
-          await WhatsAppManager.sendMessage(gymId, cust.phone, waMessage).catch(() => {});
-
-          await prisma.customer.update({
-            where: { id: cust.id },
-            data: { lastAbsenteeSentDate: today }
-          }).catch(() => {});
+          // Fire & forget queue
+          WhatsAppManager.sendMessage(gymId, cust.phone, waMessage).then(sent => {
+            if (sent) {
+              prisma.customer.update({
+                where: { id: cust.id },
+                data: { lastAbsenteeSentDate: today }
+              }).catch(() => {});
+            }
+          });
 
           absenteeRemindersSent++;
         }

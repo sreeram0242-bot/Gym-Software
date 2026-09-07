@@ -38,7 +38,15 @@ export async function POST(req: Request) {
 
     if (!existingDevice) {
       console.log(`[BIOMETRIC] Rejected unknown device SN: ${serialNumber}. Admin must register it in Settings first.`);
-      return new NextResponse('OK', { status: 200 }); // Return OK so device doesn't crash, but ignore data
+      const res = "result=OK";
+      return new NextResponse(res, { 
+        status: 200, 
+        headers: { 
+          'Content-Type': 'text/plain',
+          'Connection': 'close',
+          'Content-Length': res.length.toString()
+        } 
+      });
     }
 
     console.log(`\n========================================`);
@@ -72,7 +80,7 @@ export async function POST(req: Request) {
           const updated = await prisma.biometricCommand.updateMany({
             where: {
               deviceId: existingDevice.id,
-              commandString: { contains: `ENROLL_FP PIN=${enrolledPin}` },
+              commandString: { contains: `ENROLL_FP:PIN=${enrolledPin}` },
               status: { in: ['SENT', 'PENDING', 'FAILED'] }
             },
             data: { status: 'SUCCESS' }
