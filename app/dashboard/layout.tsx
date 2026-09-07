@@ -186,7 +186,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
 
         const now = Date.now();
-        if (now - lastKeyTime > 50) {
+        // Allow up to 120ms between keystrokes (prevents slower USB RFID/NFC readers or USB hubs from dropping digits)
+        if (now - lastKeyTime > 120) {
           buffer = ''; // Reset if typing is too slow (human typing)
         }
         lastKeyTime = now;

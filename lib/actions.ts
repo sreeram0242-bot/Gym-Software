@@ -683,11 +683,17 @@ export async function findCustomerByNFC(gymId: string, nfcId: string) {
   return customers.find((c: any) => {
     const c1 = (c.nfcCardId || '').toLowerCase();
     const c2 = (c.nfcCardId2 || '').toLowerCase();
+    const fp = (c.fingerprintId || '').toLowerCase();
+    const mid = (c.memberId || '').toLowerCase();
     return (
       c1 === cleanId ||
       (strippedId && c1.replace(/^0+/, '') === strippedId) ||
       c2 === cleanId ||
-      (strippedId && c2.replace(/^0+/, '') === strippedId)
+      (strippedId && c2.replace(/^0+/, '') === strippedId) ||
+      fp === cleanId ||
+      (strippedId && fp.replace(/^0+/, '') === strippedId) ||
+      mid === cleanId ||
+      (strippedId && mid.replace(/^0+/, '') === strippedId)
     );
   });
 }
@@ -714,7 +720,16 @@ export async function findStaffByNFC(gymId: string, nfcId: string) {
   const staffs = await getStaffs(gymId);
   return staffs.find((s: any) => {
     const s1 = (s.nfcCardId || '').toLowerCase();
-    return s1 === cleanId || (strippedId && s1.replace(/^0+/, '') === strippedId);
+    const s2 = ((s as any).nfcCardId2 || '').toLowerCase();
+    const fp = (s.fingerprintId || '').toLowerCase();
+    return (
+      s1 === cleanId ||
+      (strippedId && s1.replace(/^0+/, '') === strippedId) ||
+      s2 === cleanId ||
+      (strippedId && s2.replace(/^0+/, '') === strippedId) ||
+      fp === cleanId ||
+      (strippedId && fp.replace(/^0+/, '') === strippedId)
+    );
   });
 }
 
