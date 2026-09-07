@@ -17,7 +17,7 @@ import {
 const SWR_CONFIG = {
   revalidateOnFocus: false, // Prevents freezing when returning to tab
   revalidateOnReconnect: false,
-  dedupingInterval: 60000, // Increased to 60s to prevent spamming
+  dedupingInterval: 2000, // 2s prevents double-render spam while allowing fast mutation revalidation
   keepPreviousData: true,
 };
 

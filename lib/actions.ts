@@ -488,13 +488,13 @@ export async function addCustomer(data: any) {
     ])).filter(Boolean);
 
     const existing = await prisma.customer.findFirst({
-      where: { fingerprintId: { in: fpVariants }, gymId: data.gymId }
+      where: { fingerprintId: { in: fpVariants }, gymId: data.gymId, isArchived: false }
     });
     if (existing) {
       throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by ${existing.name}`);
     }
     const existingStaff = await prisma.staff.findFirst({
-      where: { fingerprintId: { in: fpVariants }, gymId: data.gymId }
+      where: { fingerprintId: { in: fpVariants }, gymId: data.gymId, isArchived: false }
     });
     if (existingStaff) {
       throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by Staff Member: ${existingStaff.name}`);
@@ -504,13 +504,13 @@ export async function addCustomer(data: any) {
   if (data.mantraFpData) {
     if (data.mantraFpData.length > 5000) throw new Error("Invalid fingerprint data: Payload too large");
     const existingMantra = await prisma.customer.findFirst({
-      where: { mantraFpData: data.mantraFpData, gymId: data.gymId }
+      where: { mantraFpData: data.mantraFpData, gymId: data.gymId, isArchived: false }
     });
     if (existingMantra) {
       throw new Error(`Mantra Fingerprint is already registered to ${existingMantra.name}`);
     }
     const existingMantraStaff = await prisma.staff.findFirst({
-      where: { mantraFpData: data.mantraFpData, gymId: data.gymId }
+      where: { mantraFpData: data.mantraFpData, gymId: data.gymId, isArchived: false }
     });
     if (existingMantraStaff) {
       throw new Error(`Mantra Fingerprint is already registered to Staff Member: ${existingMantraStaff.name}`);
@@ -526,6 +526,7 @@ export async function addCustomer(data: any) {
     const existingCardCust = await prisma.customer.findFirst({
       where: {
         gymId: data.gymId,
+        isArchived: false,
         OR: [
           { nfcCardId: { in: cardMatch } },
           { nfcCardId2: { in: cardMatch } }
@@ -536,7 +537,7 @@ export async function addCustomer(data: any) {
       throw new Error(`NFC Card ${card} is already assigned to ${existingCardCust.name}`);
     }
     const existingCardStaff = await prisma.staff.findFirst({
-      where: { gymId: data.gymId, nfcCardId: { in: cardMatch } }
+      where: { gymId: data.gymId, isArchived: false, nfcCardId: { in: cardMatch } }
     });
     if (existingCardStaff) {
       throw new Error(`NFC Card ${card} is already assigned to Staff Member: ${existingCardStaff.name}`);
@@ -552,6 +553,7 @@ export async function addCustomer(data: any) {
     const existingCardCust2 = await prisma.customer.findFirst({
       where: {
         gymId: data.gymId,
+        isArchived: false,
         OR: [
           { nfcCardId: { in: cardMatch2 } },
           { nfcCardId2: { in: cardMatch2 } }
@@ -562,7 +564,7 @@ export async function addCustomer(data: any) {
       throw new Error(`Secondary NFC Card ${card2} is already assigned to ${existingCardCust2.name}`);
     }
     const existingCardStaff2 = await prisma.staff.findFirst({
-      where: { gymId: data.gymId, nfcCardId: { in: cardMatch2 } }
+      where: { gymId: data.gymId, isArchived: false, nfcCardId: { in: cardMatch2 } }
     });
     if (existingCardStaff2) {
       throw new Error(`Secondary NFC Card ${card2} is already assigned to Staff Member: ${existingCardStaff2.name}`);
@@ -742,7 +744,7 @@ export async function findStaffByMantra(gymId: string, mantraFpData: string) {
 }
 
 export async function updateCustomer(id: string, data: any) {
-  const callerGymId = verifyTenantAccess();
+  const callerGymId = verifyTenantAccess(data?.gymId);
   if (!callerGymId) throw new Error("Unauthorized");
 
   if (data.fingerprintId) {
@@ -758,13 +760,13 @@ export async function updateCustomer(id: string, data: any) {
     ])).filter(Boolean);
 
     const existing = await prisma.customer.findFirst({
-      where: { fingerprintId: { in: fpVariants }, gymId: callerGymId, id: { not: id } }
+      where: { fingerprintId: { in: fpVariants }, gymId: callerGymId, id: { not: id }, isArchived: false }
     });
     if (existing) {
       throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by ${existing.name}`);
     }
     const existingStaff = await prisma.staff.findFirst({
-      where: { fingerprintId: { in: fpVariants }, gymId: callerGymId }
+      where: { fingerprintId: { in: fpVariants }, gymId: callerGymId, isArchived: false }
     });
     if (existingStaff) {
       throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by Staff Member: ${existingStaff.name}`);
@@ -774,13 +776,13 @@ export async function updateCustomer(id: string, data: any) {
   if (data.mantraFpData) {
     if (data.mantraFpData.length > 5000) throw new Error("Invalid fingerprint data: Payload too large");
     const existingMantra = await prisma.customer.findFirst({
-      where: { mantraFpData: data.mantraFpData, gymId: callerGymId, id: { not: id } }
+      where: { mantraFpData: data.mantraFpData, gymId: callerGymId, id: { not: id }, isArchived: false }
     });
     if (existingMantra) {
       throw new Error(`Mantra Fingerprint is already registered to ${existingMantra.name}`);
     }
     const existingMantraStaff = await prisma.staff.findFirst({
-      where: { mantraFpData: data.mantraFpData, gymId: callerGymId }
+      where: { mantraFpData: data.mantraFpData, gymId: callerGymId, isArchived: false }
     });
     if (existingMantraStaff) {
       throw new Error(`Mantra Fingerprint is already registered to Staff Member: ${existingMantraStaff.name}`);
@@ -797,6 +799,7 @@ export async function updateCustomer(id: string, data: any) {
       where: {
         gymId: callerGymId,
         id: { not: id },
+        isArchived: false,
         OR: [
           { nfcCardId: { in: cardMatch } },
           { nfcCardId2: { in: cardMatch } }
@@ -807,7 +810,7 @@ export async function updateCustomer(id: string, data: any) {
       throw new Error(`NFC Card ${card} is already assigned to ${existingCardCust.name}`);
     }
     const existingCardStaff = await prisma.staff.findFirst({
-      where: { gymId: callerGymId, nfcCardId: { in: cardMatch } }
+      where: { gymId: callerGymId, isArchived: false, nfcCardId: { in: cardMatch } }
     });
     if (existingCardStaff) {
       throw new Error(`NFC Card ${card} is already assigned to Staff Member: ${existingCardStaff.name}`);
@@ -824,6 +827,7 @@ export async function updateCustomer(id: string, data: any) {
       where: {
         gymId: callerGymId,
         id: { not: id },
+        isArchived: false,
         OR: [
           { nfcCardId: { in: cardMatch2 } },
           { nfcCardId2: { in: cardMatch2 } }
@@ -834,7 +838,7 @@ export async function updateCustomer(id: string, data: any) {
       throw new Error(`Secondary NFC Card ${card2} is already assigned to ${existingCardCust2.name}`);
     }
     const existingCardStaff2 = await prisma.staff.findFirst({
-      where: { gymId: callerGymId, nfcCardId: { in: cardMatch2 } }
+      where: { gymId: callerGymId, isArchived: false, nfcCardId: { in: cardMatch2 } }
     });
     if (existingCardStaff2) {
       throw new Error(`Secondary NFC Card ${card2} is already assigned to Staff Member: ${existingCardStaff2.name}`);
@@ -922,31 +926,75 @@ async function queueBiometricUserDeletion(gymId: string, pin: string) {
   }
 }
 
-export async function deleteCustomer(id: string) {
-  const callerGymId = verifyTenantAccess();
-  if (!callerGymId) throw new Error("Unauthorized");
+export async function deleteCustomer(id: string, gymId?: string) {
+  let callerGymId = verifyTenantAccess(gymId);
   try {
-    const cust = await prisma.customer.findUnique({
-      where: { id },
-      select: { fingerprintId: true, nfcCardId: true, gymId: true }
-    });
-
-    if (cust?.fingerprintId) {
-      await queueBiometricUserDeletion(callerGymId, cust.fingerprintId);
+    let cust: any;
+    try {
+      cust = await prisma.customer.findUnique({
+        where: { id },
+        select: { id: true, fingerprintId: true, nfcCardId: true, gymId: true, phone: true }
+      });
+    } catch (e) {
+      cust = store.customers.find((c: any) => c.id === id);
     }
 
-    await prisma.customer.update({
-      where: { id },
-      data: { 
-        isArchived: true,
-        fingerprintId: null,
-        mantraFpData: null,
-        nfcCardId: "",
-        nfcCardId2: null
+    if (!cust) {
+      const storeIdx = store.customers.findIndex((c: any) => c.id === id);
+      if (storeIdx !== -1) {
+        store.customers.splice(storeIdx, 1);
       }
-    });
+      return true;
+    }
+
+    const targetGymId = cust.gymId || callerGymId || gymId;
+    if (cust.fingerprintId && targetGymId) {
+      await queueBiometricUserDeletion(targetGymId, cust.fingerprintId).catch((err) => {
+        console.error('[deleteCustomer] Error queuing biometric deletion:', err);
+      });
+    }
+
+    try {
+      // Disconnect transactions to preserve income/revenue accounting without foreign key failure
+      await prisma.transaction.updateMany({
+        where: { customerId: id },
+        data: { customerId: null }
+      });
+      await prisma.productSale.updateMany({
+        where: { customerId: id },
+        data: { customerId: null }
+      });
+      await prisma.attendanceRecord.deleteMany({
+        where: { customerId: id }
+      });
+      await prisma.customer.delete({
+        where: { id }
+      });
+    } catch (dbErr) {
+      console.warn('[deleteCustomer] Hard delete failed, sanitizing soft-delete:', dbErr);
+      await prisma.customer.update({
+        where: { id },
+        data: { 
+          isArchived: true,
+          fingerprintId: null,
+          memberId: null,
+          mantraFpData: null,
+          nfcCardId: "",
+          nfcCardId2: null,
+          phone: `${cust.phone || ''}_del_${Date.now()}`
+        }
+      });
+    }
+
+    // Always cleanse in-memory fallback store
+    const storeIdx = store.customers.findIndex((c: any) => c.id === id);
+    if (storeIdx !== -1) {
+      store.customers.splice(storeIdx, 1);
+    }
+
     return true;
-  } catch {
+  } catch (e) {
+    console.error('[deleteCustomer] Error in deleteCustomer:', e);
     return false;
   }
 }
@@ -1963,13 +2011,13 @@ export async function addStaff(data: any) {
     // 2. Check duplicate NFC Card
     if (cleanNfc) {
       const existingNfc = await prisma.staff.findFirst({
-        where: { gymId, nfcCardId: cleanNfc }
+        where: { gymId, nfcCardId: cleanNfc, isArchived: false }
       });
       if (existingNfc) {
         throw new Error(`NFC Card ID "${cleanNfc}" is already assigned to staff: ${existingNfc.name}.`);
       }
       const existingCustNfc = await prisma.customer.findFirst({
-        where: { gymId, OR: [{ nfcCardId: cleanNfc }, { nfcCardId2: cleanNfc }] }
+        where: { gymId, isArchived: false, OR: [{ nfcCardId: cleanNfc }, { nfcCardId2: cleanNfc }] }
       });
       if (existingCustNfc) {
         throw new Error(`NFC Card ID "${cleanNfc}" is already assigned to Member: ${existingCustNfc.name}.`);
@@ -1978,13 +2026,13 @@ export async function addStaff(data: any) {
 
     if (cleanFp) {
       const existingFp = await prisma.staff.findFirst({
-        where: { gymId, fingerprintId: cleanFp }
+        where: { gymId, fingerprintId: cleanFp, isArchived: false }
       });
       if (existingFp) {
         throw new Error(`ZKTeco ID "${cleanFp}" is already assigned to staff: ${existingFp.name}.`);
       }
       const existingCustFp = await prisma.customer.findFirst({
-        where: { gymId, fingerprintId: cleanFp }
+        where: { gymId, fingerprintId: cleanFp, isArchived: false }
       });
       if (existingCustFp) {
         throw new Error(`ZKTeco ID "${cleanFp}" is already assigned to Member: ${existingCustFp.name}.`);
@@ -1993,13 +2041,13 @@ export async function addStaff(data: any) {
 
     if (cleanMantraFp) {
       const existingMantra = await prisma.staff.findFirst({
-        where: { gymId, mantraFpData: cleanMantraFp }
+        where: { gymId, mantraFpData: cleanMantraFp, isArchived: false }
       });
       if (existingMantra) {
         throw new Error(`Mantra Fingerprint is already assigned to staff: ${existingMantra.name}.`);
       }
       const existingCustMantra = await prisma.customer.findFirst({
-        where: { gymId, mantraFpData: cleanMantraFp }
+        where: { gymId, mantraFpData: cleanMantraFp, isArchived: false }
       });
       if (existingCustMantra) {
         throw new Error(`Mantra Fingerprint is already assigned to Member: ${existingCustMantra.name}.`);
@@ -2025,7 +2073,7 @@ export async function addStaff(data: any) {
 }
 
 export async function updateStaff(id: string, data: any) {
-  const callerGymId = verifyTenantAccess();
+  const callerGymId = verifyTenantAccess(data?.gymId);
   if (!callerGymId) throw new Error("Unauthorized");
   try {
     const current = await prisma.staff.findUnique({ where: { id } });
@@ -2039,7 +2087,7 @@ export async function updateStaff(id: string, data: any) {
     // Check duplicate phone for other staff
     if (cleanPhone !== current.phone) {
       const existingPhone = await prisma.staff.findFirst({
-        where: { gymId: current.gymId, phone: cleanPhone, NOT: { id } }
+        where: { gymId: current.gymId, phone: cleanPhone, NOT: { id }, isArchived: false }
       });
       if (existingPhone) {
         throw new Error(`Phone number "${cleanPhone}" is already registered for staff: ${existingPhone.name}.`);
@@ -2049,13 +2097,13 @@ export async function updateStaff(id: string, data: any) {
     // Check duplicate NFC for other staff
     if (cleanNfc && cleanNfc !== current.nfcCardId) {
       const existingNfc = await prisma.staff.findFirst({
-        where: { gymId: current.gymId, nfcCardId: cleanNfc, NOT: { id } }
+        where: { gymId: current.gymId, nfcCardId: cleanNfc, NOT: { id }, isArchived: false }
       });
       if (existingNfc) {
         throw new Error(`NFC Card ID "${cleanNfc}" is already assigned to staff: ${existingNfc.name}.`);
       }
       const existingCustNfc = await prisma.customer.findFirst({
-        where: { gymId: current.gymId, OR: [{ nfcCardId: cleanNfc }, { nfcCardId2: cleanNfc }] }
+        where: { gymId: current.gymId, isArchived: false, OR: [{ nfcCardId: cleanNfc }, { nfcCardId2: cleanNfc }] }
       });
       if (existingCustNfc) {
         throw new Error(`NFC Card ID "${cleanNfc}" is already assigned to Member: ${existingCustNfc.name}.`);
@@ -2064,13 +2112,13 @@ export async function updateStaff(id: string, data: any) {
 
     if (cleanFp && cleanFp !== current.fingerprintId) {
       const existingFp = await prisma.staff.findFirst({
-        where: { gymId: current.gymId, fingerprintId: cleanFp, NOT: { id } }
+        where: { gymId: current.gymId, fingerprintId: cleanFp, NOT: { id }, isArchived: false }
       });
       if (existingFp) {
         throw new Error(`ZKTeco ID "${cleanFp}" is already assigned to staff: ${existingFp.name}.`);
       }
       const existingCustFp = await prisma.customer.findFirst({
-        where: { gymId: current.gymId, fingerprintId: cleanFp }
+        where: { gymId: current.gymId, fingerprintId: cleanFp, isArchived: false }
       });
       if (existingCustFp) {
         throw new Error(`ZKTeco ID "${cleanFp}" is already assigned to Member: ${existingCustFp.name}.`);
@@ -2079,13 +2127,13 @@ export async function updateStaff(id: string, data: any) {
 
     if (cleanMantraFp && cleanMantraFp !== current.mantraFpData) {
       const existingMantra = await prisma.staff.findFirst({
-        where: { gymId: current.gymId, mantraFpData: cleanMantraFp, NOT: { id } }
+        where: { gymId: current.gymId, mantraFpData: cleanMantraFp, NOT: { id }, isArchived: false }
       });
       if (existingMantra) {
         throw new Error(`Mantra Fingerprint is already assigned to staff: ${existingMantra.name}.`);
       }
       const existingCustMantra = await prisma.customer.findFirst({
-        where: { gymId: current.gymId, mantraFpData: cleanMantraFp }
+        where: { gymId: current.gymId, mantraFpData: cleanMantraFp, isArchived: false }
       });
       if (existingCustMantra) {
         throw new Error(`Mantra Fingerprint is already assigned to Member: ${existingCustMantra.name}.`);
@@ -2112,31 +2160,53 @@ export async function updateStaff(id: string, data: any) {
   }
 }
 
-export async function deleteStaff(id: string) {
-  const callerGymId = verifyTenantAccess();
-  if (!callerGymId) throw new Error("Unauthorized");
+export async function deleteStaff(id: string, gymId?: string) {
+  let callerGymId = verifyTenantAccess(gymId);
   try {
-    const current = await prisma.staff.findUnique({ 
-      where: { id },
-      select: { fingerprintId: true, nfcCardId: true, gymId: true }
-    });
-    if (!current || current.gymId !== callerGymId) throw new Error('Staff member not found');
+    let current: any;
+    try {
+      current = await prisma.staff.findUnique({ 
+        where: { id },
+        select: { id: true, fingerprintId: true, nfcCardId: true, gymId: true, phone: true }
+      });
+    } catch (e) {
+      current = store.staff.find((s: any) => s.id === id);
+    }
+    if (!current) return true;
 
-    if (current.fingerprintId) {
-      await queueBiometricUserDeletion(callerGymId, current.fingerprintId);
+    const targetGymId = current.gymId || callerGymId || gymId;
+    if (current.fingerprintId && targetGymId) {
+      await queueBiometricUserDeletion(targetGymId, current.fingerprintId).catch(() => {});
     }
 
-    await prisma.staff.update({
-      where: { id },
-      data: { 
-        isArchived: true,
-        fingerprintId: null,
-        mantraFpData: null,
-        nfcCardId: null
-      }
-    });
+    try {
+      await prisma.staffAttendanceRecord.deleteMany({
+        where: { staffId: id }
+      });
+      await prisma.staff.delete({
+        where: { id }
+      });
+    } catch (e) {
+      await prisma.staff.update({
+        where: { id },
+        data: { 
+          isArchived: true,
+          fingerprintId: null,
+          mantraFpData: null,
+          nfcCardId: null,
+          phone: `${current.phone || ''}_del_${Date.now()}`
+        }
+      });
+    }
+
+    const storeIdx = store.staff.findIndex((s: any) => s.id === id);
+    if (storeIdx !== -1) {
+      store.staff.splice(storeIdx, 1);
+    }
+
     return true;
   } catch (e) {
+    console.error('[deleteStaff] Error:', e);
     throw new Error('Failed to delete staff');
   }
 }

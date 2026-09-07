@@ -108,19 +108,22 @@ export default function MemberManagementPage() {
     if (!fingerprintId.trim()) return null;
     const clean = fingerprintId.trim();
     const stripped = clean.replace(/^0+/, '') || clean;
+    const cleanNum = parseInt(clean, 10);
     const cust = customers.find(c => {
-      if (!c.fingerprintId || c.id === editingMemberId) return false;
+      if (!c.fingerprintId || c.isArchived || c.id === editingMemberId) return false;
       const cf = String(c.fingerprintId).trim();
       const cfStripped = cf.replace(/^0+/, '') || cf;
-      return cf === clean || cfStripped === stripped;
+      const cNum = parseInt(cf, 10);
+      return cf === clean || cfStripped === stripped || (!isNaN(cleanNum) && !isNaN(cNum) && cNum === cleanNum);
     });
     if (cust) return { name: cust.name, type: 'Member' };
 
     const staff = staffs.find((s: any) => {
-      if (!s.fingerprintId) return false;
+      if (!s.fingerprintId || s.isArchived) return false;
       const sf = String(s.fingerprintId).trim();
       const sfStripped = sf.replace(/^0+/, '') || sf;
-      return sf === clean || sfStripped === stripped;
+      const sNum = parseInt(sf, 10);
+      return sf === clean || sfStripped === stripped || (!isNaN(cleanNum) && !isNaN(sNum) && sNum === cleanNum);
     });
     if (staff) return { name: staff.name, type: 'Staff' };
 
@@ -141,6 +144,7 @@ export default function MemberManagementPage() {
   const duplicateNfcMember = useMemo(() => {
     if (!nfcCardId.trim()) return null;
     return customers.find(c => 
+      !c.isArchived &&
       c.id !== editingMemberId && (
         matchCard(c.nfcCardId, nfcCardId) || 
         matchCard(c.nfcCardId2, nfcCardId)
@@ -151,6 +155,7 @@ export default function MemberManagementPage() {
   const duplicateNfc2Member = useMemo(() => {
     if (!nfcCardId2.trim()) return null;
     return customers.find(c => 
+      !c.isArchived &&
       c.id !== editingMemberId && (
         matchCard(c.nfcCardId, nfcCardId2) || 
         matchCard(c.nfcCardId2, nfcCardId2)
@@ -160,9 +165,11 @@ export default function MemberManagementPage() {
 
   const nextSuggestedId = useMemo(() => {
     const custIds = customers
+      .filter(c => !c.isArchived)
       .map(c => parseInt(c.fingerprintId, 10))
       .filter(n => !isNaN(n) && n > 0);
     const staffIds = staffs
+      .filter((s: any) => !s.isArchived)
       .map((s: any) => parseInt(s.fingerprintId, 10))
       .filter((n: number) => !isNaN(n) && n > 0);
     const allIds = [...custIds, ...staffIds];
@@ -296,10 +303,37 @@ export default function MemberManagementPage() {
       title: 'Delete Member',
       message: 'Are you sure you want to completely delete this member? This action cannot be undone.',
       onConfirm: async () => {
-        await deleteCustomer(id);
-        setSelectedMember(null);
-        showToast('Member deleted successfully', 'success');
-        mutate(['members', gymId]);
+        try {
+          // 1. Optimistic removal from SWR cache immediately so UI & validation update instantly!
+          await mutate(
+            ['members', gymId],
+            (currentData: any) => {
+              if (!currentData) return currentData;
+              return {
+                ...currentData,
+                custs: (currentData.custs || []).filter((c: any) => c.id !== id)
+              };
+            },
+            false
+          );
+
+          setSelectedMember(null);
+
+          // 2. Call server action passing gymId
+          const res = await deleteCustomer(id, gymId);
+          if (res === false) {
+            showToast('Failed to delete member on server', 'error');
+            await mutate(['members', gymId]);
+            return;
+          }
+
+          showToast('Member deleted successfully', 'success');
+          // 3. Revalidate from server
+          await mutate(['members', gymId]);
+        } catch (err: any) {
+          showToast(err?.message || 'Failed to delete member', 'error');
+          await mutate(['members', gymId]);
+        }
       }
     });
   };
@@ -314,7 +348,7 @@ export default function MemberManagementPage() {
     let found: any;
 
     if (nfcCardId && nfcCardId.length > 3) {
-      found = customers.find(c => c.nfcCardId.toLowerCase() === nfcCardId.toLowerCase());
+      found = customers.find(c => !c.isArchived && c.nfcCardId && c.nfcCardId.toLowerCase() === nfcCardId.toLowerCase());
     }
 
     if (found) {
@@ -539,7 +573,7 @@ export default function MemberManagementPage() {
 
     const cleanPhone = phone.replace(/\D/g, '');
     
-    const existingPhone = customers.find(c => c.phone.replace(/\D/g, '') === cleanPhone);
+    const existingPhone = customers.find(c => !c.isArchived && c.phone && c.phone.replace(/\D/g, '') === cleanPhone);
     if (existingPhone && (!isEditingMember || existingPhone.id !== editingMemberId)) {
       setErrorMsg(`Phone number already in use by ${existingPhone.name}. A number is for one customer only.`);
       return;
@@ -547,9 +581,26 @@ export default function MemberManagementPage() {
 
     if (fingerprintId && fingerprintId.trim()) {
       const cleanFp = fingerprintId.trim();
-      const existingFp = customers.find(c => c.fingerprintId === cleanFp);
+      const cleanFpNum = parseInt(cleanFp, 10);
+      const existingFp = customers.find(c => {
+        if (c.isArchived || !c.fingerprintId) return false;
+        if (c.fingerprintId === cleanFp) return true;
+        const cNum = parseInt(c.fingerprintId, 10);
+        return !isNaN(cleanFpNum) && !isNaN(cNum) && cNum === cleanFpNum;
+      });
       if (existingFp && (!isEditingMember || existingFp.id !== editingMemberId)) {
         setErrorMsg(`Member ID (ZKTeco ID) "${cleanFp}" is already in use by ${existingFp.name}. Please use the Next Available ID.`);
+        return;
+      }
+
+      const existingStaffFp = staffs.find((s: any) => {
+        if (s.isArchived || !s.fingerprintId) return false;
+        if (s.fingerprintId === cleanFp) return true;
+        const sNum = parseInt(s.fingerprintId, 10);
+        return !isNaN(cleanFpNum) && !isNaN(sNum) && sNum === cleanFpNum;
+      });
+      if (existingStaffFp) {
+        setErrorMsg(`Member ID (ZKTeco ID) "${cleanFp}" is already in use by Staff Member: ${existingStaffFp.name}. Please use the Next Available ID.`);
         return;
       }
     }
