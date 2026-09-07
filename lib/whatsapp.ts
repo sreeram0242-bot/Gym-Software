@@ -237,23 +237,47 @@ export class WhatsAppManager {
       
       console.log('[WA DEBUG] Found customer:', customer.name, 'Processing keyword:', cleanText);
 
-      // Auto-mark WhatsApp as activated for this customer
+      const isStart = cleanText === 'start' || cleanText === 'menu' || cleanText === 'hi' || cleanText === 'hello';
+      const isPlanOrDue = cleanText === 'plan' || cleanText === 'due date' || cleanText === 'due' || cleanText === '1';
+      const isPayment = cleanText === 'payment' || cleanText === 'payments' || cleanText === '2';
+      const isAttendance = cleanText === 'attendance' || cleanText === 'attend' || cleanText === '3';
+
+      // WhatsApp services work ONLY after the member sends 'start'
       if (!customer.waActive) {
-        try {
-          await db.customer.update({
-            where: { id: customer.id },
-            data: { waActive: true }
-          });
-        } catch (e) {}
+        if (isStart) {
+          // Member sent 'start' -> Activate WhatsApp services
+          try {
+            await db.customer.update({
+              where: { id: customer.id },
+              data: { waActive: true }
+            });
+            console.log('[WA DEBUG] Customer activated WhatsApp services via start:', customer.name);
+            customer.waActive = true;
+          } catch (e) {
+            console.error('[WA DEBUG] Failed to activate customer:', e);
+          }
+        } else {
+          // Member has not activated WhatsApp services yet and sent something other than 'start'
+          console.log('[WA DEBUG] Inactive customer messaged without start. Replying with activation instructions.');
+          let gymName = 'Our Gym';
+          try {
+            const gym = await db.gym.findUnique({ where: { id: gymId } });
+            if (gym) gymName = gym.name;
+          } catch (e) {}
+
+          const promptReply = `👋 Hello ${customer.name}!\nWelcome to *${gymName}*.\n\nTo activate WhatsApp services, attendance alerts, payment receipts, and account options, please reply with *start*.`;
+          
+          try {
+            await sock.readMessages([m.key]);
+          } catch (e) {}
+
+          await WhatsAppManager.sendMessage(gymId, fullPhone, promptReply, undefined, true);
+          return;
+        }
       }
 
       const footer = '\n\n---\nReply *start* to see the main menu anytime.';
       let replyText = '';
-
-      const isPlanOrDue = cleanText === 'plan' || cleanText === 'due date' || cleanText === 'due' || cleanText === '1';
-      const isPayment = cleanText === 'payment' || cleanText === 'payments' || cleanText === '2';
-      const isAttendance = cleanText === 'attendance' || cleanText === 'attend' || cleanText === '3';
-      const isStart = cleanText === 'start' || cleanText === 'menu' || cleanText === 'hi' || cleanText === 'hello';
 
       if (isPlanOrDue) {
         const balanceNotice = (customer.pendingBalance || 0) > 0 
@@ -387,6 +411,21 @@ export class WhatsAppManager {
     let finalMessage = text;
     if (!isAutoReply) {
       try {
+        const cleanDigits = phone.replace(/[^0-9]/g, '');
+        const shortPhone = cleanDigits.length === 12 && cleanDigits.startsWith('91') ? cleanDigits.substring(2) : cleanDigits;
+
+        // Check if recipient is a member of this gym
+        const member = await db.customer.findFirst({
+          where: { gymId, phone: { contains: shortPhone } },
+          select: { id: true, name: true, waActive: true }
+        });
+
+        // Outbound WhatsApp services work ONLY if member has sent 'start' (waActive: true)
+        if (member && !member.waActive) {
+          console.log(`[WA] Outbound message skipped for ${member.name} (${phone}) — member has not sent 'start' yet.`);
+          return false;
+        }
+
         const settings = await db.gymSettings.findUnique({ where: { gymId } });
         if (settings?.waAutoReply) {
           finalMessage += '\n\n---\nReply *plan* or *due date* to view your Plan Details\nReply *payment* for Payment History\nReply *attendance* for Attendance Logs\nReply *start* to see this menu anytime!';

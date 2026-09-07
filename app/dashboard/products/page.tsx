@@ -194,7 +194,7 @@ export default function ProductsPage() {
 
       // Send WhatsApp receipt if customer has active WhatsApp services
       let waReceiptSent = false;
-      if (selectedCust && selectedCust.phone && (selectedCust.waActive || gymSettings?.waAutoMessages !== false)) {
+      if (selectedCust && selectedCust.phone && selectedCust.waActive && gymSettings?.waAutoMessages !== false) {
         try {
           const rawTemplate = getTemplate(gymSettings, 'storeReceipt');
           const itemsList = cart.map(i => `• ${i.productName} (x${i.quantity}) - ₹${i.totalPrice}`).join('\n');

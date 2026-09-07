@@ -675,7 +675,7 @@ export default function MemberManagementPage() {
       showToast(`Membership successfully renewed for ${updated.name}!`, 'success');
 
       const autoMessagesEnabled = settings?.waAutoMessages ?? true;
-      if (autoMessagesEnabled) {
+      if (autoMessagesEnabled && updated.waActive) {
         const now = new Date();
         const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const dateString = formatDateDDMMYYYY(now.toISOString().split('T')[0]);
@@ -984,6 +984,12 @@ export default function MemberManagementPage() {
 
 
   const handleSendAbsenteeMsg = async (cust: any) => {
+    if (!cust.waActive) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('global-toast', { detail: { message: `${cust.name} has not activated WhatsApp yet (waiting for 'start').`, type: 'warning' } }));
+      }
+      return;
+    }
     try {
       const msg = compileTemplate(getTemplate(settings, 'absentee'), {
         name: cust.name.split(' ')[0],

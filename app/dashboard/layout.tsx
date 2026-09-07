@@ -233,7 +233,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             // Fetch settings to check if Attendance WA messages are enabled
             const gymSettings = await getGymSettings(matched.id);
-            if (gymSettings?.waAttendanceMessages && matchedCust.phone) {
+            if (gymSettings?.waAttendanceMessages && matchedCust.phone && matchedCust.waActive) {
               const templateName = action === 'checkin' ? 'checkin' : 'checkout';
               const rawTemplate = getTemplate(gymSettings, templateName);
               

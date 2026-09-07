@@ -382,7 +382,7 @@ export default function CheckInTerminal() {
       await mutate(['checkin', gymId]);
 
       const gymSettings = await getGymSettings(gymId);
-      if (gymSettings?.waAttendanceMessages && matched.phone) {
+      if (gymSettings?.waAttendanceMessages && matched.phone && matched.waActive) {
         const templateName = action === 'checkin' ? 'checkin' : 'checkout';
         const rawTemplate = getTemplate(gymSettings, templateName);
         const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

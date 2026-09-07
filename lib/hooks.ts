@@ -147,13 +147,22 @@ export function useRemindersData(gymId: string) {
 
 // 8. Broadcast Page Data
 const fetchBroadcast = async (gymId: string) => {
-  const [gyms, custs] = await Promise.all([
-    getGyms(),
-    getCustomers(gymId)
-  ]);
-  return { gyms, custs };
+  if (!gymId) return { gyms: [], custs: [] };
+  try {
+    const [gyms, custs] = await Promise.all([
+      getGyms(),
+      getCustomers(gymId)
+    ]);
+    return { gyms: gyms || [], custs: custs || [] };
+  } catch (err) {
+    console.error('fetchBroadcast error:', err);
+    return { gyms: [], custs: [] };
+  }
 };
 export const preloadBroadcast = (gymId: string) => preload(gymId ? ['broadcast', gymId] : null, () => fetchBroadcast(gymId));
 export function useBroadcastData(gymId: string) {
-  return useSWR(gymId ? ['broadcast', gymId] : null, () => fetchBroadcast(gymId), SWR_CONFIG);
+  return useSWR(gymId ? ['broadcast', gymId] : null, () => fetchBroadcast(gymId), {
+    ...SWR_CONFIG,
+    revalidateOnFocus: true
+  });
 }
