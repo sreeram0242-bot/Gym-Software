@@ -9,11 +9,11 @@ import {
   getGymSettings
 } from '@/lib/actions';
 
-// Default SWR config to ensure fast cache hits and background revalidation on focus
+// Default SWR config to ensure fast cache hits without background lag
 const SWR_CONFIG = {
-  revalidateOnFocus: true,
-  revalidateOnReconnect: true,
-  dedupingInterval: 2000,
+  revalidateOnFocus: false, // Prevents freezing when returning to tab
+  revalidateOnReconnect: false,
+  dedupingInterval: 60000, // Increased to 60s to prevent spamming
   keepPreviousData: true,
 };
 

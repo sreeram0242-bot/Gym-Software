@@ -84,6 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
 
       const checkWaStatus = async (id: string) => {
+        if (typeof document !== 'undefined' && document.hidden) return;
         try {
           const res = await fetch(`/api/whatsapp/status?gymId=${id}`);
           if (res.ok) {
@@ -107,6 +108,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       let lastPollTime = Date.now() - 90000; // Start looking up to 1.5 mins ago for missed background punches
 
       const checkRecentPunch = async (id: string) => {
+        if (typeof document !== 'undefined' && document.hidden) return;
         try {
           const res = await fetch(`/api/attendance/recent-punch?gymId=${id}&since=${lastPollTime}`);
           lastPollTime = Date.now();

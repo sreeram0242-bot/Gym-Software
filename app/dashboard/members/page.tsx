@@ -377,18 +377,6 @@ export default function MemberManagementPage() {
   useEffect(() => {
     mutate(['members', gymId]);
 
-    // Background live auto-refresh polling every 3 seconds
-    const interval = setInterval(() => {
-      if (document.hidden) return;
-      mutate(['members', gymId]);
-    }, 30000);
-
-    const handleFocus = () => {
-      mutate(['members', gymId]);
-    };
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
-
     // Listen to custom open_add_member event
     const handleOpenAddMember = (e: any) => {
       const nfcId = e.detail?.nfcId;
@@ -441,9 +429,6 @@ export default function MemberManagementPage() {
     }
 
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
       window.removeEventListener('open_add_member', handleOpenAddMember);
     };
   }, []);
