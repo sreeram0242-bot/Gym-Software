@@ -1802,6 +1802,12 @@ export async function authenticateSuperadmin(userId: string, passwordHash: strin
   return { success: false, error: 'Invalid Master Admin credentials.' };
 }
 
+export async function logoutSuperadmin() {
+  cookies().delete('is_superadmin');
+  cookies().delete('active_gym_id');
+  return { success: true };
+}
+
 // --- STAFF MANAGEMENT ---
 export async function getStaffs(gymId: string) {
   const authorizedGymId = verifyTenantAccess(gymId);

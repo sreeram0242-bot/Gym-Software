@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Plus, Search, Building2, UserPlus, Key, Phone, Mail, CheckCircle, AlertCircle, ArrowLeft, Users, Eye, EyeOff, Dumbbell, Lock, Sparkles, Filter, LogOut, Trash2 } from 'lucide-react';
-import { getGyms, getCustomers, addGym, toggleGymStatus, findCustomerByPhone, getMemberMonthlyAvgHours, getGlobalStats, getAnnouncements, createAnnouncement, deleteAnnouncement, updateGymStatus, setSuperadminTenant } from '@/lib/actions';
+import { getGyms, getCustomers, addGym, toggleGymStatus, findCustomerByPhone, getMemberMonthlyAvgHours, getGlobalStats, getAnnouncements, createAnnouncement, deleteAnnouncement, updateGymStatus, setSuperadminTenant, logoutSuperadmin } from '@/lib/actions';
 import { Gym, Customer } from '@/lib/types';
 import { formatDateDDMMYYYY } from '@/lib/utils';
 
@@ -160,8 +160,9 @@ export default function SuperAdminPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <button 
-              onClick={() => {
+              onClick={async () => {
                 if (typeof window !== 'undefined') localStorage.removeItem('is_master_admin');
+                await logoutSuperadmin();
                 router.push('/superadmin/login');
               }}
               className="p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
