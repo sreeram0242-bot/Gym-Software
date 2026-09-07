@@ -8,6 +8,7 @@ import { getGyms, findCustomerByNFC, findStaffByNFC, toggleCheckIn, toggleStaffC
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 import { preloadOverview, preloadCheckin, preloadMembers, preloadStaffs, preloadReminders, preloadBroadcast, preloadRevenue, preloadProducts } from '@/lib/hooks';
+import { mutate } from 'swr';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -121,12 +122,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           if (res.ok) {
             const data = await res.json();
             if (data.hasPunch && data.punches) {
+              let hasNew = false;
               data.punches.forEach((p: any) => {
                 if (!processedPunchIds.has(p.id)) {
                   processedPunchIds.add(p.id);
                   punchQueue.push(p);
+                  hasNew = true;
                 }
               });
+              if (hasNew) {
+                mutate(['checkin', id]);
+                mutate(['overview', id]);
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('attendance_updated'));
+                }
+              }
             }
           }
         } catch (e) {
@@ -209,6 +219,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               durationMinutes: record?.durationMinutes
             });
 
+            mutate(['checkin', matched.id]);
+            mutate(['overview', matched.id]);
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('attendance_updated'));
+            }
+
             if (notificationTimeout) clearTimeout(notificationTimeout);
             notificationTimeout = setTimeout(() => {
               setLivePunchNotice(null);
@@ -267,6 +283,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 durationMinutes: staffRes?.record?.durationMinutes
               });
+
+              mutate(['checkin', matched.id]);
+              mutate(['overview', matched.id]);
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('attendance_updated'));
+              }
 
               if (notificationTimeout) clearTimeout(notificationTimeout);
               notificationTimeout = setTimeout(() => {

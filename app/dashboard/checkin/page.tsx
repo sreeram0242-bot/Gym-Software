@@ -100,6 +100,26 @@ export default function CheckInTerminal() {
     }
   }, []);
 
+  // Live timer tick to continuously update elapsed minutes (e.g. IN GYM XXm) without full page reload
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTick(t => t + 1);
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Listen to global attendance updates (biometric device push, USB reader, etc.) to immediately refresh cards
+  useEffect(() => {
+    const handleUpdate = () => {
+      revalidateCheckin();
+    };
+    window.addEventListener('attendance_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('attendance_updated', handleUpdate);
+    };
+  }, [revalidateCheckin]);
+
   // ─── DUAL EXPORT HANDLERS (CSV & PDF) ───
   const exportMemberVisitsCSV = () => {
     const exportData = todayMemberRecords.map(r => ({
@@ -542,7 +562,7 @@ export default function CheckInTerminal() {
       {/* Segmented Tab Switcher (Members vs Staff) - Sleek & Compact */}
       <div className="flex bg-slate-100/90 p-1 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-2xs gap-1 sm:gap-1.5">
         <button
-          onClick={() => { setActiveTab('members'); setManualSearch(''); }}
+          onClick={() => { setActiveTab('members'); setManualSearch(''); revalidateCheckin(); }}
           className={`flex-1 py-1.5 px-2 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl font-black text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'members'
               ? 'bg-blue-600 text-white shadow-sm'
@@ -557,7 +577,7 @@ export default function CheckInTerminal() {
         </button>
 
         <button
-          onClick={() => { setActiveTab('staff'); setManualSearch(''); }}
+          onClick={() => { setActiveTab('staff'); setManualSearch(''); revalidateCheckin(); }}
           className={`flex-1 py-1.5 px-2 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl font-black text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'staff'
               ? 'bg-blue-600 text-white shadow-sm'
