@@ -91,11 +91,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             const data = await res.json();
             setWaStatus(data.status);
           } else {
-            setWaStatus('DISCONNECTED');
+            setWaStatus('disconnected');
           }
         } catch (e) {
           console.error('WhatsApp status poll error:', e);
-          setWaStatus('DISCONNECTED');
+          setWaStatus('disconnected');
         }
       };
       checkWaStatus(matched.id);
