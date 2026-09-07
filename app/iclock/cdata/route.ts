@@ -76,14 +76,18 @@ export async function POST(req: Request) {
         const match = line.match(/PIN=(\d+)/);
         if (match) {
           const enrolledPin = match[1];
+          const strippedEnrolledPin = enrolledPin.replace(/^0+/, '') || enrolledPin;
           // Only mark ENROLL_FP commands as SUCCESS — never card/delete commands
           const updated = await prisma.biometricCommand.updateMany({
             where: {
               deviceId: existingDevice.id,
-              commandString: { contains: `ENROLL_FP:PIN=${enrolledPin}` },
+              OR: [
+                { commandString: { contains: `ENROLL_FP:PIN=${enrolledPin}` } },
+                { commandString: { contains: `ENROLL_FP:PIN=${strippedEnrolledPin}` } }
+              ],
               status: { in: ['SENT', 'PENDING', 'FAILED'] }
             },
-            data: { status: 'SUCCESS' }
+            data: { status: 'SUCCESS', completedAt: new Date() }
           });
           fs.appendFileSync('biometric.log', `Enrollment Success callback processed for PIN: ${enrolledPin} (updated ${updated.count} command(s))\n`);
           continue; // Skip regular punch logic
@@ -104,9 +108,17 @@ export async function POST(req: Request) {
         }
         
         if (enrolledPin) {
+          const stripped = enrolledPin.replace(/^0+/, '') || enrolledPin;
           await prisma.biometricCommand.updateMany({
-            where: { deviceId: existingDevice.id, commandString: { contains: `PIN=${enrolledPin}` }, status: { in: ['SENT', 'PENDING', 'FAILED'] } },
-            data: { status: 'SUCCESS' }
+            where: {
+              deviceId: existingDevice.id,
+              OR: [
+                { commandString: { contains: `PIN=${enrolledPin}` } },
+                { commandString: { contains: `PIN=${stripped}` } }
+              ],
+              status: { in: ['SENT', 'PENDING', 'FAILED'] }
+            },
+            data: { status: 'SUCCESS', completedAt: new Date() }
           });
           fs.appendFileSync('biometric.log', `Enrollment Success (OPLOG ${parts[1]}) processed for PIN: ${enrolledPin}\n`);
         }
@@ -124,25 +136,26 @@ export async function POST(req: Request) {
         fs.appendFileSync('biometric.log', `Parsed PIN: '${pin}'\n`);
         
         const strippedPin = pin.replace(/^0+/, '');
-        const padded10Pin = strippedPin ? strippedPin.padStart(10, '0') : pin;
+        const pinVariants = new Set<string>();
+        if (pin) pinVariants.add(pin);
+        if (strippedPin) {
+          pinVariants.add(strippedPin);
+          for (let len = 1; len <= 10; len++) {
+            pinVariants.add(strippedPin.padStart(len, '0'));
+          }
+        }
+        const pinArray = Array.from(pinVariants);
         
         // Find Customer
         const customer = await prisma.customer.findFirst({
           where: { 
             gymId: existingDevice.gymId,
             OR: [
-              { nfcCardId: pin },
-              { nfcCardId: strippedPin },
-              { nfcCardId: padded10Pin },
-              { nfcCardId2: pin },
-              { nfcCardId2: strippedPin },
-              { nfcCardId2: padded10Pin },
-              { fingerprintId: pin },
-              { fingerprintId: strippedPin },
-              { memberId: pin },
-              { memberId: strippedPin },
-              { memberId: `M-${pin}` },
-              { memberId: `M-${strippedPin}` }
+              { nfcCardId: { in: pinArray } },
+              { nfcCardId2: { in: pinArray } },
+              { fingerprintId: { in: pinArray } },
+              { memberId: { in: pinArray } },
+              ...pinArray.map(p => ({ memberId: `M-${p}` }))
             ]
           }
         });
@@ -166,11 +179,8 @@ export async function POST(req: Request) {
           where: { 
             gymId: existingDevice.gymId,
             OR: [
-              { nfcCardId: pin },
-              { nfcCardId: strippedPin },
-              { nfcCardId: padded10Pin },
-              { fingerprintId: pin },
-              { fingerprintId: strippedPin }
+              { nfcCardId: { in: pinArray } },
+              { fingerprintId: { in: pinArray } }
             ]
           }
         });

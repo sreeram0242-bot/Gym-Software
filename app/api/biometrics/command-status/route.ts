@@ -27,12 +27,18 @@ export async function GET(req: Request) {
 
     // Fallback: If no commandId is provided, check if any recent ENROLL_FP command for this PIN succeeded
     if (!commandId && pin) {
+      const cleanPin = pin.replace(/\D/g, '');
+      const trimmedPin = cleanPin.replace(/^0+/, '') || cleanPin;
       const pinCmd = await prisma.biometricCommand.findFirst({
         where: {
           device: { gymId },
-          // Both conditions must match — use AND to avoid duplicate key TS error
           AND: [
-            { commandString: { contains: `PIN=${pin}` } },
+            {
+              OR: [
+                { commandString: { contains: `PIN=${cleanPin}` } },
+                { commandString: { contains: `PIN=${trimmedPin}` } }
+              ]
+            },
             { commandString: { contains: 'ENROLL_FP' } },
           ],
           status: { in: ['SUCCESS', 'COMPLETED'] },
@@ -58,11 +64,17 @@ export async function GET(req: Request) {
     // If polling specific command didn't mark success yet, check if any recent ENROLL_FP for this PIN succeeded
     if (isEnrollFp && !isSuccess && pin) {
       const cleanPin = pin.replace(/\D/g, '');
+      const trimmedPin = cleanPin.replace(/^0+/, '') || cleanPin;
       const pinSuccessCmd = await prisma.biometricCommand.findFirst({
         where: {
           device: { gymId },
           AND: [
-            { commandString: { contains: `PIN=${cleanPin}` } },
+            {
+              OR: [
+                { commandString: { contains: `PIN=${cleanPin}` } },
+                { commandString: { contains: `PIN=${trimmedPin}` } }
+              ]
+            },
             { commandString: { contains: 'ENROLL_FP' } },
           ],
           status: { in: ['SUCCESS', 'COMPLETED'] },

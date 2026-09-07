@@ -912,7 +912,14 @@ export default function SettingsPage() {
                         enabled={attendanceWallMountEnabled} 
                         label="ZKTeco K40 Pro (Wall Terminal)" 
                         desc="Members scan their fingerprint/card on a wall-mounted ADMS terminal" 
-                        onChange={async (v) => { setAttendanceWallMountEnabled(v); await saveSetting({ attendanceWallMountEnabled: v }); }} 
+                        onChange={async (v) => {
+                          if (v && !deviceSerialNumber.trim()) {
+                            showError('Please enter the Cloud ADMS Serial Number before enabling the wall-mount terminal.');
+                            return;
+                          }
+                          setAttendanceWallMountEnabled(v);
+                          await saveSetting({ attendanceWallMountEnabled: v });
+                        }} 
                       />
                     </div>
                   </div>

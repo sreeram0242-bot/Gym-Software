@@ -274,6 +274,24 @@ export async function POST(req: Request) {
   // 3. Handle Fingerprint Enrollment Data
   if (cmdId === "RTEnrollDataAction" && jsonData) {
     console.log(`[BIOMETRIC] Fingerprint enrolled for User ${jsonData.user_id}`);
+    if (jsonData.user_id) {
+      const uPin = String(jsonData.user_id);
+      const stripped = uPin.replace(/^0+/, '') || uPin;
+      const dev = await prisma.biometricDevice.findFirst({ where: { serialNumber: devId! } });
+      if (dev) {
+        await prisma.biometricCommand.updateMany({
+          where: {
+            deviceId: dev.id,
+            OR: [
+              { commandString: { contains: `PIN=${uPin}` } },
+              { commandString: { contains: `PIN=${stripped}` } }
+            ],
+            status: { in: ['SENT', 'PENDING'] }
+          },
+          data: { status: 'SUCCESS', completedAt: new Date() }
+        });
+      }
+    }
     const res = "result=OK";
     return new NextResponse(res, { status: 200, headers: { 'Content-Type': 'text/plain', 'Connection': 'close', 'Content-Length': res.length.toString() } });
   }

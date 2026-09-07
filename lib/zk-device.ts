@@ -1,6 +1,6 @@
 // Helper functions for direct communication with ZKTeco Biometric Device over TCP Port 4370
 
-const DEFAULT_DEVICE_IP = process.env.ZK_DEVICE_IP || '192.168.137.188';
+const DEFAULT_DEVICE_IP = process.env.ZK_DEVICE_IP || '';
 const DEFAULT_DEVICE_PORT = parseInt(process.env.ZK_DEVICE_PORT || '4370', 10);
 
 /**
@@ -8,6 +8,7 @@ const DEFAULT_DEVICE_PORT = parseInt(process.env.ZK_DEVICE_PORT || '4370', 10);
  */
 export async function writeCardToZkDevice(pin: string, cardNo: number, userName: string = '', deviceIp?: string) {
   const ip = deviceIp || DEFAULT_DEVICE_IP;
+  if (!ip) return { success: false, error: 'No device IP configured' };
   try {
     const ZKLib = require('node-zklib');
     const zk = new ZKLib(ip, DEFAULT_DEVICE_PORT, 5000, 4000);
@@ -52,6 +53,7 @@ export async function writeCardToZkDevice(pin: string, cardNo: number, userName:
  */
 export async function deleteUserFromZkDevice(pin: string, deviceIp?: string) {
   const ip = deviceIp || DEFAULT_DEVICE_IP;
+  if (!ip) return { success: false, error: 'No device IP configured' };
   try {
     const ZKLib = require('node-zklib');
     const zk = new ZKLib(ip, DEFAULT_DEVICE_PORT, 5000, 4000);
@@ -68,15 +70,18 @@ export async function deleteUserFromZkDevice(pin: string, deviceIp?: string) {
       // CMD_DELETE_USER = 18 deletes user profile
       const buf = Buffer.alloc(2);
       buf.writeUInt16LE(targetUser.uid, 0);
+
       try {
-        await zk.executeCmd(19, buf); // 19 = CMD_DELETE_USERTEMP
-      } catch (e) { /* ignore if not supported by older fw */ }
-      await zk.executeCmd(18, buf);   // 18 = CMD_DELETE_USER
-      // CMD_REFRESHDATA = 1013
-      await zk.executeCmd(1013, '');
-      console.log(`[ZK_DEVICE] Successfully deleted user & templates for PIN ${pin} (UID ${targetUser.uid}) from device ${ip}`);
+        await zk.executeCmd(19, buf);
+      } catch (e) {
+        console.warn(`[ZK_DEVICE] CMD_DELETE_USERTEMP (19) failed, trying CMD_DELETE_USER (18)...`);
+      }
+
+      await zk.executeCmd(18, buf);
+      await zk.executeCmd(1013, ''); // CMD_REFRESHDATA
+      console.log(`[ZK_DEVICE] Successfully deleted user PIN ${pin} (UID ${targetUser.uid}) from ${ip}`);
     } else {
-      console.log(`[ZK_DEVICE] PIN ${pin} not found on device ${ip} — nothing to delete`);
+      console.log(`[ZK_DEVICE] User PIN ${pin} not found on ${ip} (already removed)`);
     }
 
     await zk.disconnect();
@@ -93,6 +98,7 @@ export async function deleteUserFromZkDevice(pin: string, deviceIp?: string) {
  */
 export async function verifyUserExistsOnZkDevice(pin: string, deviceIp?: string): Promise<boolean> {
   const ip = deviceIp || DEFAULT_DEVICE_IP;
+  if (!ip) return false;
   try {
     const ZKLib = require('node-zklib');
     const zk = new ZKLib(ip, DEFAULT_DEVICE_PORT, 5000, 4000);

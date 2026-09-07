@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     if (isCard) {
       try {
         const gymSettings = await prisma.gymSettings.findFirst({ where: { gymId } });
-        const ip = gymSettings?.deviceIpAddress || process.env.ZK_DEVICE_IP || '192.168.137.188';
+        const ip = gymSettings?.deviceIpAddress || process.env.ZK_DEVICE_IP;
         const cardInt = parseInt(cleanCard, 10);
         if (ip && !isNaN(cardInt) && cardInt > 0) {
           const ZKLib = require('node-zklib');

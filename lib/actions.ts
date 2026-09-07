@@ -479,14 +479,25 @@ export async function addCustomer(data: any) {
   const memberId = data.memberId || ('M-' + Math.floor(1000 + Math.random() * 9000).toString());
 
   if (data.fingerprintId) {
+    const fpStr = String(data.fingerprintId).trim();
+    const strippedFp = fpStr.replace(/^0+/, '') || fpStr;
+    const fpVariants = Array.from(new Set([
+      fpStr,
+      strippedFp,
+      strippedFp.padStart(2, '0'),
+      strippedFp.padStart(3, '0'),
+      strippedFp.padStart(4, '0'),
+      strippedFp.padStart(5, '0')
+    ])).filter(Boolean);
+
     const existing = await prisma.customer.findFirst({
-      where: { fingerprintId: data.fingerprintId, gymId: data.gymId }
+      where: { fingerprintId: { in: fpVariants }, gymId: data.gymId }
     });
     if (existing) {
       throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by ${existing.name}`);
     }
     const existingStaff = await prisma.staff.findFirst({
-      where: { fingerprintId: data.fingerprintId, gymId: data.gymId }
+      where: { fingerprintId: { in: fpVariants }, gymId: data.gymId }
     });
     if (existingStaff) {
       throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by Staff Member: ${existingStaff.name}`);
@@ -678,7 +689,13 @@ export async function findCustomerByNFC(gymId: string, nfcId: string) {
 
 export async function findCustomerByFingerprint(gymId: string, fingerprintId: string) {
   const customers = await getCustomers(gymId);
-  return customers.find((c: any) => c.fingerprintId && c.fingerprintId.toLowerCase() === fingerprintId.toLowerCase());
+  const clean = String(fingerprintId).trim().toLowerCase();
+  const stripped = clean.replace(/^0+/, '');
+  return customers.find((c: any) => {
+    if (!c.fingerprintId) return false;
+    const cf = String(c.fingerprintId).trim().toLowerCase();
+    return cf === clean || (stripped && cf.replace(/^0+/, '') === stripped);
+  });
 }
 
 export async function findCustomerByMantra(gymId: string, mantraFpData: string) {
@@ -698,7 +715,13 @@ export async function findStaffByNFC(gymId: string, nfcId: string) {
 
 export async function findStaffByFingerprint(gymId: string, fingerprintId: string) {
   const staffs = await getStaffs(gymId);
-  return staffs.find((s: any) => s.fingerprintId && s.fingerprintId.toLowerCase() === fingerprintId.toLowerCase());
+  const clean = String(fingerprintId).trim().toLowerCase();
+  const stripped = clean.replace(/^0+/, '');
+  return staffs.find((s: any) => {
+    if (!s.fingerprintId) return false;
+    const sf = String(s.fingerprintId).trim().toLowerCase();
+    return sf === clean || (stripped && sf.replace(/^0+/, '') === stripped);
+  });
 }
 
 export async function findStaffByMantra(gymId: string, mantraFpData: string) {
@@ -711,14 +734,25 @@ export async function updateCustomer(id: string, data: any) {
   if (!callerGymId) throw new Error("Unauthorized");
 
   if (data.fingerprintId) {
+    const fpStr = String(data.fingerprintId).trim();
+    const strippedFp = fpStr.replace(/^0+/, '') || fpStr;
+    const fpVariants = Array.from(new Set([
+      fpStr,
+      strippedFp,
+      strippedFp.padStart(2, '0'),
+      strippedFp.padStart(3, '0'),
+      strippedFp.padStart(4, '0'),
+      strippedFp.padStart(5, '0')
+    ])).filter(Boolean);
+
     const existing = await prisma.customer.findFirst({
-      where: { fingerprintId: data.fingerprintId, gymId: callerGymId, id: { not: id } }
+      where: { fingerprintId: { in: fpVariants }, gymId: callerGymId, id: { not: id } }
     });
     if (existing) {
       throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by ${existing.name}`);
     }
     const existingStaff = await prisma.staff.findFirst({
-      where: { fingerprintId: data.fingerprintId, gymId: callerGymId }
+      where: { fingerprintId: { in: fpVariants }, gymId: callerGymId }
     });
     if (existingStaff) {
       throw new Error(`ZKTeco ID ${data.fingerprintId} is already in use by Staff Member: ${existingStaff.name}`);
@@ -827,6 +861,48 @@ export async function toggleCustomerWaStatus(id: string, waActive: boolean) {
   }
 }
 
+// Helper to delete user and fingerprint from physical biometric devices (ADMS + TCP)
+async function queueBiometricUserDeletion(gymId: string, pin: string) {
+  if (!gymId || !pin) return;
+  const cleanPin = String(pin).trim();
+  const numericPin = cleanPin.replace(/\D/g, '');
+  const trimmedPin = numericPin.replace(/^0+/, '') || numericPin;
+  const pinsToDelete = Array.from(new Set([cleanPin, trimmedPin])).filter(Boolean);
+
+  try {
+    const devices = await prisma.biometricDevice.findMany({
+      where: { gymId }
+    });
+    for (const device of devices) {
+      for (const p of pinsToDelete) {
+        await prisma.biometricCommand.create({
+          data: {
+            deviceId: device.id,
+            commandString: `DATA DELETE USERINFO PIN=${p}`,
+            status: 'PENDING'
+          }
+        });
+      }
+    }
+    console.log(`[Biometric Deletion] Queued ADMS deletion for PINs [${pinsToDelete.join(', ')}] across ${devices.length} device(s)`);
+  } catch (e) {
+    console.error('[queueBiometricUserDeletion] Error queuing ADMS commands:', e);
+  }
+
+  // Direct TCP delete only if gym has an explicit local device IP configured
+  try {
+    const gymSettings = await prisma.gymSettings.findFirst({ where: { gymId } });
+    if (gymSettings?.deviceIpAddress) {
+      deleteUserFromZkDevice(cleanPin, gymSettings.deviceIpAddress).catch(() => {});
+      if (trimmedPin !== cleanPin) {
+        deleteUserFromZkDevice(trimmedPin, gymSettings.deviceIpAddress).catch(() => {});
+      }
+    }
+  } catch (e) {
+    console.error('[queueBiometricUserDeletion] Error direct TCP delete:', e);
+  }
+}
+
 export async function deleteCustomer(id: string) {
   const callerGymId = verifyTenantAccess();
   if (!callerGymId) throw new Error("Unauthorized");
@@ -837,28 +913,7 @@ export async function deleteCustomer(id: string) {
     });
 
     if (cust?.fingerprintId) {
-      // 1. Delete user & biometrics from physical ZKTeco device via TCP port 4370
-      try {
-        await deleteUserFromZkDevice(cust.fingerprintId);
-      } catch (e) {
-        console.error('Device direct delete error:', e);
-      }
-
-      // 2. Also enqueue ADMS delete command as secondary backup
-      try {
-        const device = await prisma.biometricDevice.findFirst({
-          where: { gymId: callerGymId, status: 'online' }
-        });
-        if (device) {
-          await prisma.biometricCommand.create({
-            data: {
-              deviceId: device.id,
-              commandString: `DATA DELETE USER PIN=${cust.fingerprintId}`,
-              status: 'PENDING'
-            }
-          });
-        }
-      } catch (e) {}
+      await queueBiometricUserDeletion(callerGymId, cust.fingerprintId);
     }
 
     await prisma.customer.update({
@@ -2010,28 +2065,7 @@ export async function deleteStaff(id: string) {
     if (!current || current.gymId !== callerGymId) throw new Error('Staff member not found');
 
     if (current.fingerprintId) {
-      // 1. Delete user & biometrics from physical ZKTeco device via TCP port 4370
-      try {
-        await deleteUserFromZkDevice(current.fingerprintId);
-      } catch (e) {
-        console.error('Device direct delete error:', e);
-      }
-
-      // 2. Also enqueue ADMS delete command as secondary backup
-      try {
-        const device = await prisma.biometricDevice.findFirst({
-          where: { gymId: callerGymId, status: 'online' }
-        });
-        if (device) {
-          await prisma.biometricCommand.create({
-            data: {
-              deviceId: device.id,
-              commandString: `DATA DELETE USER PIN=${current.fingerprintId}`,
-              status: 'PENDING'
-            }
-          });
-        }
-      } catch (e) {}
+      await queueBiometricUserDeletion(callerGymId, current.fingerprintId);
     }
 
     await prisma.staff.update({

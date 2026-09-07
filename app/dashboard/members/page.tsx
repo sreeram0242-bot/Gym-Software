@@ -101,7 +101,14 @@ export default function MemberManagementPage() {
 
   const duplicateMember = useMemo(() => {
     if (!fingerprintId.trim()) return null;
-    return customers.find(c => c.fingerprintId && String(c.fingerprintId).trim() === fingerprintId.trim() && c.id !== editingMemberId);
+    const clean = fingerprintId.trim();
+    const stripped = clean.replace(/^0+/, '') || clean;
+    return customers.find(c => {
+      if (!c.fingerprintId || c.id === editingMemberId) return false;
+      const cf = String(c.fingerprintId).trim();
+      const cfStripped = cf.replace(/^0+/, '') || cf;
+      return cf === clean || cfStripped === stripped;
+    });
   }, [fingerprintId, customers, editingMemberId]);
 
   // Helper to match card strings with or without leading zeros
@@ -139,9 +146,10 @@ export default function MemberManagementPage() {
     const existingIds = customers
       .map(c => parseInt(c.fingerprintId, 10))
       .filter(n => !isNaN(n) && n > 0);
-    if (existingIds.length === 0) return '101';
-    return String(Math.max(...existingIds) + 1);
-  }, [customers]);
+    if (existingIds.length === 0) return nextAvailableId || '001';
+    const nextNum = Math.max(...existingIds) + 1;
+    return String(nextNum).padStart(3, '0');
+  }, [customers, nextAvailableId]);
 
   // Collect Due Modal State
   const [showCollectDueModal, setShowCollectDueModal] = useState(false);
