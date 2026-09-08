@@ -947,7 +947,8 @@ export default function MemberManagementPage() {
     return parseFloat(avg.toFixed(1));
   };
 
-  const fpWsRef = useRef<WebSocket | null>(null);
+  const fpWsRef = React.useRef<WebSocket | null>(null);
+
 
   const handleFingerprintScan = () => {
     if (fpScanning) {
