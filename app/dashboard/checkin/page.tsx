@@ -58,11 +58,26 @@ export default function CheckInTerminal() {
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const nfcProcessingRef = useRef<boolean>(false);
 
-  // Fingerprint Bridge WebSocket State
+  // Fingerprint Bridge Global State
   const [fpConnected, setFpConnected] = useState<boolean>(false);
   const [fpStatus, setFpStatus] = useState<string>('Connecting to fingerprint agent...');
-  const fpWsRef = useRef<WebSocket | null>(null);
-  const fpRetryCountRef = useRef<number>(0);
+
+  useEffect(() => {
+    // Read current global status
+    if (typeof window !== 'undefined' && (window as any).__fpState) {
+      setFpConnected((window as any).__fpState.connected);
+      setFpStatus((window as any).__fpState.status);
+    }
+    
+    const handleFpStatus = (e: any) => {
+      setFpConnected(e.detail.connected);
+      setFpStatus(e.detail.status);
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('fp_status', handleFpStatus);
+      return () => window.removeEventListener('fp_status', handleFpStatus);
+    }
+  }, []);
 
   // Manual search state
   const [manualSearch, setManualSearch] = useState('');
@@ -259,84 +274,7 @@ export default function CheckInTerminal() {
     });
   };
 
-  // Connect to local MFS100 WebSocket bridge agent
-  const connectFingerprintBridge = (gymId: string, port: number) => {
-    try {
-      if (fpWsRef.current) {
-        fpWsRef.current.close();
-        fpWsRef.current = null;
-      }
-      const ws = new WebSocket(`ws://localhost:${port}`);
-      fpWsRef.current = ws;
-
-      ws.onopen = () => {
-        fpRetryCountRef.current = 0;
-        setFpConnected(true);
-        setFpStatus('Fingerprint scanner ready — place finger on sensor');
-        // Tell the native agent to start continuous 1:N checking mode
-        ws.send(JSON.stringify({ action: 'start_continuous', gymId }));
-      };
-
-      ws.onmessage = async (event: MessageEvent) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'scan' && data.fingerprintId) {
-            const matched = await findCustomerByMantra(gymId, data.fingerprintId);
-            if (matched) {
-              await handleCheckInToggle(matched, gymId);
-              setFpStatus(`Member Scan: ${matched.name}`);
-              setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 30000);
-            } else {
-              const matchedStaff = await findStaffByMantra(gymId, data.fingerprintId);
-              if (matchedStaff) {
-                const staffRes = await toggleStaffCheckIn(matchedStaff.id);
-                const isPunchIn = staffRes?.action === 'checkin';
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('staff_punch_event', {
-                    detail: {
-                      staffName: matchedStaff.name,
-                      staffRole: matchedStaff.role || 'Staff',
-                      action: staffRes?.action,
-                      record: staffRes?.record,
-                      durationMinutes: staffRes?.record?.durationMinutes
-                    }
-                  }));
-                }
-                setFpStatus(`Staff ${isPunchIn ? 'Punch IN' : 'Punch OUT'}: ${matchedStaff.name}`);
-                await mutate(['checkin', gymId]);
-                setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 30000);
-              } else {
-                setFpStatus('Fingerprint not registered. Try again or check profile.');
-                setTimeout(() => setFpStatus('Fingerprint scanner ready — place finger on sensor'), 30000);
-              }
-            }
-          }
-        } catch (e) {
-          console.error('FP message parse error', e);
-        }
-      };
-
-      ws.onerror = () => {
-        setFpConnected(false);
-        setFpStatus('Cannot connect to fingerprint bridge. Is Python agent running?');
-      };
-
-      ws.onclose = () => {
-        setFpConnected(false);
-        fpWsRef.current = null;
-        if (fpRetryCountRef.current < 3) {
-          fpRetryCountRef.current += 1;
-          setFpStatus(`Fingerprint agent offline. Retrying (${fpRetryCountRef.current}/3)...`);
-          setTimeout(() => connectFingerprintBridge(gymId, port), 5000);
-        } else {
-          setFpStatus('Fingerprint bridge offline. Click Reconnect when ready.');
-        }
-      };
-    } catch (e) {
-      setFpConnected(false);
-      setFpStatus('WebSocket unreachable.');
-    }
-  };
+  // Fingerprint bridge connection is now globally managed in layout.tsx
 
   // Start Hardware Web NFC Scan (for devices with Web NFC support)
   const startHardwareNFCScan = async () => {
@@ -607,8 +545,7 @@ export default function CheckInTerminal() {
                   {!fpConnected && (
                     <button
                       onClick={() => {
-                        fpRetryCountRef.current = 0;
-                        connectFingerprintBridge(gymId, fpPort);
+                        window.dispatchEvent(new CustomEvent('fp_reconnect_request'));
                       }}
                       className="px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10px] font-bold transition-colors shadow-xs"
                     >

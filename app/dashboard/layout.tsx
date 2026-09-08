@@ -222,50 +222,121 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       };
       const punchInterval = setInterval(() => checkRecentPunch(activeGymId), 3000);
 
-      // Mantra MFS100 Live Punch Listener
+      // Global Mantra MFS100 Live Punch Listener
       let mantraWs: WebSocket | null = null;
-      try {
-        const settings = await getGymSettings(activeGymId);
-        const fpPort = settings?.fingerprintAgentPort || 8765;
-        if (settings?.attendanceMantraEnabled) {
-          mantraWs = new WebSocket(`ws://localhost:${fpPort}`);
-          mantraWs.onopen = () => {
-            if (mantraWs?.readyState === WebSocket.OPEN) {
-              mantraWs.send(JSON.stringify({ action: 'init', gymId: activeGymId }));
-            }
-          };
-          mantraWs.onmessage = async (event) => {
-            try {
-              const data = JSON.parse(event.data);
-              if (data.type === 'scan_match' && data.customerId) {
-                const res = await toggleCheckIn(data.customerId);
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('member_punch_event', {
-                    detail: {
-                      customerName: res.record?.customerName || 'Member',
-                      customerProfilePic: res.customerProfilePic,
-                      action: res.action,
-                      record: res.record
-                    }
-                  }));
-                }
-              } else if (data.type === 'scan_match_staff' && data.staffId) {
-                const staffRes = await toggleStaffCheckIn(data.staffId);
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('staff_punch_event', {
-                    detail: {
-                      staffName: staffRes?.record?.staffName || 'Staff',
-                      staffRole: 'Staff',
-                      action: staffRes?.action,
-                      durationMinutes: staffRes?.record?.durationMinutes
-                    }
-                  }));
-                }
+      let mantraReconnectTimer: NodeJS.Timeout | null = null;
+
+      const connectMantraGlobal = async () => {
+        const dispatchFpStatus = (connected: boolean, status: string) => {
+          if (typeof window !== 'undefined') {
+            (window as any).__fpState = { connected, status };
+            window.dispatchEvent(new CustomEvent('fp_status', { detail: { connected, status } }));
+          }
+        };
+
+        try {
+          const settings = await getGymSettings(activeGymId);
+          const fpPort = settings?.fingerprintAgentPort || 8765;
+          if (settings?.attendanceMantraEnabled) {
+            mantraWs = new WebSocket(`ws://localhost:${fpPort}`);
+            
+            dispatchFpStatus(false, 'Connecting to fingerprint agent...');
+            
+            mantraWs.onopen = () => {
+              if (mantraWs?.readyState === WebSocket.OPEN) {
+                // Force reset the C# agent's static state machine.
+                // If a previous connection died abruptly, the agent might still have
+                // isContinuousMode = true but a broken websocket. Sending stop resets it.
+                mantraWs.send(JSON.stringify({ action: 'stop_continuous', gymId: activeGymId }));
+
+                // Wait 1.5s before starting again to ensure the reset processes
+                setTimeout(() => {
+                  if (mantraWs?.readyState === WebSocket.OPEN) {
+                    mantraWs.send(JSON.stringify({ action: 'start_continuous', gymId: activeGymId }));
+                    dispatchFpStatus(true, 'Fingerprint scanner ready — place finger on sensor');
+                  }
+                }, 1500);
               }
-            } catch (err) {}
-          };
+            };
+
+            mantraWs.onmessage = async (event) => {
+              try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'scan' && data.fingerprintId && data.fingerprintId !== 'UNKNOWN') {
+                  const { findCustomerByMantra, findStaffByMantra, toggleCheckIn, toggleStaffCheckIn } = await import('@/lib/actions');
+                  const matched = await findCustomerByMantra(activeGymId, data.fingerprintId);
+                  
+                  if (matched) {
+                    const res = await toggleCheckIn(matched.id);
+                    if (typeof window !== 'undefined') {
+                      dispatchFpStatus(true, `Member Scan: ${matched.name}`);
+                      window.dispatchEvent(new CustomEvent('member_punch_event', {
+                        detail: {
+                          customerName: res.record?.customerName || 'Member',
+                          customerProfilePic: res.customerProfilePic,
+                          action: res.action,
+                          record: res.record
+                        }
+                      }));
+                      mutate(['checkin', activeGymId]);
+                      mutate(['overview', activeGymId]);
+                      setTimeout(() => dispatchFpStatus(true, 'Fingerprint scanner ready — place finger on sensor'), 5000);
+                    }
+                  } else {
+                    const matchedStaff = await findStaffByMantra(activeGymId, data.fingerprintId);
+                    if (matchedStaff) {
+                      const staffRes = await toggleStaffCheckIn(matchedStaff.id);
+                      if (typeof window !== 'undefined') {
+                        dispatchFpStatus(true, `Staff Scan: ${matchedStaff.name}`);
+                        window.dispatchEvent(new CustomEvent('staff_punch_event', {
+                          detail: {
+                            staffName: staffRes?.record?.staffName || 'Staff',
+                            staffRole: matchedStaff.role || 'Staff',
+                            action: staffRes?.action,
+                            durationMinutes: staffRes?.record?.durationMinutes
+                          }
+                        }));
+                        mutate(['checkin', activeGymId]);
+                        mutate(['overview', activeGymId]);
+                        setTimeout(() => dispatchFpStatus(true, 'Fingerprint scanner ready — place finger on sensor'), 5000);
+                      }
+                    } else {
+                       if (typeof window !== 'undefined') {
+                          dispatchFpStatus(true, 'Fingerprint not registered. Try again or check profile.');
+                          setTimeout(() => dispatchFpStatus(true, 'Fingerprint scanner ready — place finger on sensor'), 5000);
+                       }
+                    }
+                  }
+                }
+              } catch (err) {}
+            };
+
+            mantraWs.onclose = () => {
+              dispatchFpStatus(false, 'Scanner offline. Retrying in 5s...');
+              mantraReconnectTimer = setTimeout(connectMantraGlobal, 5000);
+            };
+
+            mantraWs.onerror = () => {
+               dispatchFpStatus(false, 'Cannot connect to fingerprint bridge.');
+            };
+          }
+        } catch (e) {}
+      };
+
+      const handleFpReconnect = () => {
+        if (mantraWs) {
+          mantraWs.onclose = null; // Prevent the auto-reconnect timer from firing due to manual close
+          mantraWs.close();
         }
-      } catch (e) {}
+        if (mantraReconnectTimer) clearTimeout(mantraReconnectTimer);
+        connectMantraGlobal();
+      };
+
+      if (typeof window !== 'undefined') {
+        window.addEventListener('fp_reconnect_request', handleFpReconnect as EventListener);
+      }
+
+      connectMantraGlobal();
 
       // Automated Daily Reminders (Due, Overdue, Absentee)
       const runDailyReminders = async (id: string) => {
@@ -481,8 +552,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         window.removeEventListener('global-toast', handleGlobalToast);
         window.removeEventListener('staff_punch_event', handleStaffPunchEvent);
         window.removeEventListener('member_punch_event', handleMemberPunchEvent);
+        window.removeEventListener('fp_reconnect_request', handleFpReconnect as EventListener);
         if (notificationTimeout) clearTimeout(notificationTimeout);
         if (mantraWs) mantraWs.close();
+        if (mantraReconnectTimer) clearTimeout(mantraReconnectTimer);
         clearInterval(waInterval);
         clearInterval(punchInterval);
         if (gymStatusInterval) clearInterval(gymStatusInterval);
