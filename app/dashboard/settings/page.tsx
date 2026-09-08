@@ -235,6 +235,7 @@ export default function SettingsPage() {
   const [attendanceNfcEnabled, setAttendanceNfcEnabled] = useState(true);
   const [attendanceMantraEnabled, setAttendanceMantraEnabled] = useState(false);
   const [attendanceWallMountEnabled, setAttendanceWallMountEnabled] = useState(false);
+  const [playPunchSounds, setPlayPunchSounds] = useState(false);
   const [fpPort, setFpPort] = useState<number | string>(8765);
   const [deviceIpAddress, setDeviceIpAddress] = useState('');
   const [deviceSerialNumber, setDeviceSerialNumber] = useState('');
@@ -1168,6 +1169,15 @@ export default function SettingsPage() {
                         onChange={async (v) => {
                           setAttendanceWallMountEnabled(v);
                           await saveSetting({ attendanceWallMountEnabled: v });
+                        }} 
+                      />
+                      <Toggle 
+                        enabled={playPunchSounds} 
+                        label="Play Attendance Sounds" 
+                        desc="Play a sound on this device when a member or staff checks in/out" 
+                        onChange={(v) => {
+                          setPlayPunchSounds(v);
+                          localStorage.setItem('playPunchSounds', v ? 'true' : 'false');
                         }} 
                       />
                     </div>

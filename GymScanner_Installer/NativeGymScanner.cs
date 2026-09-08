@@ -17,6 +17,7 @@ namespace GymScanner
         static bool isContinuousMode = false;
         static string currentGymId = "";
         static List<StoredTemplate> dbTemplates = new List<StoredTemplate>();
+        static readonly object scannerLock = new object();
         
         class StoredTemplate {
             public string Id;
@@ -36,7 +37,10 @@ namespace GymScanner
             Console.WriteLine("=========================================");
 
             mfs100 = new MFS100();
-            int ret = mfs100.Init();
+            int ret;
+            lock (scannerLock) {
+                ret = mfs100.Init();
+            }
             if (ret != 0)
             {
                 Console.WriteLine("[!] Failed to initialize MFS100 device. Error Code: " + ret);
@@ -107,21 +111,27 @@ namespace GymScanner
                         {
                             isContinuousMode = false; // Stop continuous if manual scan requested
                             Console.WriteLine("[*] Manual scan requested by dashboard (Registration)");
-                            
-                            if (!mfs100.IsConnected())
-                            {
-                                int initRet = mfs100.Init();
-                                if (initRet != 0)
+                            int ret;
+                            FingerData fingerData = new FingerData();
+                            int initRet = 0;
+                            lock (scannerLock) {
+                                if (!mfs100.IsConnected())
                                 {
-                                    await SendError(webSocket, "Scanner not connected.");
-                                    continue;
+                                    initRet = mfs100.Init();
+                                }
+                                if (initRet == 0) {
+                                    Console.WriteLine("[*] Please place finger on scanner...");
+                                    ret = mfs100.AutoCapture(ref fingerData, 10000, false, true);
+                                } else {
+                                    ret = -1;
                                 }
                             }
-
-                            FingerData fingerData = new FingerData();
-                            Console.WriteLine("[*] Please place finger on scanner...");
                             
-                            int ret = mfs100.AutoCapture(ref fingerData, 10000, false, true);
+                            if (initRet != 0)
+                            {
+                                await SendError(webSocket, "Scanner not connected.");
+                                continue;
+                            }
                             
                             if (ret == 0)
                             {
@@ -179,7 +189,7 @@ namespace GymScanner
                 {
                     string json = client.DownloadString("http://localhost:3000/api/biometrics/sync?gymId=" + gymId);
                     
-                    dbTemplates.Clear();
+                    var newTemplates = new List<StoredTemplate>();
                     // Basic regex parsing for {"id":"...", "name":"...", "template":"..."}
                     // Pattern allows for properties in any order roughly
                     MatchCollection matches = Regex.Matches(json, "\"id\":\"([^\"]+)\".*?\"template\":\"([^\"]+)\"");
@@ -189,9 +199,10 @@ namespace GymScanner
                             string id = m.Groups[1].Value;
                             string tpl = m.Groups[2].Value;
                             byte[] bytes = Convert.FromBase64String(tpl);
-                            dbTemplates.Add(new StoredTemplate { Id = id, Base64Data = tpl, Bytes = bytes });
+                            newTemplates.Add(new StoredTemplate { Id = id, Base64Data = tpl, Bytes = bytes });
                         } catch { }
                     }
+                    dbTemplates = newTemplates;
                     Console.WriteLine(string.Format("[*] Downloaded {0} member fingerprints.", dbTemplates.Count));
                 }
             } 
@@ -207,14 +218,16 @@ namespace GymScanner
             {
                 if (isContinuousMode && webSocket.State == WebSocketState.Open)
                 {
-                    if (!mfs100.IsConnected())
-                    {
-                        mfs100.Init();
-                    }
-
                     FingerData fingerData = new FingerData();
-                    // Short timeout (1000ms) for continuous polling so it doesn't block forever
-                    int ret = mfs100.AutoCapture(ref fingerData, 1000, false, false);
+                    int ret;
+                    lock (scannerLock) {
+                        if (!mfs100.IsConnected())
+                        {
+                            mfs100.Init();
+                        }
+                        // Longer timeout (3000ms) for continuous polling so it is almost always listening
+                        ret = mfs100.AutoCapture(ref fingerData, 3000, false, false);
+                    }
                     
                     if (ret == 0 && fingerData.ISOTemplate != null)
                     {
@@ -222,14 +235,19 @@ namespace GymScanner
                         int bestScore = 0;
                         StoredTemplate bestMatch = null;
                         
-                        foreach (var st in dbTemplates)
+                        // Capture reference to current list to avoid mutation issues
+                        var currentTemplates = dbTemplates;
+                        
+                        foreach (var st in currentTemplates)
                         {
                             int score = 0;
-                            int matchRet = mfs100.MatchISO(fingerData.ISOTemplate, st.Bytes, ref score);
-                            if (matchRet == 0 && score > bestScore)
-                            {
-                                bestScore = score;
-                                bestMatch = st;
+                            lock (scannerLock) {
+                                int matchRet = mfs100.MatchISO(fingerData.ISOTemplate, st.Bytes, ref score);
+                                if (matchRet == 0 && score > bestScore)
+                                {
+                                    bestScore = score;
+                                    bestMatch = st;
+                                }
                             }
                         }
                         
@@ -259,7 +277,7 @@ namespace GymScanner
                     }
                 }
                 
-                await Task.Delay(500, token); // Small delay to prevent CPU hogging
+                await Task.Delay(50, token); // Tiny delay to prevent CPU hogging but keep scanner responsive
             }
         }
 

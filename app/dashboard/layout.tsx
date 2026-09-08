@@ -270,6 +270,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     const res = await toggleCheckIn(matched.id);
                     if (typeof window !== 'undefined') {
                       dispatchFpStatus(true, `Member Scan: ${matched.name}`);
+                      
+                      if (localStorage.getItem('playPunchSounds') === 'true') {
+                        const { playPunchInSound, playPunchOutSound } = await import('@/lib/audio');
+                        if (res.action === 'checkin') playPunchInSound();
+                        else playPunchOutSound();
+                      }
+
                       window.dispatchEvent(new CustomEvent('member_punch_event', {
                         detail: {
                           customerName: res.record?.customerName || 'Member',
@@ -288,6 +295,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       const staffRes = await toggleStaffCheckIn(matchedStaff.id);
                       if (typeof window !== 'undefined') {
                         dispatchFpStatus(true, `Staff Scan: ${matchedStaff.name}`);
+                        
+                        if (localStorage.getItem('playPunchSounds') === 'true') {
+                          const { playPunchInSound, playPunchOutSound } = await import('@/lib/audio');
+                          if (staffRes?.action === 'checkin') playPunchInSound();
+                          else playPunchOutSound();
+                        }
+
                         window.dispatchEvent(new CustomEvent('staff_punch_event', {
                           detail: {
                             staffName: staffRes?.record?.staffName || 'Staff',
