@@ -164,16 +164,7 @@ export default function CheckInTerminal() {
     return () => clearInterval(timer);
   }, []);
 
-  // Listen to global attendance updates (biometric device push, USB reader, etc.) to immediately refresh cards
-  useEffect(() => {
-    const handleUpdate = () => {
-      revalidateCheckin();
-    };
-    window.addEventListener('attendance_updated', handleUpdate);
-    return () => {
-      window.removeEventListener('attendance_updated', handleUpdate);
-    };
-  }, [revalidateCheckin]);
+  // Removed redundant attendance_updated listener. Global mutations are handled by SWR.
 
   // ─── DUAL EXPORT HANDLERS (CSV & PDF) ───
   const exportMemberVisitsCSV = () => {
@@ -390,6 +381,16 @@ export default function CheckInTerminal() {
   const handleCheckInToggle = async (matched: any, gymId: string, isManual: boolean = false) => {
     try {
       const { record, action } = await toggleCheckIn(matched.id, isManual);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('member_punch_event', {
+          detail: {
+            customerName: matched.name,
+            action: action,
+            customerProfilePic: matched.profilePic,
+            record: record
+          }
+        }));
+      }
       await mutate(['checkin', gymId]);
 
       const gymSettings = await getGymSettings(gymId);

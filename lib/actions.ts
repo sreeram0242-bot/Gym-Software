@@ -466,9 +466,12 @@ export async function addCustomer(data: any) {
   if (!authorizedGymId) throw new Error("Unauthorized");
   data.gymId = authorizedGymId;
 
-  const paidAmount = data.paidAmount !== undefined ? Number(data.paidAmount) : Number(data.feeAmount);
-  const pendingBalance = data.pendingBalance !== undefined ? Number(data.pendingBalance) : 0;
+  const feeAmount = data.feeAmount !== undefined ? Number(data.feeAmount) : 0;
+  const paidAmount = data.paidAmount !== undefined ? Number(data.paidAmount) : feeAmount;
   const discountAmount = data.discountAmount !== undefined ? Number(data.discountAmount) : 0;
+  
+  // Enforce server-side pending balance calculation
+  const pendingBalance = Math.max(0, feeAmount - paidAmount - discountAmount);
   const paymentMethod = data.paymentMethod || 'CASH';
   const splitDetails = data.splitDetails ? (typeof data.splitDetails === 'string' ? data.splitDetails : JSON.stringify(data.splitDetails)) : null;
 
@@ -583,6 +586,7 @@ export async function addCustomer(data: any) {
           nfcCardId: data.nfcCardId,
           nfcCardId2: data.nfcCardId2 || null,
           fingerprintId: data.fingerprintId || null,
+          mantraFpData: data.mantraFpData || null,
           planType: data.planType,
           feeAmount: data.feeAmount,
           pendingBalance: pendingBalance,
@@ -956,21 +960,23 @@ export async function deleteCustomer(id: string, gymId?: string) {
     }
 
     try {
-      // Disconnect transactions to preserve income/revenue accounting without foreign key failure
-      await prisma.transaction.updateMany({
-        where: { customerId: id },
-        data: { customerId: null }
-      });
-      await prisma.productSale.updateMany({
-        where: { customerId: id },
-        data: { customerId: null }
-      });
-      await prisma.attendanceRecord.deleteMany({
-        where: { customerId: id }
-      });
-      await prisma.customer.delete({
-        where: { id }
-      });
+      // Use transaction to preserve atomicity and prevent orphaned records
+      await prisma.$transaction([
+        prisma.transaction.updateMany({
+          where: { customerId: id },
+          data: { customerId: null }
+        }),
+        prisma.productSale.updateMany({
+          where: { customerId: id },
+          data: { customerId: null }
+        }),
+        prisma.attendanceRecord.deleteMany({
+          where: { customerId: id }
+        }),
+        prisma.customer.delete({
+          where: { id }
+        })
+      ]);
     } catch (dbErr) {
       console.warn('[deleteCustomer] Hard delete failed, sanitizing soft-delete:', dbErr);
       await prisma.customer.update({
@@ -1218,69 +1224,72 @@ export async function toggleCheckIn(customerId: string, isManual: boolean = fals
     const cutoffHours = gymSettings?.memberCutoffHours || 4;
 
     // ── Debounce Check (Hardware scanners often double-fire) ──
-    const latestRecord = await prisma.attendanceRecord.findFirst({
-      where: { customerId: customer.id },
-      orderBy: { checkInTime: 'desc' }
-    });
-    if (latestRecord) {
-      const msSinceLastPunch = new Date(nowIso).getTime() - new Date(latestRecord.checkInTime).getTime();
-      if (msSinceLastPunch < 5000) {
-        return { record: latestRecord, action: latestRecord.checkOutTime ? 'checkout' : 'checkin' as const, customerProfilePic: customer.profilePic || null };
+    return await prisma.$transaction(async (tx) => {
+      const latestRecord = await tx.attendanceRecord.findFirst({
+        where: { customerId: customer.id },
+        orderBy: { checkInTime: 'desc' }
+      });
+      if (latestRecord) {
+        const msSinceLastPunch = new Date(nowIso).getTime() - new Date(latestRecord.checkInTime).getTime();
+        if (msSinceLastPunch < 5000) {
+          return { record: latestRecord, action: latestRecord.checkOutTime ? 'checkout' : 'checkin' as const, customerProfilePic: customer.profilePic || null };
+        }
       }
-    }
 
-    // Find latest active session without checkout time
-    const activeSession = await prisma.attendanceRecord.findFirst({
-      where: {
-        customerId: customer.id,
-        checkOutTime: null
-      },
-      orderBy: { checkInTime: 'desc' }
-    });
+      // Find latest active session without checkout time
+      const activeSession = await tx.attendanceRecord.findFirst({
+        where: {
+          customerId: customer.id,
+          checkOutTime: null
+        },
+        orderBy: { checkInTime: 'desc' }
+      });
 
-    if (activeSession) {
-      const checkInTime = new Date(activeSession.checkInTime);
-      const checkOutTime = new Date(nowIso);
-      const diffHours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
+      if (activeSession) {
+        const checkInTime = new Date(activeSession.checkInTime);
+        const checkOutTime = new Date(nowIso);
+        const diffHours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
 
-      // If active session is within cutoffHours, treat as normal checkout
-      if (diffHours <= cutoffHours) {
-        const diffMinutes = Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60));
-        const updated = await prisma.attendanceRecord.update({
-          where: { id: activeSession.id },
-          data: {
-            checkOutTime: nowIso,
-            durationMinutes: diffMinutes > 0 ? diffMinutes : 1
-          }
-        });
-        if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
-        return { record: updated, action: 'checkout' as const, customerProfilePic: customer.profilePic || null };
-      } else {
-        // Session exceeded cutoff timer (member forgot to checkout earlier)
-        // Auto-close previous session and start fresh checkin
-        const autoOut = new Date(checkInTime.getTime() + (cutoffHours * 60 * 60 * 1000)).toISOString();
-        await prisma.attendanceRecord.update({
-          where: { id: activeSession.id },
-          data: {
-            checkOutTime: autoOut,
-            durationMinutes: cutoffHours * 60
-          }
-        }).catch(() => {});
+        // If active session is within cutoffHours, treat as normal checkout
+        if (diffHours <= cutoffHours) {
+          const msDiff = checkOutTime.getTime() - checkInTime.getTime();
+          const diffMinutes = Math.max(1, Math.round(msDiff / (1000 * 60)));
+          const updated = await tx.attendanceRecord.update({
+            where: { id: activeSession.id },
+            data: {
+              checkOutTime: nowIso,
+              durationMinutes: diffMinutes
+            }
+          });
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
+          return { record: updated, action: 'checkout' as const, customerProfilePic: customer.profilePic || null };
+        } else {
+          // Session exceeded cutoff timer (member forgot to checkout earlier)
+          // Auto-close previous session and start fresh checkin
+          const autoOut = new Date(checkInTime.getTime() + (cutoffHours * 60 * 60 * 1000)).toISOString();
+          await tx.attendanceRecord.update({
+            where: { id: activeSession.id },
+            data: {
+              checkOutTime: autoOut,
+              durationMinutes: cutoffHours * 60
+            }
+          }).catch(() => {});
+        }
       }
-    }
 
-    const newRecord = await prisma.attendanceRecord.create({
-      data: {
-        gymId: customer.gymId,
-        customerId: customer.id,
-        customerName: customer.name,
-        customerPhone: customer.phone,
-        checkInTime: nowIso,
-        dateStr: todayStr
-      }
+      const newRecord = await tx.attendanceRecord.create({
+        data: {
+          gymId: customer.gymId,
+          customerId: customer.id,
+          customerName: customer.name,
+          customerPhone: customer.phone,
+          checkInTime: nowIso,
+          dateStr: todayStr
+        }
+      });
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
+      return { record: newRecord, action: 'checkin' as const, customerProfilePic: customer.profilePic || null };
     });
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('attendance_updated'));
-    return { record: newRecord, action: 'checkin' as const, customerProfilePic: customer.profilePic || null };
   } catch (e) {
     const active = store.attendance.find((a: any) => a.customerId === customer.id && !a.checkOutTime && a.dateStr === todayStr);
     if (active) {

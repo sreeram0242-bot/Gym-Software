@@ -962,8 +962,8 @@ export default function MemberManagementPage() {
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'scan_result') {
-            if (data.success && data.fingerprintId) {
-              setMantraFpData(data.fingerprintId);
+            if (data.success && (data.template || data.fingerprintId)) {
+              setMantraFpData(data.template || data.fingerprintId);
               setInfoMsg('Fingerprint registered successfully!');
             } else {
               setErrorMsg(data.error || 'Failed to scan fingerprint.');

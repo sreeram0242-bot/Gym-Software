@@ -233,6 +233,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       };
       const punchInterval = setInterval(() => checkRecentPunch(activeGymId), 3000);
 
+      // Mantra MFS100 Live Punch Listener
+      let mantraWs: WebSocket | null = null;
+      try {
+        const settings = await getGymSettings(activeGymId);
+        const fpPort = settings?.fingerprintAgentPort || 8765;
+        if (settings?.attendanceMantraEnabled) {
+          mantraWs = new WebSocket(`ws://localhost:${fpPort}`);
+          mantraWs.onopen = () => {
+            if (mantraWs?.readyState === WebSocket.OPEN) {
+              mantraWs.send(JSON.stringify({ action: 'init', gymId: activeGymId }));
+            }
+          };
+          mantraWs.onmessage = async (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              if (data.type === 'scan_match' && data.customerId) {
+                const res = await toggleCheckIn(data.customerId);
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('member_punch_event', {
+                    detail: {
+                      customerName: res.record?.customerName || 'Member',
+                      customerProfilePic: res.customerProfilePic,
+                      action: res.action,
+                      record: res.record
+                    }
+                  }));
+                }
+              } else if (data.type === 'scan_match_staff' && data.staffId) {
+                const staffRes = await toggleStaffCheckIn(data.staffId);
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('staff_punch_event', {
+                    detail: {
+                      staffName: staffRes?.record?.staffName || 'Staff',
+                      staffRole: 'Staff',
+                      action: staffRes?.action,
+                      durationMinutes: staffRes?.record?.durationMinutes
+                    }
+                  }));
+                }
+              }
+            } catch (err) {}
+          };
+        }
+      } catch (e) {}
+
       // Automated Daily Reminders (Due, Overdue, Absentee)
       const runDailyReminders = async (id: string) => {
         try {
@@ -448,6 +493,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         window.removeEventListener('staff_punch_event', handleStaffPunchEvent);
         window.removeEventListener('member_punch_event', handleMemberPunchEvent);
         if (notificationTimeout) clearTimeout(notificationTimeout);
+        if (mantraWs) mantraWs.close();
         clearInterval(waInterval);
         clearInterval(punchInterval);
         if (gymStatusInterval) clearInterval(gymStatusInterval);
