@@ -947,12 +947,25 @@ export default function MemberManagementPage() {
     return parseFloat(avg.toFixed(1));
   };
 
+  const fpWsRef = useRef<WebSocket | null>(null);
+
   const handleFingerprintScan = () => {
+    if (fpScanning) {
+      if (fpWsRef.current) {
+        fpWsRef.current.close();
+        fpWsRef.current = null;
+      }
+      setFpScanning(false);
+      setErrorMsg('Fingerprint scan cancelled.');
+      return;
+    }
+
     setFpScanning(true);
     setErrorMsg('');
     const port = settings?.fingerprintAgentPort || 8765;
     try {
       const ws = new WebSocket(`ws://localhost:${port}`);
+      fpWsRef.current = ws;
       
       ws.onopen = () => {
         ws.send(JSON.stringify({ action: 'scan' }));
@@ -970,6 +983,7 @@ export default function MemberManagementPage() {
             }
             ws.close();
             setFpScanning(false);
+            fpWsRef.current = null;
           }
         } catch (e) {
           console.error("Failed to parse FP message", e);
@@ -980,6 +994,7 @@ export default function MemberManagementPage() {
         setErrorMsg('Scanner agent not running. Run resources/fingerprint_agent.py');
         setFpScanning(false);
         ws.close();
+        fpWsRef.current = null;
       };
       
       setTimeout(() => {
@@ -987,12 +1002,14 @@ export default function MemberManagementPage() {
           ws.close();
           setFpScanning(false);
           setErrorMsg('Fingerprint scan timed out (15s).');
+          fpWsRef.current = null;
         }
       }, 15000);
       
     } catch (e) {
-      setErrorMsg('Could not connect to local scanner agent.');
+      setErrorMsg('Could not connect to scanner.');
       setFpScanning(false);
+      fpWsRef.current = null;
     }
   };
 
@@ -2008,12 +2025,11 @@ export default function MemberManagementPage() {
                     <button
                       type="button"
                       onClick={handleFingerprintScan}
-                      disabled={fpScanning}
                       className={`px-3 py-2 rounded-lg text-xs font-bold shrink-0 transition-colors ${
-                        fpScanning ? 'bg-amber-100 text-amber-700 animate-pulse' : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
+                        fpScanning ? 'bg-red-100 text-red-700 hover:bg-red-200 animate-pulse' : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
                       }`}
                     >
-                      {fpScanning ? 'Scanning...' : 'Scan'}
+                      {fpScanning ? 'Stop Scan' : 'Scan Fingerprint'}
                     </button>
                   </div>
                 </div>
