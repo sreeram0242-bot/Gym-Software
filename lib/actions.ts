@@ -99,6 +99,7 @@ if (!globalAny.mockStore) {
       { id: 'plan_2', gymId: 'gym_1', name: 'VIP Plan', durationMonths: 3, price: 4500 },
       { id: 'plan_3', gymId: 'gym_1', name: 'Annual Beast', durationMonths: 12, price: 18000 }
     ],
+    staff: [],
     transactions: [
       {
         id: 'tx_1',

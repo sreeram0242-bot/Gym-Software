@@ -79,6 +79,7 @@ class BiometricAgent:
         
         try:
             req = urllib.request.Request(url, data=pid_options.encode('utf-8'), headers={'Content-Type': 'text/xml'})
+            req.get_method = lambda: 'CAPTURE' # Force the UIDAI mandated CAPTURE method
             with urllib.request.urlopen(req, timeout=12) as response:
                 xml_response = response.read().decode('utf-8')
                 
