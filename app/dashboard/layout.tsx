@@ -15,18 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
 
   const [gyms, setGyms] = useState<any[]>([]);
-  const [currentGym, setCurrentGym] = useState<any | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const id = localStorage.getItem('active_gym_id');
-        const name = localStorage.getItem('active_gym_name');
-        if (id) {
-          return { id, name: name || 'Gym Admin', status: 'active' };
-        }
-      } catch (e) {}
-    }
-    return null;
-  });
+  const [currentGym, setCurrentGym] = useState<any | null>(null);
 
   // Global Live Check-in / Check-out Notification (Top Right)
   const [livePunchNotice, setLivePunchNotice] = useState<{

@@ -15,10 +15,13 @@ import { useCheckinData } from '@/lib/hooks';
 import { mutate } from 'swr';
 
 export default function CheckInTerminal() {
-  const [gymId, setGymId] = useState<string>(
-    typeof window !== 'undefined' ? localStorage.getItem('active_gym_id') || '' : ''
-  );
+  const [isMounted, setIsMounted] = useState(false);
+  const [gymId, setGymId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'members' | 'staff'>('members');
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -66,9 +69,10 @@ export default function CheckInTerminal() {
   const deferredSearchQuery = useDeferredValue(manualSearch);
   const [punchLoading, setPunchLoading] = useState<string | null>(null);
   const [memberViewFilter, setMemberViewFilter] = useState<'all' | 'inside'>('all');
-  const [nowTick, setNowTick] = useState<number>(Date.now());
+  const [nowTick, setNowTick] = useState<number>(0);
 
   useEffect(() => {
+    setNowTick(Date.now());
     const timer = setInterval(() => setNowTick(Date.now()), 10000);
     return () => clearInterval(timer);
   }, []);
@@ -269,6 +273,8 @@ export default function CheckInTerminal() {
         fpRetryCountRef.current = 0;
         setFpConnected(true);
         setFpStatus('Fingerprint scanner ready — place finger on sensor');
+        // Tell the native agent to start continuous 1:N checking mode
+        ws.send(JSON.stringify({ action: 'start_continuous', gymId }));
       };
 
       ws.onmessage = async (event: MessageEvent) => {
@@ -511,6 +517,8 @@ export default function CheckInTerminal() {
       uniqueTodayStaffRecords.push(rec);
     }
   });
+
+  if (!isMounted) return null;
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-20">
