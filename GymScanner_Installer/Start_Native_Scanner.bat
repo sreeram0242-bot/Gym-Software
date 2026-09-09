@@ -28,4 +28,4 @@ echo Compilation successful!
 echo [3/3] Starting Native Agent...
 echo.
 NativeGymScanner.exe
-pause
+timeout /t 2 >nul

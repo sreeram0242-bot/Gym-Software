@@ -229,6 +229,17 @@ namespace GymScanner
                         ret = mfs100.AutoCapture(ref fingerData, 3000, false, false);
                     }
                     
+                    if (ret != 0)
+                    {
+                        Console.WriteLine("[!] Scanner error (Code: " + ret + "). Reinitializing...");
+                        lock (scannerLock) {
+                            try { mfs100.Uninit(); } catch {}
+                            mfs100.Init();
+                        }
+                        await Task.Delay(2000, token);
+                        continue;
+                    }
+                    
                     if (ret == 0 && fingerData.ISOTemplate != null)
                     {
                         Console.WriteLine("\n[*] Finger placed! Matching...");
@@ -277,7 +288,7 @@ namespace GymScanner
                     }
                 }
                 
-                await Task.Delay(50, token); // Tiny delay to prevent CPU hogging but keep scanner responsive
+                await Task.Delay(200, token); // Tiny delay to prevent CPU hogging but keep scanner responsive
             }
         }
 

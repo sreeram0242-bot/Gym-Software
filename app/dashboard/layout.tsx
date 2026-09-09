@@ -343,6 +343,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           mantraWs.close();
         }
         if (mantraReconnectTimer) clearTimeout(mantraReconnectTimer);
+        
+        // Trigger the background agent to run so the user doesn't have to manually click the .bat
+        fetch('/api/biometrics/start-scanner', { method: 'POST' }).catch(() => {});
+        
         connectMantraGlobal();
       };
 
