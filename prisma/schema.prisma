@@ -186,6 +186,8 @@ model GymSettings {
   waReminderWindowDays  Int     @default(3)
 
   waAttendanceMessages  Boolean @default(true)
+  waCheckInMessages     Boolean @default(true)
+  waCheckOutMessages    Boolean @default(true)
   waAutoReply           Boolean @default(true)
   waAutoArchive         Boolean @default(false)
 

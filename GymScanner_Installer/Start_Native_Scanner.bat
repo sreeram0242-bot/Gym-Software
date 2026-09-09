@@ -25,7 +25,11 @@ if %errorlevel% neq 0 (
 )
 echo Compilation successful!
 
-echo [3/3] Starting Native Agent...
+echo [3/3] Starting Native Agent (with auto-recovery)...
 echo.
+
+:RUN_LOOP
 NativeGymScanner.exe
-timeout /t 2 >nul
+echo [!] Native agent exited. Auto-recovering in 3 seconds...
+timeout /t 3 /nobreak >nul
+goto RUN_LOOP

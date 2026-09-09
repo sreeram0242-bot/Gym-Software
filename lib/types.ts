@@ -122,6 +122,8 @@ export interface GymSettings {
   waConnected?: boolean;
   waAutoMessages?: boolean;
   waAttendanceMessages?: boolean;
+  waCheckInMessages?: boolean;
+  waCheckOutMessages?: boolean;
   waAutoReply?: boolean;
   waAutoArchive?: boolean;
   waReminderWindowDays?: number;

@@ -178,7 +178,8 @@ export async function POST(req: Request) {
             
             console.log(`[BIOMETRIC] Automated customer ${action} for ${customer.name}`);
 
-            if (gymSettings?.waAttendanceMessages && customer.phone && customer.waActive) {
+            const sendWa = (action === 'checkin' ? ((gymSettings as any)?.waCheckInMessages ?? gymSettings?.waAttendanceMessages) : ((gymSettings as any)?.waCheckOutMessages ?? gymSettings?.waAttendanceMessages)) ?? true;
+            if (sendWa && customer.phone && customer.waActive) {
               const templateName = action === 'checkin' ? 'checkin' : 'checkout';
               const rawTemplate = getTemplate(gymSettings, templateName);
               const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

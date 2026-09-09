@@ -222,9 +222,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       };
       const punchInterval = setInterval(() => checkRecentPunch(activeGymId), 3000);
 
-      // Global Mantra MFS100 Live Punch Listener
+      // Global Mantra MFS100 Live Punch Listener & Auto-Healing Bridge
       let mantraWs: WebSocket | null = null;
       let mantraReconnectTimer: NodeJS.Timeout | null = null;
+      let lastAutoStartAttempt = 0;
+
+      const ensureScannerRunning = () => {
+        const now = Date.now();
+        if (now - lastAutoStartAttempt > 10000) {
+          lastAutoStartAttempt = now;
+          fetch('/api/biometrics/start-scanner', { method: 'POST' }).catch(() => {});
+        }
+      };
 
       const connectMantraGlobal = async () => {
         const dispatchFpStatus = (connected: boolean, status: string) => {
@@ -238,100 +247,190 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const settings = await getGymSettings(activeGymId);
           const fpPort = settings?.fingerprintAgentPort || 8765;
           if (settings?.attendanceMantraEnabled) {
+            // Auto-heal: Ensure the background scanner agent is started
+            ensureScannerRunning();
+
             mantraWs = new WebSocket(`ws://localhost:${fpPort}`);
             
             dispatchFpStatus(false, 'Connecting to fingerprint agent...');
             
             mantraWs.onopen = () => {
               if (mantraWs?.readyState === WebSocket.OPEN) {
-                // Force reset the C# agent's static state machine.
-                // If a previous connection died abruptly, the agent might still have
-                // isContinuousMode = true but a broken websocket. Sending stop resets it.
-                mantraWs.send(JSON.stringify({ action: 'stop_continuous', gymId: activeGymId }));
-
-                // Wait 1.5s before starting again to ensure the reset processes
-                setTimeout(() => {
-                  if (mantraWs?.readyState === WebSocket.OPEN) {
-                    mantraWs.send(JSON.stringify({ action: 'start_continuous', gymId: activeGymId }));
-                    dispatchFpStatus(true, 'Fingerprint scanner ready — place finger on sensor');
-                  }
-                }, 1500);
+                mantraWs.send(JSON.stringify({ action: 'start_continuous', gymId: activeGymId }));
+                dispatchFpStatus(true, 'Fingerprint scanner ready — place finger on sensor');
               }
             };
 
             mantraWs.onmessage = async (event) => {
               try {
                 const data = JSON.parse(event.data);
-                if (data.type === 'scan' && data.fingerprintId && data.fingerprintId !== 'UNKNOWN') {
-                  const { findCustomerByMantra, findStaffByMantra, toggleCheckIn, toggleStaffCheckIn } = await import('@/lib/actions');
-                  const matched = await findCustomerByMantra(activeGymId, data.fingerprintId);
+                if (data.type === 'scan' && ((data.userId && data.userId !== 'UNKNOWN') || (data.fingerprintId && data.fingerprintId !== 'UNKNOWN'))) {
+                  const { findCustomerByMantra, findStaffByMantra, toggleCheckIn, toggleStaffCheckIn, getCustomers, getStaffs, getGymSettings } = await import('@/lib/actions');
                   
-                  if (matched) {
-                    const res = await toggleCheckIn(matched.id);
+                  let isStaff = data.userRole === 'Staff';
+                  let matchedCust: any = null;
+                  let matchedStaff: any = null;
+
+                  // 1. Direct ID lookup (fastest & 100% reliable)
+                  if (data.userId) {
+                    if (isStaff) {
+                      const allStaff = await getStaffs(activeGymId);
+                      matchedStaff = allStaff.find((s: any) => s.id === data.userId);
+                    } else {
+                      const allCust = await getCustomers(activeGymId);
+                      matchedCust = allCust.find((c: any) => c.id === data.userId);
+                      if (!matchedCust) {
+                        const allStaff = await getStaffs(activeGymId);
+                        matchedStaff = allStaff.find((s: any) => s.id === data.userId);
+                        if (matchedStaff) isStaff = true;
+                      }
+                    }
+                  }
+
+                  // 2. Fallback by fingerprint template matching if ID lookup did not resolve
+                  if (!matchedCust && !matchedStaff && data.fingerprintId) {
+                    matchedCust = await findCustomerByMantra(activeGymId, data.fingerprintId);
+                    if (!matchedCust) {
+                      matchedStaff = await findStaffByMantra(activeGymId, data.fingerprintId);
+                      if (matchedStaff) isStaff = true;
+                    }
+                  }
+
+                  if (matchedCust) {
+                    const res = await toggleCheckIn(matchedCust.id);
+                    const isCheckIn = res.action === 'checkin';
+                    const punchActionLabel = isCheckIn ? 'Check-IN' : 'Check-OUT';
+
                     if (typeof window !== 'undefined') {
-                      dispatchFpStatus(true, `Member Scan: ${matched.name}`);
+                      dispatchFpStatus(true, `Member ${punchActionLabel}: ${matchedCust.name}`);
                       
                       if (localStorage.getItem('playPunchSounds') === 'true') {
                         const { playPunchInSound, playPunchOutSound } = await import('@/lib/audio');
-                        if (res.action === 'checkin') playPunchInSound();
+                        if (isCheckIn) playPunchInSound();
                         else playPunchOutSound();
                       }
 
+                      setLivePunchNotice({
+                        id: String(Date.now()),
+                        type: 'member',
+                        name: matchedCust.name,
+                        role: 'Member',
+                        action: res.action as 'checkin' | 'checkout',
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        durationMinutes: res.record?.durationMinutes,
+                        profilePic: matchedCust.profilePic || res.customerProfilePic || null
+                      });
+
+                      if (notificationTimeout) clearTimeout(notificationTimeout);
+                      notificationTimeout = setTimeout(() => {
+                        setLivePunchNotice(null);
+                      }, 5000);
+
                       window.dispatchEvent(new CustomEvent('member_punch_event', {
                         detail: {
-                          customerName: res.record?.customerName || 'Member',
-                          customerProfilePic: res.customerProfilePic,
+                          customerName: matchedCust.name,
+                          customerProfilePic: matchedCust.profilePic || res.customerProfilePic,
                           action: res.action,
                           record: res.record
                         }
                       }));
+
                       mutate(['checkin', activeGymId]);
                       mutate(['overview', activeGymId]);
-                      setTimeout(() => dispatchFpStatus(true, 'Fingerprint scanner ready — place finger on sensor'), 5000);
+                      window.dispatchEvent(new CustomEvent('attendance_updated'));
+
+                      // WhatsApp Attendance notification
+                      try {
+                        const gymSettings = await getGymSettings(activeGymId);
+                        const sendWa = (isCheckIn ? ((gymSettings as any)?.waCheckInMessages ?? gymSettings?.waAttendanceMessages) : ((gymSettings as any)?.waCheckOutMessages ?? gymSettings?.waAttendanceMessages)) ?? true;
+                        if (sendWa && matchedCust.phone && matchedCust.waActive) {
+                          const { getTemplate, compileTemplate } = await import('@/lib/templates');
+                          const templateName = isCheckIn ? 'checkin' : 'checkout';
+                          const rawTemplate = getTemplate(gymSettings, templateName);
+                          const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                          const duration = res.record?.durationMinutes || 0;
+                          const message = compileTemplate(rawTemplate, {
+                            gymName: activeGymName,
+                            name: matchedCust.name,
+                            time: nowTime,
+                            duration: duration.toString()
+                          });
+                          fetch('/api/whatsapp/send', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ gymId: activeGymId, phone: matchedCust.phone, message })
+                          }).catch(() => {});
+                        }
+                      } catch (waErr) {}
+
+                      setTimeout(() => dispatchFpStatus(true, 'Fingerprint scanner ready — place finger on sensor'), 4500);
+                    }
+                  } else if (matchedStaff) {
+                    const staffRes = await toggleStaffCheckIn(matchedStaff.id);
+                    const isCheckIn = staffRes?.action === 'checkin';
+                    const punchActionLabel = isCheckIn ? 'Punch-IN' : 'Punch-OUT';
+
+                    if (typeof window !== 'undefined') {
+                      dispatchFpStatus(true, `Staff ${punchActionLabel}: ${matchedStaff.name}`);
+                      
+                      if (localStorage.getItem('playPunchSounds') === 'true') {
+                        const { playPunchInSound, playPunchOutSound } = await import('@/lib/audio');
+                        if (isCheckIn) playPunchInSound();
+                        else playPunchOutSound();
+                      }
+
+                      setLivePunchNotice({
+                        id: String(Date.now()),
+                        type: 'staff',
+                        name: matchedStaff.name,
+                        role: matchedStaff.role || 'Staff',
+                        action: staffRes?.action as 'checkin' | 'checkout',
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        durationMinutes: staffRes?.record?.durationMinutes
+                      });
+
+                      if (notificationTimeout) clearTimeout(notificationTimeout);
+                      notificationTimeout = setTimeout(() => {
+                        setLivePunchNotice(null);
+                      }, 5000);
+
+                      window.dispatchEvent(new CustomEvent('staff_punch_event', {
+                        detail: {
+                          staffName: matchedStaff.name,
+                          staffRole: matchedStaff.role || 'Staff',
+                          action: staffRes?.action,
+                          durationMinutes: staffRes?.record?.durationMinutes
+                        }
+                      }));
+
+                      mutate(['checkin', activeGymId]);
+                      mutate(['overview', activeGymId]);
+                      window.dispatchEvent(new CustomEvent('attendance_updated'));
+
+                      setTimeout(() => dispatchFpStatus(true, 'Fingerprint scanner ready — place finger on sensor'), 4500);
                     }
                   } else {
-                    const matchedStaff = await findStaffByMantra(activeGymId, data.fingerprintId);
-                    if (matchedStaff) {
-                      const staffRes = await toggleStaffCheckIn(matchedStaff.id);
-                      if (typeof window !== 'undefined') {
-                        dispatchFpStatus(true, `Staff Scan: ${matchedStaff.name}`);
-                        
-                        if (localStorage.getItem('playPunchSounds') === 'true') {
-                          const { playPunchInSound, playPunchOutSound } = await import('@/lib/audio');
-                          if (staffRes?.action === 'checkin') playPunchInSound();
-                          else playPunchOutSound();
-                        }
-
-                        window.dispatchEvent(new CustomEvent('staff_punch_event', {
-                          detail: {
-                            staffName: staffRes?.record?.staffName || 'Staff',
-                            staffRole: matchedStaff.role || 'Staff',
-                            action: staffRes?.action,
-                            durationMinutes: staffRes?.record?.durationMinutes
-                          }
-                        }));
-                        mutate(['checkin', activeGymId]);
-                        mutate(['overview', activeGymId]);
-                        setTimeout(() => dispatchFpStatus(true, 'Fingerprint scanner ready — place finger on sensor'), 5000);
-                      }
-                    } else {
-                       if (typeof window !== 'undefined') {
-                          dispatchFpStatus(true, 'Fingerprint not registered. Try again or check profile.');
-                          setTimeout(() => dispatchFpStatus(true, 'Fingerprint scanner ready — place finger on sensor'), 5000);
-                       }
+                    if (typeof window !== 'undefined') {
+                      dispatchFpStatus(true, 'Fingerprint not registered. Try again or enroll member.');
+                      setTimeout(() => dispatchFpStatus(true, 'Fingerprint scanner ready — place finger on sensor'), 4500);
                     }
                   }
                 }
-              } catch (err) {}
+              } catch (err) {
+                console.error('Mantra live scan error:', err);
+              }
             };
 
             mantraWs.onclose = () => {
-              dispatchFpStatus(false, 'Scanner offline. Retrying in 5s...');
-              mantraReconnectTimer = setTimeout(connectMantraGlobal, 5000);
+              dispatchFpStatus(false, 'Scanner offline. Reconnecting in 4s...');
+              ensureScannerRunning();
+              if (mantraReconnectTimer) clearTimeout(mantraReconnectTimer);
+              mantraReconnectTimer = setTimeout(connectMantraGlobal, 4000);
             };
 
             mantraWs.onerror = () => {
-               dispatchFpStatus(false, 'Cannot connect to fingerprint bridge.');
+              dispatchFpStatus(false, 'Connecting to fingerprint agent...');
+              ensureScannerRunning();
             };
           }
         } catch (e) {}
@@ -439,7 +538,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             // Fetch settings to check if Attendance WA messages are enabled
             const gymSettings = await getGymSettings(activeGymId);
-            if (gymSettings?.waAttendanceMessages && matchedCust.phone && matchedCust.waActive) {
+            const sendWa = (action === 'checkin' ? ((gymSettings as any)?.waCheckInMessages ?? gymSettings?.waAttendanceMessages) : ((gymSettings as any)?.waCheckOutMessages ?? gymSettings?.waAttendanceMessages)) ?? true;
+            if (sendWa && matchedCust.phone && matchedCust.waActive) {
               const templateName = action === 'checkin' ? 'checkin' : 'checkout';
               const rawTemplate = getTemplate(gymSettings, templateName);
               

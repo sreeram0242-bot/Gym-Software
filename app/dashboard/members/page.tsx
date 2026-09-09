@@ -654,6 +654,18 @@ export default function MemberManagementPage() {
       // Re-fetch members list from DB
       await mutate(['members', gymId]);
 
+      // If a fingerprint was enrolled, notify the native scanner bridge to reload templates immediately
+      if (mantraFpData) {
+        try {
+          const port = settings?.fingerprintAgentPort || 8765;
+          const ws = new WebSocket(`ws://localhost:${port}`);
+          ws.onopen = () => {
+            ws.send(JSON.stringify({ action: 'sync', gymId }));
+            setTimeout(() => { try { ws.close(); } catch {} }, 500);
+          };
+        } catch (e) {}
+      }
+
       // Clear enrolled device pin ref as member is now saved successfully
       lastEnrolledDevicePinRef.current = null;
 
@@ -992,9 +1004,10 @@ export default function MemberManagementPage() {
       };
       
       ws.onerror = () => {
-        setErrorMsg('Scanner agent not running. Run resources/fingerprint_agent.py');
+        fetch('/api/biometrics/start-scanner', { method: 'POST' }).catch(() => {});
+        setErrorMsg('Scanner connecting... Please plug in USB Mantra scanner and click Scan again in a few seconds.');
         setFpScanning(false);
-        ws.close();
+        try { ws.close(); } catch {}
         fpWsRef.current = null;
       };
       

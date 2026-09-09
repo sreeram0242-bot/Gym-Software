@@ -183,7 +183,15 @@ export default function CheckInTerminal() {
     return () => clearInterval(timer);
   }, []);
 
-  // Removed redundant attendance_updated listener. Global mutations are handled by SWR.
+  useEffect(() => {
+    const handleUpdate = () => {
+      revalidateCheckin();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('attendance_updated', handleUpdate);
+      return () => window.removeEventListener('attendance_updated', handleUpdate);
+    }
+  }, [revalidateCheckin]);
 
   // ─── DUAL EXPORT HANDLERS (CSV & PDF) ───
   const exportMemberVisitsCSV = () => {
@@ -338,7 +346,8 @@ export default function CheckInTerminal() {
       await mutate(['checkin', gymId]);
 
       const gymSettings = await getGymSettings(gymId);
-      if (gymSettings?.waAttendanceMessages && matched.phone && matched.waActive) {
+      const sendWa = (action === 'checkin' ? ((gymSettings as any)?.waCheckInMessages ?? gymSettings?.waAttendanceMessages) : ((gymSettings as any)?.waCheckOutMessages ?? gymSettings?.waAttendanceMessages)) ?? true;
+      if (sendWa && matched.phone && matched.waActive) {
         const templateName = action === 'checkin' ? 'checkin' : 'checkout';
         const rawTemplate = getTemplate(gymSettings, templateName);
         const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

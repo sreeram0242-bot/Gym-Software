@@ -219,6 +219,8 @@ export default function SettingsPage() {
   const [waLoading, setWaLoading] = useState(true);
   const [autoMessages, setAutoMessages] = useState(true);
   const [attendanceMessages, setAttendanceMessages] = useState(true);
+  const [checkInMessages, setCheckInMessages] = useState(true);
+  const [checkOutMessages, setCheckOutMessages] = useState(true);
   const [autoReply, setAutoReply] = useState(true);
   const [autoArchive, setAutoArchive] = useState(false);
   const [reminderDays, setReminderDays] = useState(3);
@@ -297,6 +299,8 @@ export default function SettingsPage() {
       setAddress(data.address || '');
       setAutoMessages(data.waAutoMessages ?? true);
       setAttendanceMessages(data.waAttendanceMessages ?? true);
+      setCheckInMessages((data as any).waCheckInMessages ?? data.waAttendanceMessages ?? true);
+      setCheckOutMessages((data as any).waCheckOutMessages ?? data.waAttendanceMessages ?? true);
       setAutoReply(data.waAutoReply ?? true);
       setAutoArchive(data.waAutoArchive ?? false);
       setReminderDays(data.waReminderWindowDays ?? 3);
@@ -1027,8 +1031,13 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="py-3">
-                    <Toggle enabled={attendanceMessages} label="Auto-send Check-in/Check-out Messages" desc="Notify members on entry and exit" onChange={v => handleToggle('waAttendanceMessages', v, setAttendanceMessages)} />
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <Toggle 
+                      enabled={checkInMessages} 
+                      label="Auto-send Check-IN Messages" 
+                      desc="Notify members via WhatsApp when they punch IN at the gym" 
+                      onChange={v => handleToggle('waCheckInMessages', v, setCheckInMessages)} 
+                    />
+                    <div className="mt-2 flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => { setSelectedTemplate('checkin'); setActiveTab('templates'); }}
@@ -1036,6 +1045,17 @@ export default function SettingsPage() {
                       >
                         <FileText className="w-3 h-3" /> Edit Check-In Template <ChevronRight className="w-3 h-3" />
                       </button>
+                    </div>
+                  </div>
+
+                  <div className="py-3">
+                    <Toggle 
+                      enabled={checkOutMessages} 
+                      label="Auto-send Check-OUT Messages" 
+                      desc="Notify members via WhatsApp with workout duration when they punch OUT" 
+                      onChange={v => handleToggle('waCheckOutMessages', v, setCheckOutMessages)} 
+                    />
+                    <div className="mt-2 flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => { setSelectedTemplate('checkout'); setActiveTab('templates'); }}

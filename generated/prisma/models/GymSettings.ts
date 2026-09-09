@@ -50,6 +50,8 @@ export type GymSettingsMinAggregateOutputType = {
   waAutoMessages: boolean | null
   waReminderWindowDays: number | null
   waAttendanceMessages: boolean | null
+  waCheckInMessages: boolean | null
+  waCheckOutMessages: boolean | null
   waAutoReply: boolean | null
   waAutoArchive: boolean | null
   templateWelcome: string | null
@@ -85,6 +87,8 @@ export type GymSettingsMaxAggregateOutputType = {
   waAutoMessages: boolean | null
   waReminderWindowDays: number | null
   waAttendanceMessages: boolean | null
+  waCheckInMessages: boolean | null
+  waCheckOutMessages: boolean | null
   waAutoReply: boolean | null
   waAutoArchive: boolean | null
   templateWelcome: string | null
@@ -120,6 +124,8 @@ export type GymSettingsCountAggregateOutputType = {
   waAutoMessages: number
   waReminderWindowDays: number
   waAttendanceMessages: number
+  waCheckInMessages: number
+  waCheckOutMessages: number
   waAutoReply: number
   waAutoArchive: number
   templateWelcome: number
@@ -173,6 +179,8 @@ export type GymSettingsMinAggregateInputType = {
   waAutoMessages?: true
   waReminderWindowDays?: true
   waAttendanceMessages?: true
+  waCheckInMessages?: true
+  waCheckOutMessages?: true
   waAutoReply?: true
   waAutoArchive?: true
   templateWelcome?: true
@@ -208,6 +216,8 @@ export type GymSettingsMaxAggregateInputType = {
   waAutoMessages?: true
   waReminderWindowDays?: true
   waAttendanceMessages?: true
+  waCheckInMessages?: true
+  waCheckOutMessages?: true
   waAutoReply?: true
   waAutoArchive?: true
   templateWelcome?: true
@@ -243,6 +253,8 @@ export type GymSettingsCountAggregateInputType = {
   waAutoMessages?: true
   waReminderWindowDays?: true
   waAttendanceMessages?: true
+  waCheckInMessages?: true
+  waCheckOutMessages?: true
   waAutoReply?: true
   waAutoArchive?: true
   templateWelcome?: true
@@ -365,6 +377,8 @@ export type GymSettingsGroupByOutputType = {
   waAutoMessages: boolean
   waReminderWindowDays: number
   waAttendanceMessages: boolean
+  waCheckInMessages: boolean
+  waCheckOutMessages: boolean
   waAutoReply: boolean
   waAutoArchive: boolean
   templateWelcome: string | null
@@ -423,6 +437,8 @@ export type GymSettingsWhereInput = {
   waAutoMessages?: Prisma.BoolFilter<"GymSettings"> | boolean
   waReminderWindowDays?: Prisma.IntFilter<"GymSettings"> | number
   waAttendanceMessages?: Prisma.BoolFilter<"GymSettings"> | boolean
+  waCheckInMessages?: Prisma.BoolFilter<"GymSettings"> | boolean
+  waCheckOutMessages?: Prisma.BoolFilter<"GymSettings"> | boolean
   waAutoReply?: Prisma.BoolFilter<"GymSettings"> | boolean
   waAutoArchive?: Prisma.BoolFilter<"GymSettings"> | boolean
   templateWelcome?: Prisma.StringNullableFilter<"GymSettings"> | string | null
@@ -459,6 +475,8 @@ export type GymSettingsOrderByWithRelationInput = {
   waAutoMessages?: Prisma.SortOrder
   waReminderWindowDays?: Prisma.SortOrder
   waAttendanceMessages?: Prisma.SortOrder
+  waCheckInMessages?: Prisma.SortOrder
+  waCheckOutMessages?: Prisma.SortOrder
   waAutoReply?: Prisma.SortOrder
   waAutoArchive?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -498,6 +516,8 @@ export type GymSettingsWhereUniqueInput = Prisma.AtLeast<{
   waAutoMessages?: Prisma.BoolFilter<"GymSettings"> | boolean
   waReminderWindowDays?: Prisma.IntFilter<"GymSettings"> | number
   waAttendanceMessages?: Prisma.BoolFilter<"GymSettings"> | boolean
+  waCheckInMessages?: Prisma.BoolFilter<"GymSettings"> | boolean
+  waCheckOutMessages?: Prisma.BoolFilter<"GymSettings"> | boolean
   waAutoReply?: Prisma.BoolFilter<"GymSettings"> | boolean
   waAutoArchive?: Prisma.BoolFilter<"GymSettings"> | boolean
   templateWelcome?: Prisma.StringNullableFilter<"GymSettings"> | string | null
@@ -534,6 +554,8 @@ export type GymSettingsOrderByWithAggregationInput = {
   waAutoMessages?: Prisma.SortOrder
   waReminderWindowDays?: Prisma.SortOrder
   waAttendanceMessages?: Prisma.SortOrder
+  waCheckInMessages?: Prisma.SortOrder
+  waCheckOutMessages?: Prisma.SortOrder
   waAutoReply?: Prisma.SortOrder
   waAutoArchive?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -577,6 +599,8 @@ export type GymSettingsScalarWhereWithAggregatesInput = {
   waAutoMessages?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
   waReminderWindowDays?: Prisma.IntWithAggregatesFilter<"GymSettings"> | number
   waAttendanceMessages?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
+  waCheckInMessages?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
+  waCheckOutMessages?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
   waAutoReply?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
   waAutoArchive?: Prisma.BoolWithAggregatesFilter<"GymSettings"> | boolean
   templateWelcome?: Prisma.StringNullableWithAggregatesFilter<"GymSettings"> | string | null
@@ -611,6 +635,8 @@ export type GymSettingsCreateInput = {
   waAutoMessages?: boolean
   waReminderWindowDays?: number
   waAttendanceMessages?: boolean
+  waCheckInMessages?: boolean
+  waCheckOutMessages?: boolean
   waAutoReply?: boolean
   waAutoArchive?: boolean
   templateWelcome?: string | null
@@ -647,6 +673,8 @@ export type GymSettingsUncheckedCreateInput = {
   waAutoMessages?: boolean
   waReminderWindowDays?: number
   waAttendanceMessages?: boolean
+  waCheckInMessages?: boolean
+  waCheckOutMessages?: boolean
   waAutoReply?: boolean
   waAutoArchive?: boolean
   templateWelcome?: string | null
@@ -681,6 +709,8 @@ export type GymSettingsUpdateInput = {
   waAutoMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waReminderWindowDays?: Prisma.IntFieldUpdateOperationsInput | number
   waAttendanceMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  waCheckInMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  waCheckOutMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waAutoReply?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waAutoArchive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -717,6 +747,8 @@ export type GymSettingsUncheckedUpdateInput = {
   waAutoMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waReminderWindowDays?: Prisma.IntFieldUpdateOperationsInput | number
   waAttendanceMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  waCheckInMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  waCheckOutMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waAutoReply?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waAutoArchive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -752,6 +784,8 @@ export type GymSettingsCreateManyInput = {
   waAutoMessages?: boolean
   waReminderWindowDays?: number
   waAttendanceMessages?: boolean
+  waCheckInMessages?: boolean
+  waCheckOutMessages?: boolean
   waAutoReply?: boolean
   waAutoArchive?: boolean
   templateWelcome?: string | null
@@ -786,6 +820,8 @@ export type GymSettingsUpdateManyMutationInput = {
   waAutoMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waReminderWindowDays?: Prisma.IntFieldUpdateOperationsInput | number
   waAttendanceMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  waCheckInMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  waCheckOutMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waAutoReply?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waAutoArchive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -821,6 +857,8 @@ export type GymSettingsUncheckedUpdateManyInput = {
   waAutoMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waReminderWindowDays?: Prisma.IntFieldUpdateOperationsInput | number
   waAttendanceMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  waCheckInMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  waCheckOutMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waAutoReply?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waAutoArchive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -861,6 +899,8 @@ export type GymSettingsCountOrderByAggregateInput = {
   waAutoMessages?: Prisma.SortOrder
   waReminderWindowDays?: Prisma.SortOrder
   waAttendanceMessages?: Prisma.SortOrder
+  waCheckInMessages?: Prisma.SortOrder
+  waCheckOutMessages?: Prisma.SortOrder
   waAutoReply?: Prisma.SortOrder
   waAutoArchive?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrder
@@ -904,6 +944,8 @@ export type GymSettingsMaxOrderByAggregateInput = {
   waAutoMessages?: Prisma.SortOrder
   waReminderWindowDays?: Prisma.SortOrder
   waAttendanceMessages?: Prisma.SortOrder
+  waCheckInMessages?: Prisma.SortOrder
+  waCheckOutMessages?: Prisma.SortOrder
   waAutoReply?: Prisma.SortOrder
   waAutoArchive?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrder
@@ -939,6 +981,8 @@ export type GymSettingsMinOrderByAggregateInput = {
   waAutoMessages?: Prisma.SortOrder
   waReminderWindowDays?: Prisma.SortOrder
   waAttendanceMessages?: Prisma.SortOrder
+  waCheckInMessages?: Prisma.SortOrder
+  waCheckOutMessages?: Prisma.SortOrder
   waAutoReply?: Prisma.SortOrder
   waAutoArchive?: Prisma.SortOrder
   templateWelcome?: Prisma.SortOrder
@@ -1013,6 +1057,8 @@ export type GymSettingsCreateWithoutGymInput = {
   waAutoMessages?: boolean
   waReminderWindowDays?: number
   waAttendanceMessages?: boolean
+  waCheckInMessages?: boolean
+  waCheckOutMessages?: boolean
   waAutoReply?: boolean
   waAutoArchive?: boolean
   templateWelcome?: string | null
@@ -1047,6 +1093,8 @@ export type GymSettingsUncheckedCreateWithoutGymInput = {
   waAutoMessages?: boolean
   waReminderWindowDays?: number
   waAttendanceMessages?: boolean
+  waCheckInMessages?: boolean
+  waCheckOutMessages?: boolean
   waAutoReply?: boolean
   waAutoArchive?: boolean
   templateWelcome?: string | null
@@ -1097,6 +1145,8 @@ export type GymSettingsUpdateWithoutGymInput = {
   waAutoMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waReminderWindowDays?: Prisma.IntFieldUpdateOperationsInput | number
   waAttendanceMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  waCheckInMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  waCheckOutMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waAutoReply?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waAutoArchive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1131,6 +1181,8 @@ export type GymSettingsUncheckedUpdateWithoutGymInput = {
   waAutoMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waReminderWindowDays?: Prisma.IntFieldUpdateOperationsInput | number
   waAttendanceMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  waCheckInMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  waCheckOutMessages?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waAutoReply?: Prisma.BoolFieldUpdateOperationsInput | boolean
   waAutoArchive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   templateWelcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1168,6 +1220,8 @@ export type GymSettingsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   waAutoMessages?: boolean
   waReminderWindowDays?: boolean
   waAttendanceMessages?: boolean
+  waCheckInMessages?: boolean
+  waCheckOutMessages?: boolean
   waAutoReply?: boolean
   waAutoArchive?: boolean
   templateWelcome?: boolean
@@ -1204,6 +1258,8 @@ export type GymSettingsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   waAutoMessages?: boolean
   waReminderWindowDays?: boolean
   waAttendanceMessages?: boolean
+  waCheckInMessages?: boolean
+  waCheckOutMessages?: boolean
   waAutoReply?: boolean
   waAutoArchive?: boolean
   templateWelcome?: boolean
@@ -1240,6 +1296,8 @@ export type GymSettingsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   waAutoMessages?: boolean
   waReminderWindowDays?: boolean
   waAttendanceMessages?: boolean
+  waCheckInMessages?: boolean
+  waCheckOutMessages?: boolean
   waAutoReply?: boolean
   waAutoArchive?: boolean
   templateWelcome?: boolean
@@ -1276,6 +1334,8 @@ export type GymSettingsSelectScalar = {
   waAutoMessages?: boolean
   waReminderWindowDays?: boolean
   waAttendanceMessages?: boolean
+  waCheckInMessages?: boolean
+  waCheckOutMessages?: boolean
   waAutoReply?: boolean
   waAutoArchive?: boolean
   templateWelcome?: boolean
@@ -1303,7 +1363,7 @@ export type GymSettingsSelectScalar = {
   staffCutoffHours?: boolean
 }
 
-export type GymSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "absentTrackingEnabled" | "absentThresholdDays" | "waAutoMessages" | "waReminderWindowDays" | "waAttendanceMessages" | "waAutoReply" | "waAutoArchive" | "templateWelcome" | "templateReceipt" | "templateStoreReceipt" | "templateReminder" | "templateAbsentee" | "templateCheckIn" | "templateCheckOut" | "templateQueryPlan" | "templateQueryPayment" | "templateQueryAttendance" | "upiId" | "upiName" | "address" | "productsEnabled" | "showStoreInRevenue" | "attendanceManualEnabled" | "attendanceNfcEnabled" | "attendanceMantraEnabled" | "attendanceWallMountEnabled" | "fingerprintAgentPort" | "deviceIpAddress" | "memberCutoffHours" | "staffCutoffHours", ExtArgs["result"]["gymSettings"]>
+export type GymSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "gymId" | "absentTrackingEnabled" | "absentThresholdDays" | "waAutoMessages" | "waReminderWindowDays" | "waAttendanceMessages" | "waCheckInMessages" | "waCheckOutMessages" | "waAutoReply" | "waAutoArchive" | "templateWelcome" | "templateReceipt" | "templateStoreReceipt" | "templateReminder" | "templateAbsentee" | "templateCheckIn" | "templateCheckOut" | "templateQueryPlan" | "templateQueryPayment" | "templateQueryAttendance" | "upiId" | "upiName" | "address" | "productsEnabled" | "showStoreInRevenue" | "attendanceManualEnabled" | "attendanceNfcEnabled" | "attendanceMantraEnabled" | "attendanceWallMountEnabled" | "fingerprintAgentPort" | "deviceIpAddress" | "memberCutoffHours" | "staffCutoffHours", ExtArgs["result"]["gymSettings"]>
 export type GymSettingsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   gym?: boolean | Prisma.GymDefaultArgs<ExtArgs>
 }
@@ -1327,6 +1387,8 @@ export type $GymSettingsPayload<ExtArgs extends runtime.Types.Extensions.Interna
     waAutoMessages: boolean
     waReminderWindowDays: number
     waAttendanceMessages: boolean
+    waCheckInMessages: boolean
+    waCheckOutMessages: boolean
     waAutoReply: boolean
     waAutoArchive: boolean
     templateWelcome: string | null
@@ -1783,6 +1845,8 @@ export interface GymSettingsFieldRefs {
   readonly waAutoMessages: Prisma.FieldRef<"GymSettings", 'Boolean'>
   readonly waReminderWindowDays: Prisma.FieldRef<"GymSettings", 'Int'>
   readonly waAttendanceMessages: Prisma.FieldRef<"GymSettings", 'Boolean'>
+  readonly waCheckInMessages: Prisma.FieldRef<"GymSettings", 'Boolean'>
+  readonly waCheckOutMessages: Prisma.FieldRef<"GymSettings", 'Boolean'>
   readonly waAutoReply: Prisma.FieldRef<"GymSettings", 'Boolean'>
   readonly waAutoArchive: Prisma.FieldRef<"GymSettings", 'Boolean'>
   readonly templateWelcome: Prisma.FieldRef<"GymSettings", 'String'>
