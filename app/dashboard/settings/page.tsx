@@ -244,6 +244,27 @@ export default function SettingsPage() {
   const [memberCutoffHours, setMemberCutoffHours] = useState<number>(4);
   const [staffCutoffHours, setStaffCutoffHours] = useState<number>(12);
 
+  // Mantra Bridge Live Status
+  const [fpConnected, setFpConnected] = useState(false);
+  const [fpStatus, setFpStatus] = useState('Scanner offline');
+  const [isFpReconnecting, setIsFpReconnecting] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).__fpState) {
+      setFpConnected((window as any).__fpState.connected);
+      setFpStatus((window as any).__fpState.status);
+    }
+    const handleFpStatus = (e: any) => {
+      setFpConnected(e.detail.connected);
+      setFpStatus(e.detail.status);
+      if (e.detail.connected) setIsFpReconnecting(false);
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('fp_status', handleFpStatus);
+      return () => window.removeEventListener('fp_status', handleFpStatus);
+    }
+  }, []);
+
   // Store State
   const [productsEnabled, setProductsEnabled] = useState(false);
   const [showStoreInRevenue, setShowStoreInRevenue] = useState(true);
@@ -1208,8 +1229,37 @@ export default function SettingsPage() {
               {/* Fingerprint Config */}
               {attendanceMantraEnabled && (
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-4">
-                  <div className="flex items-center gap-2 text-blue-800 font-bold">
-                    <Fingerprint className="w-5 h-5" /> Mantra MFS100 Configuration
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-blue-800 font-bold">
+                      <Fingerprint className="w-5 h-5" /> Mantra MFS100 Configuration
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1.5 ${
+                        fpConnected 
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+                          : 'bg-amber-100 text-amber-800 border-amber-300'
+                      }`}>
+                        <span className={`w-2 h-2 rounded-full ${fpConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                        {fpConnected ? 'Scanner Connected' : 'Scanner Offline'}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={isFpReconnecting}
+                        onClick={() => {
+                          setIsFpReconnecting(true);
+                          setFpStatus('Restarting scanner agent...');
+                          window.dispatchEvent(new CustomEvent('fp_reconnect_request'));
+                          setTimeout(() => setIsFpReconnecting(false), 3500);
+                        }}
+                        className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isFpReconnecting ? 'animate-spin' : ''}`} />
+                        {isFpReconnecting ? 'Connecting...' : 'Reconnect Scanner'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-xs text-blue-700 font-medium">
+                    Status: <span className="font-semibold">{fpStatus}</span>
                   </div>
                   <p className="text-sm text-blue-700">
                     The MFS100 USB fingerprint scanner connects via a <strong>local WebSocket bridge agent</strong> installed on the gym PC. Download and run the GymFlow Bridge Agent on the PC where the MFS100 is plugged in.

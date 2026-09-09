@@ -19,6 +19,7 @@ namespace GymScanner
         static bool isPausedForManualScan = false;
         static int activeContinuousSubscribers = 0;
         static string currentGymId = "";
+        static string currentServerUrl = "http://localhost:3000";
         static DateTime lastTemplateSync = DateTime.MinValue;
         static List<StoredTemplate> dbTemplates = new List<StoredTemplate>();
         static readonly object scannerLock = new object();
@@ -31,17 +32,45 @@ namespace GymScanner
             public byte[] Bytes;
         }
 
+        static void Log(string msg)
+        {
+            try
+            {
+                Console.WriteLine(msg);
+            }
+            catch {}
+            try
+            {
+                string logDir = AppDomain.CurrentDomain.BaseDirectory;
+                string logPath = Path.Combine(logDir, "scanner.log");
+                File.AppendAllText(logPath, string.Format("[{0:yyyy-MM-dd HH:mm:ss}] {1}\r\n", DateTime.Now, msg));
+            }
+            catch {}
+        }
+
         static void Main(string[] args)
         {
-            MainAsync(args).GetAwaiter().GetResult();
+            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            {
+                Log("[FATAL UNHANDLED] " + (e.ExceptionObject != null ? e.ExceptionObject.ToString() : "Unknown exception"));
+            };
+            try
+            {
+                Log("=== Starting NativeGymScanner ===");
+                MainAsync(args).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Log("[FATAL EXCEPTION] " + ex.ToString());
+            }
         }
 
         static async Task MainAsync(string[] args)
         {
-            Console.WriteLine("=================================================");
-            Console.WriteLine("  GymFlow Native Fingerprint Bridge (MFS100)     ");
-            Console.WriteLine("  Auto-Reconnect & Multi-Mode Biometric Service  ");
-            Console.WriteLine("=================================================");
+            Log("=================================================");
+            Log("  GymFlow Native Fingerprint Bridge (MFS100)     ");
+            Log("  Auto-Reconnect & Multi-Mode Biometric Service  ");
+            Log("=================================================");
 
             InitializeDevice();
 
@@ -50,11 +79,11 @@ namespace GymScanner
             {
                 listener.Prefixes.Add("http://localhost:8765/");
                 listener.Start();
-                Console.WriteLine("[*] WebSocket bridge listening on ws://localhost:8765/");
+                Log("[*] WebSocket bridge listening on ws://localhost:8765/");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[!] Failed to bind port 8765: " + ex.Message);
+                Log("[!] Failed to bind port 8765: " + ex.Message);
                 return;
             }
 
@@ -75,7 +104,7 @@ namespace GymScanner
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("[!] Listener error: " + ex.Message);
+                    Log("[!] Listener error: " + ex.Message);
                     Thread.Sleep(500);
                 }
             }
@@ -99,22 +128,22 @@ namespace GymScanner
                         if (ret == 0)
                         {
                             isDeviceConnected = true;
-                            Console.WriteLine("[*] MFS100 Device Initialized Successfully!");
+                            Log("[*] MFS100 Device Initialized Successfully!");
                             return;
                         }
                         else
                         {
-                            Console.WriteLine(string.Format("[!] MFS100 Init returned code {0}. Waiting for valid hardware state...", ret));
+                            Log(string.Format("[!] MFS100 Init returned code {0}. Waiting for valid hardware state...", ret));
                         }
                     }
                     else
                     {
-                        Console.WriteLine("[!] MFS100 scanner is not plugged in. Waiting for USB connection...");
+                        Log("[!] MFS100 scanner is not plugged in. Waiting for USB connection...");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("[!] Device init exception: " + ex.Message);
+                    Log("[!] Device init exception: " + ex.Message);
                 }
                 isDeviceConnected = false;
             }
@@ -126,24 +155,37 @@ namespace GymScanner
             try
             {
                 webSocketContext = await context.AcceptWebSocketAsync(null);
-                Console.WriteLine("[*] Dashboard UI Client Connected!");
+                Log("[*] Dashboard UI Client Connected!");
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error accepting WS: " + e.Message);
+                Log("Error accepting WS: " + e.Message);
                 return;
             }
 
             WebSocket webSocket = webSocketContext.WebSocket;
             CancellationTokenSource cts = new CancellationTokenSource();
             bool isThisConnContinuous = false;
+
+            // Immediately send current hardware device status to the freshly connected client
+            try
+            {
+                string initStatus = string.Format(
+                    "{{\"type\":\"device_status\",\"deviceReady\":{0},\"message\":\"{1}\"}}",
+                    isDeviceConnected ? "true" : "false",
+                    isDeviceConnected ? "Fingerprint scanner ready — place finger on sensor" : "Scanner offline. Check USB connection or click Reconnect"
+                );
+                byte[] initBytes = Encoding.UTF8.GetBytes(initStatus);
+                await webSocket.SendAsync(new ArraySegment<byte>(initBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+            catch {}
             
             // Start the continuous scanning background loop for this connection
             Task scanLoop = Task.Run(() => ContinuousScanLoop(webSocket, cts.Token));
 
             try
             {
-                byte[] receiveBuffer = new byte[8192];
+                byte[] receiveBuffer = new byte[16384];
                 while (webSocket.State == WebSocketState.Open)
                 {
                     WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None);
@@ -155,13 +197,13 @@ namespace GymScanner
                     else
                     {
                         string message = Encoding.UTF8.GetString(receiveBuffer, 0, receiveResult.Count);
-                        Console.WriteLine("Received: " + message);
+                        Log("Received: " + (message.Length > 200 ? message.Substring(0, 200) + "..." : message));
                         
                         if (message.Contains("\"action\":\"scan\"") || message.Contains("\"action\": \"scan\""))
                         {
                             // Temporary pause continuous loop while single registration capture is running
                             isPausedForManualScan = true;
-                            Console.WriteLine("[*] Manual scan requested by dashboard (Registration)");
+                            Log("[*] Manual scan requested by dashboard (Registration)");
                             
                             string manualError = null;
                             string successTemplate = null;
@@ -182,7 +224,7 @@ namespace GymScanner
                                     ready = (mfs100 != null && mfs100.IsConnected());
                                     if (ready)
                                     {
-                                        Console.WriteLine("[*] Please place finger on scanner for registration...");
+                                        Log("[*] Please place finger on scanner for registration...");
                                         ret = mfs100.AutoCapture(ref fingerData, 10000, false, true);
                                     }
                                 }
@@ -193,18 +235,18 @@ namespace GymScanner
                                 }
                                 else if (ret == 0 && fingerData.ISOTemplate != null)
                                 {
-                                    Console.WriteLine("[*] Registration Scan Successful!");
+                                    Log("[*] Registration Scan Successful!");
                                     successTemplate = Convert.ToBase64String(fingerData.ISOTemplate);
                                 }
                                 else
                                 {
-                                    Console.WriteLine(string.Format("[!] Scan failed. Error Code: {0}", ret));
+                                    Log(string.Format("[!] Scan failed. Error Code: {0}", ret));
                                     manualError = "Scan failed. Please place your finger firmly and try again.";
                                 }
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine("[!] Exception in manual scan: " + ex.Message);
+                                Log("[!] Exception in manual scan: " + ex.Message);
                                 manualError = "Scanner error: " + ex.Message;
                             }
                             finally
@@ -229,7 +271,16 @@ namespace GymScanner
                             if (m.Success)
                             {
                                 currentGymId = m.Groups[1].Value;
-                                Console.WriteLine("[*] Start Continuous Check-in Mode for Gym: " + currentGymId);
+                                Log("[*] Start Continuous Check-in Mode for Gym: " + currentGymId);
+                            }
+                            Match sUrlM = Regex.Match(message, "\"serverUrl\"\\s*:\\s*\"(.*?)\"");
+                            if (sUrlM.Success && !string.IsNullOrEmpty(sUrlM.Groups[1].Value))
+                            {
+                                currentServerUrl = sUrlM.Groups[1].Value.TrimEnd('/');
+                                Log("[*] Using Server URL: " + currentServerUrl);
+                            }
+                            if (!string.IsNullOrEmpty(currentGymId))
+                            {
                                 FetchTemplates(currentGymId);
                             }
                             if (!isThisConnContinuous)
@@ -241,7 +292,7 @@ namespace GymScanner
                         }
                         else if (message.Contains("\"stop_continuous\""))
                         {
-                            Console.WriteLine("[*] Stopped Continuous Check-in Mode for this connection.");
+                            Log("[*] Stopped Continuous Check-in Mode for this connection.");
                             if (isThisConnContinuous)
                             {
                                 isThisConnContinuous = false;
@@ -252,9 +303,26 @@ namespace GymScanner
                                 }
                             }
                         }
+                        else if (message.Contains("\"sync_templates\"") || message.Contains("\"push_templates\""))
+                        {
+                            Log("[*] Direct templates payload received from dashboard UI");
+                            ParseAndStoreTemplates(message);
+                        }
+                        else if (message.Contains("\"reconnect\"") || message.Contains("\"reinit\""))
+                        {
+                            Log("[*] Reconnect/re-init requested by client");
+                            InitializeDevice();
+                            string statusMsg = string.Format(
+                                "{{\"type\":\"device_status\",\"deviceReady\":{0},\"message\":\"{1}\"}}",
+                                isDeviceConnected ? "true" : "false",
+                                isDeviceConnected ? "Fingerprint scanner ready — place finger on sensor" : "MFS100 Scanner not detected. Please check USB cable."
+                            );
+                            byte[] statusBytes = Encoding.UTF8.GetBytes(statusMsg);
+                            await webSocket.SendAsync(new ArraySegment<byte>(statusBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                        }
                         else if (message.Contains("\"action\":\"sync\"") || message.Contains("\"action\":\"refresh\"") || message.Contains("\"refresh_templates\""))
                         {
-                            Console.WriteLine("[*] Immediate template refresh requested by dashboard.");
+                            Log("[*] Immediate template refresh requested by dashboard.");
                             Match m = Regex.Match(message, "\"gymId\"\\s*:\\s*\"(.*?)\"");
                             string syncGym = m.Success ? m.Groups[1].Value : currentGymId;
                             if (!string.IsNullOrEmpty(syncGym))
@@ -267,7 +335,7 @@ namespace GymScanner
             }
             catch (Exception e)
             {
-                Console.WriteLine("Connection Exception: " + e.Message);
+                Log("Connection Exception: " + e.Message);
             }
             finally
             {
@@ -284,7 +352,59 @@ namespace GymScanner
                 {
                     try { webSocket.Dispose(); } catch {}
                 }
-                Console.WriteLine("[*] Dashboard UI Client Disconnected.");
+                Log("[*] Dashboard UI Client Disconnected.");
+            }
+        }
+
+        static void ParseAndStoreTemplates(string json)
+        {
+            try
+            {
+                var newTemplates = new List<StoredTemplate>();
+                MatchCollection objMatches = Regex.Matches(json, @"\{[^{}]*""id""\s*:\s*""([^""]+)""[^{}]*\}");
+                foreach (Match objMatch in objMatches)
+                {
+                    string block = objMatch.Value;
+                    Match idM = Regex.Match(block, @"""id""\s*:\s*""([^""]+)""");
+                    Match nameM = Regex.Match(block, @"""name""\s*:\s*""([^""]+)""");
+                    Match roleM = Regex.Match(block, @"""role""\s*:\s*""([^""]+)""");
+                    Match tplM = Regex.Match(block, @"""template""\s*:\s*""([^""]+)""");
+
+                    if (idM.Success && tplM.Success)
+                    {
+                        try
+                        {
+                            string id = idM.Groups[1].Value;
+                            string name = nameM.Success ? nameM.Groups[1].Value : "Member";
+                            string role = roleM.Success ? roleM.Groups[1].Value : "Member";
+                            string tpl = tplM.Groups[1].Value;
+                            
+                            byte[] bytes = Convert.FromBase64String(tpl);
+                            if (bytes.Length > 0)
+                            {
+                                newTemplates.Add(new StoredTemplate
+                                {
+                                    Id = id,
+                                    Name = name,
+                                    Role = role,
+                                    Base64Data = tpl,
+                                    Bytes = bytes
+                                });
+                            }
+                        }
+                        catch {}
+                    }
+                }
+                if (newTemplates.Count > 0)
+                {
+                    dbTemplates = newTemplates;
+                    lastTemplateSync = DateTime.UtcNow;
+                    Log(string.Format("[*] Synced {0} member & staff templates directly from dashboard!", dbTemplates.Count));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("[!] Error parsing direct templates: " + ex.Message);
             }
         }
         
@@ -293,11 +413,12 @@ namespace GymScanner
             if (string.IsNullOrEmpty(gymId)) return;
             try
             {
-                Console.WriteLine("[*] Fetching registered member fingerprints from server for gym: " + gymId);
+                string syncUrl = currentServerUrl + "/api/biometrics/sync?gymId=" + gymId;
+                Log("[*] Fetching registered member fingerprints from server: " + syncUrl);
                 using (WebClient client = new WebClient())
                 {
                     client.Encoding = Encoding.UTF8;
-                    string json = client.DownloadString("http://localhost:3000/api/biometrics/sync?gymId=" + gymId);
+                    string json = client.DownloadString(syncUrl);
                     
                     var newTemplates = new List<StoredTemplate>();
                     
@@ -337,19 +458,24 @@ namespace GymScanner
                         }
                     }
                     
-                    dbTemplates = newTemplates;
-                    lastTemplateSync = DateTime.UtcNow;
-                    Console.WriteLine(string.Format("[*] Downloaded {0} member & staff fingerprints successfully.", dbTemplates.Count));
+                    if (newTemplates.Count > 0 || dbTemplates.Count == 0)
+                    {
+                        dbTemplates = newTemplates;
+                        lastTemplateSync = DateTime.UtcNow;
+                        Log(string.Format("[*] Downloaded {0} member & staff fingerprints successfully.", dbTemplates.Count));
+                    }
                 }
             } 
             catch (Exception ex)
             {
-                Console.WriteLine("[!] Failed to sync templates: " + ex.Message);
+                Log("[!] Remote template sync notice: " + ex.Message + " (will rely on dashboard direct sync if available)");
             }
         }
         
         static async Task ContinuousScanLoop(WebSocket webSocket, CancellationToken token)
         {
+            bool previousDeviceReady = isDeviceConnected;
+
             while (!token.IsCancellationRequested)
             {
                 try
@@ -378,7 +504,7 @@ namespace GymScanner
                                         if (initRet == 0)
                                         {
                                             isDeviceConnected = true;
-                                            Console.WriteLine("[*] MFS100 Scanner Reconnected & Ready!");
+                                            Log("[*] MFS100 Scanner Reconnected & Ready!");
                                         }
                                     }
                                     deviceReady = isDeviceConnected;
@@ -390,9 +516,26 @@ namespace GymScanner
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine("[!] USB state check error: " + ex.Message);
+                                Log("[!] USB state check error: " + ex.Message);
                                 isDeviceConnected = false;
                             }
+                        }
+
+                        // Broadcast hardware state transition to browser UI
+                        if (deviceReady != previousDeviceReady)
+                        {
+                            previousDeviceReady = deviceReady;
+                            try
+                            {
+                                string devStatus = string.Format(
+                                    "{{\"type\":\"device_status\",\"deviceReady\":{0},\"message\":\"{1}\"}}",
+                                    deviceReady ? "true" : "false",
+                                    deviceReady ? "Fingerprint scanner ready — place finger on sensor" : "MFS100 Scanner disconnected. Please check USB cable."
+                                );
+                                byte[] devBytes = Encoding.UTF8.GetBytes(devStatus);
+                                await webSocket.SendAsync(new ArraySegment<byte>(devBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                            }
+                            catch {}
                         }
 
                         if (!deviceReady)
@@ -419,7 +562,7 @@ namespace GymScanner
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine("[!] AutoCapture exception (likely unplugged): " + ex.Message);
+                            Log("[!] AutoCapture exception (likely unplugged): " + ex.Message);
                             ret = -999;
                         }
 
@@ -438,8 +581,17 @@ namespace GymScanner
 
                             if (!stillConnected)
                             {
-                                Console.WriteLine("[!] Scanner was unplugged! Waiting for reconnection...");
+                                Log("[!] Scanner was unplugged! Waiting for reconnection...");
                                 isDeviceConnected = false;
+                                previousDeviceReady = false;
+                                try
+                                {
+                                    string unpluggedJson = "{\"type\":\"device_status\",\"deviceReady\":false,\"message\":\"MFS100 Scanner disconnected. Please check USB cable.\"}";
+                                    byte[] uBytes = Encoding.UTF8.GetBytes(unpluggedJson);
+                                    await webSocket.SendAsync(new ArraySegment<byte>(uBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                                }
+                                catch {}
+
                                 lock (scannerLock)
                                 {
                                     try { if (mfs100 != null) { mfs100.Uninit(); mfs100.Dispose(); } } catch {}
@@ -457,7 +609,7 @@ namespace GymScanner
                         // ret == 0: A finger was placed on the scanner
                         if (fingerData.ISOTemplate != null && fingerData.ISOTemplate.Length > 0)
                         {
-                            Console.WriteLine("\n[*] Finger placed! Matching with registered templates...");
+                            Log("\n[*] Finger placed! Matching with registered templates...");
                             int bestScore = 0;
                             StoredTemplate bestMatch = null;
                             
@@ -483,7 +635,7 @@ namespace GymScanner
                             // Mantra Match Score >= 140 indicates an authentic match
                             if (bestScore >= 140 && bestMatch != null)
                             {
-                                Console.WriteLine(string.Format("[+] MATCH FOUND! Score: {0}, ID: {1}, Name: {2}, Role: {3}", bestScore, bestMatch.Id, bestMatch.Name, bestMatch.Role));
+                                Log(string.Format("[+] MATCH FOUND! Score: {0}, ID: {1}, Name: {2}, Role: {3}", bestScore, bestMatch.Id, bestMatch.Name, bestMatch.Role));
                                 string responseJson = string.Format(
                                     "{{\"type\": \"scan\", \"userId\": \"{0}\", \"name\": \"{1}\", \"userRole\": \"{2}\", \"fingerprintId\": \"{3}\"}}",
                                     bestMatch.Id,
@@ -503,7 +655,7 @@ namespace GymScanner
                             }
                             else
                             {
-                                Console.WriteLine(string.Format("[-] No registered match found. Best score was: {0}", bestScore));
+                                Log(string.Format("[-] No registered match found. Best score was: {0}", bestScore));
                                 string responseJson = "{\"type\": \"scan\", \"fingerprintId\": \"UNKNOWN\"}";
                                 byte[] bytes = Encoding.UTF8.GetBytes(responseJson);
                                 try
@@ -518,7 +670,7 @@ namespace GymScanner
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("[!] Loop iteration error: " + ex.Message);
+                    Log("[!] Loop iteration error: " + ex.Message);
                 }
                 
                 await Task.Delay(150, token);

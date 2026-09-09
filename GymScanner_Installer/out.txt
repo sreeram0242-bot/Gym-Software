@@ -1,0 +1,6 @@
+=================================================
+  GymFlow Native Fingerprint Bridge (MFS100)     
+  Auto-Reconnect & Multi-Mode Biometric Service  
+=================================================
+[*] MFS100 Device Initialized Successfully!
+[*] WebSocket bridge listening on ws://localhost:8765/

@@ -1,0 +1,19 @@
+[2026-09-09 13:52:02] === Starting NativeGymScanner ===
+[2026-09-09 13:52:02] =================================================
+[2026-09-09 13:52:02]   GymFlow Native Fingerprint Bridge (MFS100)     
+[2026-09-09 13:52:02]   Auto-Reconnect & Multi-Mode Biometric Service  
+[2026-09-09 13:52:02] =================================================
+[2026-09-09 13:52:04] [*] MFS100 Device Initialized Successfully!
+[2026-09-09 13:52:04] [*] WebSocket bridge listening on ws://localhost:8765/
+[2026-09-09 13:52:13] [*] Dashboard UI Client Connected!
+[2026-09-09 13:52:13] Received: {"action":"start_continuous","gymId":"61bcdeb2-9801-4ee3-816c-89b90d4c3bf7","serverUrl":"http://localhost:3000"}
+[2026-09-09 13:52:13] [*] Start Continuous Check-in Mode for Gym: 61bcdeb2-9801-4ee3-816c-89b90d4c3bf7
+[2026-09-09 13:52:13] [*] Using Server URL: http://localhost:3000
+[2026-09-09 13:52:13] [*] Fetching registered member fingerprints from server: http://localhost:3000/api/biometrics/sync?gymId=61bcdeb2-9801-4ee3-816c-89b90d4c3bf7
+[2026-09-09 13:52:14] [*] Downloaded 3 member & staff fingerprints successfully.
+[2026-09-09 13:52:14] Received: {"action":"reconnect"}
+[2026-09-09 13:52:14] [*] Reconnect/re-init requested by client
+[2026-09-09 13:52:16] [*] MFS100 Device Initialized Successfully!
+[2026-09-09 13:52:16] Connection Exception: An internal WebSocket error occurred. Please see the innerException, if present, for more details. 
+[2026-09-09 13:52:16] [*] Dashboard UI Client Disconnected.
+[2026-09-09 13:52:18] [!] Loop iteration error: A task was canceled.

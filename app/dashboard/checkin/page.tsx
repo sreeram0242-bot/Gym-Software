@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
-import { Radio, Clock, UserCheck, Fingerprint, Search, Wifi, WifiOff, Briefcase, LogIn, LogOut, Shield, Users, FileText, FileSpreadsheet } from 'lucide-react';
+import { Radio, Clock, UserCheck, Fingerprint, Search, Wifi, WifiOff, Briefcase, LogIn, LogOut, Shield, Users, FileText, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { 
   getCustomers, getAttendance, findCustomerByNFC, findCustomerByFingerprint, findCustomerByMantra, toggleCheckIn, 
   getMemberMonthlyAvgHours, getGymSettings, getStaffs, getStaffAttendance, findStaffByNFC, 
@@ -61,6 +61,7 @@ export default function CheckInTerminal() {
   // Fingerprint Bridge Global State
   const [fpConnected, setFpConnected] = useState<boolean>(false);
   const [fpStatus, setFpStatus] = useState<string>('Connecting to fingerprint agent...');
+  const [isFpReconnecting, setIsFpReconnecting] = useState<boolean>(false);
 
   useEffect(() => {
     // Read current global status
@@ -72,6 +73,9 @@ export default function CheckInTerminal() {
     const handleFpStatus = (e: any) => {
       setFpConnected(e.detail.connected);
       setFpStatus(e.detail.status);
+      if (e.detail.connected) {
+        setIsFpReconnecting(false);
+      }
     };
     if (typeof window !== 'undefined') {
       window.addEventListener('fp_status', handleFpStatus);
@@ -553,12 +557,17 @@ export default function CheckInTerminal() {
                   <p className="font-bold">{fpConnected ? 'Scanner Connected' : 'Scanner Offline'}</p>
                   {!fpConnected && (
                     <button
+                      disabled={isFpReconnecting}
                       onClick={() => {
+                        setIsFpReconnecting(true);
+                        setFpStatus('Restarting scanner agent...');
                         window.dispatchEvent(new CustomEvent('fp_reconnect_request'));
+                        setTimeout(() => setIsFpReconnecting(false), 3500);
                       }}
-                      className="px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10px] font-bold transition-colors shadow-xs"
+                      className="px-2 py-0.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white rounded text-[10px] font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                     >
-                      Reconnect
+                      <RefreshCw className={`w-2.5 h-2.5 ${isFpReconnecting ? 'animate-spin' : ''}`} />
+                      {isFpReconnecting ? 'Connecting...' : 'Reconnect'}
                     </button>
                   )}
                 </div>
