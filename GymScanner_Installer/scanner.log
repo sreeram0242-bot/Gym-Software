@@ -140,3 +140,27 @@
 [2026-09-09 14:08:21] =================================================
 [2026-09-09 14:08:24] [!] MFS100 scanner is not plugged in. Waiting for USB connection...
 [2026-09-09 14:08:24] [*] WebSocket bridge listening on ws://localhost:8765/
+[2026-09-09 14:28:31] [*] Dashboard UI Client Connected!
+[2026-09-09 14:28:31] Received: {"action":"start_continuous","gymId":"61bcdeb2-9801-4ee3-816c-89b90d4c3bf7","serverUrl":"https://gym-flow.duckdns.org"}
+[2026-09-09 14:28:31] [*] Start Continuous Check-in Mode for Gym: 61bcdeb2-9801-4ee3-816c-89b90d4c3bf7
+[2026-09-09 14:28:31] [*] Using Server URL: https://gym-flow.duckdns.org
+[2026-09-09 14:28:31] [*] Fetching registered member fingerprints from server: https://gym-flow.duckdns.org/api/biometrics/sync?gymId=61bcdeb2-9801-4ee3-816c-89b90d4c3bf7
+[2026-09-09 14:28:31] [!] Remote template sync notice: The request was aborted: Could not create SSL/TLS secure channel. (will rely on dashboard direct sync if available)
+[2026-09-09 14:28:31] Received: {"action":"sync_templates","templates":[{"id":"43f8daec-5efd-40bf-8413-273cf3aaaf4d","name":"Left Index","role":"Member","template":"Rk1SACAyMAAAAAFcAAABPAFiAMUAxQEAAAAoNYCOAOOkAEB+AOk/AEByAMTBAEB2APN...
+[2026-09-09 14:28:31] [*] Direct templates payload received from dashboard UI
+[2026-09-09 14:28:31] [*] Synced 3 member & staff templates directly from dashboard!
+[2026-09-09 14:28:34] [!] Loop iteration error: A task was canceled.
+[2026-09-09 14:28:34] [*] Dashboard UI Client Disconnected.
+[2026-09-09 14:28:38] [*] Dashboard UI Client Connected!
+[2026-09-09 14:28:38] Received: {"action":"start_continuous","gymId":"61bcdeb2-9801-4ee3-816c-89b90d4c3bf7","serverUrl":"https://gym-flow.duckdns.org"}
+[2026-09-09 14:28:38] [*] Start Continuous Check-in Mode for Gym: 61bcdeb2-9801-4ee3-816c-89b90d4c3bf7
+[2026-09-09 14:28:38] [*] Using Server URL: https://gym-flow.duckdns.org
+[2026-09-09 14:28:38] [*] Fetching registered member fingerprints from server: https://gym-flow.duckdns.org/api/biometrics/sync?gymId=61bcdeb2-9801-4ee3-816c-89b90d4c3bf7
+[2026-09-09 14:28:38] [!] Remote template sync notice: The request was aborted: Could not create SSL/TLS secure channel. (will rely on dashboard direct sync if available)
+[2026-09-09 14:28:38] Received: {"action":"sync_templates","templates":[{"id":"43f8daec-5efd-40bf-8413-273cf3aaaf4d","name":"Left Index","role":"Member","template":"Rk1SACAyMAAAAAFcAAABPAFiAMUAxQEAAAAoNYCOAOOkAEB+AOk/AEByAMTBAEB2APN...
+[2026-09-09 14:28:38] [*] Direct templates payload received from dashboard UI
+[2026-09-09 14:28:38] [*] Synced 3 member & staff templates directly from dashboard!
+[2026-09-09 14:29:24] [*] Fetching registered member fingerprints from server: https://gym-flow.duckdns.org/api/biometrics/sync?gymId=61bcdeb2-9801-4ee3-816c-89b90d4c3bf7
+[2026-09-09 14:29:24] [!] Remote template sync notice: The request was aborted: Could not create SSL/TLS secure channel. (will rely on dashboard direct sync if available)
+[2026-09-09 14:30:07] [!] Loop iteration error: A task was canceled.
+[2026-09-09 14:30:07] [*] Dashboard UI Client Disconnected.

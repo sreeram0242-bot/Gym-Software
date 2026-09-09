@@ -7,7 +7,7 @@ const cf = spawn('npx', ['cloudflared', 'tunnel', '--url', 'http://localhost:300
 cf.stderr.on('data', (data) => {
   const output = data.toString();
   console.log("CF LOG:", output);
-  
+
   // Extract URL like https://xyz.trycloudflare.com
   const match = output.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
   if (match) {
