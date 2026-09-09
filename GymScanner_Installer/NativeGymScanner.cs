@@ -489,35 +489,31 @@ namespace GymScanner
                             ThreadPool.QueueUserWorkItem(state => FetchTemplates(currentGymId));
                         }
 
-                        // Check USB connection before attempting capture
-                        bool deviceReady = false;
-                        lock (scannerLock)
+                        // Check USB connection only if device was previously marked disconnected
+                        bool deviceReady = isDeviceConnected;
+                        if (!isDeviceConnected)
                         {
-                            try
+                            lock (scannerLock)
                             {
-                                if (mfs100 == null) mfs100 = new MFS100();
-                                if (mfs100.IsConnected())
+                                try
                                 {
-                                    if (!isDeviceConnected)
+                                    if (mfs100 == null) mfs100 = new MFS100();
+                                    if (mfs100.IsConnected())
                                     {
                                         int initRet = mfs100.Init();
                                         if (initRet == 0)
                                         {
                                             isDeviceConnected = true;
+                                            deviceReady = true;
                                             Log("[*] MFS100 Scanner Reconnected & Ready!");
                                         }
                                     }
-                                    deviceReady = isDeviceConnected;
                                 }
-                                else
+                                catch (Exception ex)
                                 {
+                                    Log("[!] USB state check error: " + ex.Message);
                                     isDeviceConnected = false;
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                Log("[!] USB state check error: " + ex.Message);
-                                isDeviceConnected = false;
                             }
                         }
 
@@ -541,11 +537,11 @@ namespace GymScanner
                         if (!deviceReady)
                         {
                             // Scanner is unplugged. Wait gently and loop without crashing.
-                            await Task.Delay(1500, token);
+                            await Task.Delay(1000, token);
                             continue;
                         }
 
-                        // Scanner is verified connected - perform AutoCapture
+                        // High-Speed Instant Fingerprint Capture (sub-second / milliseconds)
                         FingerData fingerData = new FingerData();
                         int ret = -1;
 
@@ -555,8 +551,8 @@ namespace GymScanner
                             {
                                 if (mfs100 != null && isDeviceConnected)
                                 {
-                                    // 2500ms timeout keeps the loop responsive while waiting for finger touches
-                                    ret = mfs100.AutoCapture(ref fingerData, 2500, false, false);
+                                    // 2000ms timeout with IsDetectFinger = true triggers IMMEDIATELY on touch
+                                    ret = mfs100.AutoCapture(ref fingerData, 2000, false, true);
                                 }
                             }
                         }
@@ -568,7 +564,13 @@ namespace GymScanner
 
                         if (ret != 0)
                         {
-                            // Check if device was disconnected during capture
+                            // If AutoCapture failed with an error, check if device was disconnected
+                            if (ret != -1140 && ret != -1307 && ret != -999) // Normal timeout codes
+                            {
+                                await Task.Delay(10, token);
+                                continue;
+                            }
+
                             bool stillConnected = false;
                             lock (scannerLock)
                             {
@@ -597,36 +599,37 @@ namespace GymScanner
                                     try { if (mfs100 != null) { mfs100.Uninit(); mfs100.Dispose(); } } catch {}
                                     mfs100 = null;
                                 }
-                                await Task.Delay(1500, token);
+                                await Task.Delay(1000, token);
                                 continue;
                             }
 
-                            // Device is still connected and just timed out with no finger placed.
-                            await Task.Delay(150, token);
+                            await Task.Delay(10, token);
                             continue;
                         }
 
-                        // ret == 0: A finger was placed on the scanner
+                        // ret == 0: A finger was instantly detected and captured!
                         if (fingerData.ISOTemplate != null && fingerData.ISOTemplate.Length > 0)
                         {
-                            Log("\n[*] Finger placed! Matching with registered templates...");
+                            Log("\n[*] Finger placed! Instant matching with registered templates...");
                             int bestScore = 0;
                             StoredTemplate bestMatch = null;
                             
                             var currentTemplates = dbTemplates;
                             
-                            foreach (var st in currentTemplates)
+                            lock (scannerLock)
                             {
-                                int score = 0;
-                                lock (scannerLock)
+                                if (mfs100 != null && isDeviceConnected)
                                 {
-                                    if (mfs100 != null && isDeviceConnected)
+                                    foreach (var st in currentTemplates)
                                     {
+                                        int score = 0;
                                         int matchRet = mfs100.MatchISO(fingerData.ISOTemplate, st.Bytes, ref score);
                                         if (matchRet == 0 && score > bestScore)
                                         {
                                             bestScore = score;
                                             bestMatch = st;
+                                            // Score >= 160 is a definitive match - break early for millisecond speed!
+                                            if (bestScore >= 160) break;
                                         }
                                     }
                                 }
@@ -650,8 +653,8 @@ namespace GymScanner
                                 }
                                 catch {}
                                 
-                                // Pause 3 seconds after successful punch to avoid accidental double-punches
-                                await Task.Delay(3000, token);
+                                // Brief 1 second cooldown after successful punch
+                                await Task.Delay(1000, token);
                             }
                             else
                             {
@@ -663,7 +666,7 @@ namespace GymScanner
                                     await webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
                                 }
                                 catch {}
-                                await Task.Delay(1500, token);
+                                await Task.Delay(800, token);
                             }
                         }
                     }
@@ -673,7 +676,7 @@ namespace GymScanner
                     Log("[!] Loop iteration error: " + ex.Message);
                 }
                 
-                await Task.Delay(150, token);
+                await Task.Delay(15, token);
             }
         }
 

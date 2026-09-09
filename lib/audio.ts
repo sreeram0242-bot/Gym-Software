@@ -2,18 +2,21 @@ export function playPunchInSound() {
   if (typeof window === 'undefined') return;
   try {
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
     
-    // Play a happy double chime
+    // Play a crisp, cheerful ascending double chime
     const playNote = (freq: number, startTime: number, duration: number) => {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       
-      osc.type = 'sine';
+      osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, startTime);
       
       gain.gain.setValueAtTime(0, startTime);
-      gain.gain.linearRampToValueAtTime(0.5, startTime + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      gain.gain.linearRampToValueAtTime(0.6, startTime + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
       
       osc.connect(gain);
       gain.connect(audioCtx.destination);
@@ -23,8 +26,8 @@ export function playPunchInSound() {
     };
 
     const now = audioCtx.currentTime;
-    playNote(659.25, now, 0.15); // E5
-    playNote(880.00, now + 0.15, 0.4); // A5
+    playNote(784.00, now, 0.18);        // G5
+    playNote(1046.50, now + 0.12, 0.45); // C6
   } catch (e) {
     console.error("Audio playback failed", e);
   }
@@ -34,18 +37,21 @@ export function playPunchOutSound() {
   if (typeof window === 'undefined') return;
   try {
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
     
-    // Play a descending double chime
+    // Play a distinct descending chime
     const playNote = (freq: number, startTime: number, duration: number) => {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       
-      osc.type = 'sine';
+      osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, startTime);
       
       gain.gain.setValueAtTime(0, startTime);
-      gain.gain.linearRampToValueAtTime(0.5, startTime + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      gain.gain.linearRampToValueAtTime(0.6, startTime + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
       
       osc.connect(gain);
       gain.connect(audioCtx.destination);
@@ -55,8 +61,9 @@ export function playPunchOutSound() {
     };
 
     const now = audioCtx.currentTime;
-    playNote(880.00, now, 0.15); // A5
-    playNote(659.25, now + 0.15, 0.4); // E5
+    playNote(1046.50, now, 0.16);       // C6
+    playNote(784.00, now + 0.12, 0.18);  // G5
+    playNote(523.25, now + 0.24, 0.45);  // C5
   } catch (e) {
     console.error("Audio playback failed", e);
   }

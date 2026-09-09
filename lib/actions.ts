@@ -1235,8 +1235,11 @@ export async function toggleCheckIn(customerId: string, isManual: boolean = fals
         orderBy: { checkInTime: 'desc' }
       });
       if (latestRecord) {
-        const msSinceLastPunch = new Date(nowIso).getTime() - new Date(latestRecord.checkInTime).getTime();
-        if (msSinceLastPunch < 5000) {
+        const lastPunchTime = latestRecord.checkOutTime 
+          ? new Date(latestRecord.checkOutTime).getTime() 
+          : new Date(latestRecord.checkInTime).getTime();
+        const msSinceLastPunch = new Date(nowIso).getTime() - lastPunchTime;
+        if (msSinceLastPunch < 1200) {
           return { record: latestRecord, action: latestRecord.checkOutTime ? 'checkout' : 'checkin' as const, customerProfilePic: customer.profilePic || null };
         }
       }
@@ -2310,8 +2313,11 @@ export async function toggleStaffCheckIn(staffId: string, isManual: boolean = fa
       orderBy: { checkInTime: 'desc' }
     });
     if (latestRecord) {
-      const msSinceLastPunch = new Date(nowIso).getTime() - new Date(latestRecord.checkInTime).getTime();
-      if (msSinceLastPunch < 5000) {
+      const lastPunchTime = latestRecord.checkOutTime 
+        ? new Date(latestRecord.checkOutTime).getTime() 
+        : new Date(latestRecord.checkInTime).getTime();
+      const msSinceLastPunch = new Date(nowIso).getTime() - lastPunchTime;
+      if (msSinceLastPunch < 1200) {
         return { record: latestRecord, action: latestRecord.checkOutTime ? 'checkout' : 'checkin' as const };
       }
     }

@@ -8,6 +8,7 @@ import { getGyms, findCustomerByNFC, findStaffByNFC, toggleCheckIn, toggleStaffC
 import { Gym, Customer, AttendanceRecord } from '@/lib/types';
 import { getTemplate, compileTemplate } from '@/lib/templates';
 import { preloadOverview, preloadCheckin, preloadMembers, preloadStaffs, preloadReminders, preloadBroadcast, preloadRevenue, preloadProducts } from '@/lib/hooks';
+import { playPunchInSound, playPunchOutSound } from '@/lib/audio';
 import { mutate } from 'swr';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -338,22 +339,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       
                       const playSounds = localStorage.getItem('playPunchSounds') !== 'false';
                       if (playSounds) {
-                        try {
-                          const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-                          const osc = ctx.createOscillator();
-                          const gain = ctx.createGain();
-                          osc.connect(gain);
-                          gain.connect(ctx.destination);
-                          osc.type = 'sine';
-                          osc.frequency.setValueAtTime(isCheckIn ? 880 : 440, ctx.currentTime);
-                          gain.gain.setValueAtTime(0.25, ctx.currentTime);
-                          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-                          osc.start();
-                          osc.stop(ctx.currentTime + 0.35);
-                        } catch (e) {}
+                        if (isCheckIn) {
+                          playPunchInSound();
+                        } else {
+                          playPunchOutSound();
+                        }
                       }
 
-                      window.dispatchEvent(new CustomEvent('punch_detected', {
+                      window.dispatchEvent(new CustomEvent('member_punch_event', {
                         detail: {
                           customerName: matchedCust.name,
                           customerProfilePic: matchedCust.profilePic || res.customerProfilePic,
@@ -378,26 +371,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       
                       const playSounds = localStorage.getItem('playPunchSounds') !== 'false';
                       if (playSounds) {
-                        try {
-                          const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-                          const osc = ctx.createOscillator();
-                          const gain = ctx.createGain();
-                          osc.connect(gain);
-                          gain.connect(ctx.destination);
-                          osc.type = 'sine';
-                          osc.frequency.setValueAtTime(750, ctx.currentTime);
-                          gain.gain.setValueAtTime(0.25, ctx.currentTime);
-                          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-                          osc.start();
-                          osc.stop(ctx.currentTime + 0.35);
-                        } catch (e) {}
+                        if (isCheckIn) {
+                          playPunchInSound();
+                        } else {
+                          playPunchOutSound();
+                        }
                       }
 
-                      window.dispatchEvent(new CustomEvent('punch_detected', {
+                      window.dispatchEvent(new CustomEvent('staff_punch_event', {
                         detail: {
-                          customerName: matchedStaff.name,
+                          staffName: matchedStaff.name,
+                          staffRole: matchedStaff.role || 'Staff',
                           action: staffRes?.action || 'checkin',
-                          role: 'Staff'
+                          durationMinutes: staffRes?.record?.durationMinutes
                         }
                       }));
 
